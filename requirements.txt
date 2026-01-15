@@ -10,7 +10,7 @@ google-genai>=1.0.0
 
 # Web Search & HTTP
 requests==2.31.0
-httpx==0.26.0
+httpx>=0.28.0
 beautifulsoup4==4.12.3
 
 # Utilities
