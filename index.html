@@ -996,6 +996,10 @@
         let shownTipArticles = [];
         let shownTrendArticles = [];
 
+        // Meme text overlay state (draggable text boxes)
+        let memeTextOverlays = [];
+        let selectedMemeTextBox = -1;
+
         // Month data
         const months = [
             { name: 'january', emoji: '❄️', season: 'winter' },
@@ -2376,63 +2380,50 @@
         }
 
         function displayImages() {
-            // Display meme with text overlay
+            // Display meme with draggable text boxes
             if (generatedImages.meme) {
-                const textTop = generatedImages.meme.text_top || '';
-                const textBottom = generatedImages.meme.text_bottom || '';
-                const textSize = generatedImages.meme.textSize || 32;
-                const textColor = generatedImages.meme.textColor || '#FFFFFF';
-
                 document.getElementById('memePreview').innerHTML = `
-                    <div style="position: relative; display: inline-block; max-width: 100%;">
-                        <img src="${generatedImages.meme.url}" alt="Monthly Meme" style="max-width: 100%; border-radius: 8px; display: block;" />
-                        ${textTop ? `<div style="position: absolute; top: 20px; left: 0; right: 0; text-align: center; color: ${textColor}; font-family: Impact, Arial Black, sans-serif; font-size: ${textSize}px; font-weight: bold; text-transform: uppercase; text-shadow: 2px 2px 4px black, -2px -2px 4px black, 2px -2px 4px black, -2px 2px 4px black; padding: 0 10px; line-height: 1.2;">${textTop}</div>` : ''}
-                        ${textBottom ? `<div style="position: absolute; bottom: 20px; left: 0; right: 0; text-align: center; color: ${textColor}; font-family: Impact, Arial Black, sans-serif; font-size: ${textSize}px; font-weight: bold; text-transform: uppercase; text-shadow: 2px 2px 4px black, -2px -2px 4px black, 2px -2px 4px black, -2px 2px 4px black; padding: 0 10px; line-height: 1.2;">${textBottom}</div>` : ''}
+                    <div id="meme-preview-container" style="position: relative; display: inline-block; max-width: 100%;">
+                        <img id="meme-preview-img" src="${generatedImages.meme.url}" alt="Monthly Meme" style="max-width: 100%; border-radius: 8px; display: block;" />
+                        <div id="meme-text-boxes-container" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none;">
+                            <!-- Text boxes will be rendered here -->
+                        </div>
                     </div>
+                    <p style="background: #f0fdf4; padding: 0.75rem; border-radius: 8px; margin-top: 0.75rem; color: #047857; font-size: 0.9rem; text-align: center;">
+                        <strong>Drag to move</strong> | <strong>Drag corners to resize</strong> | <strong>Click to select</strong>
+                    </p>
                 `;
                 document.getElementById('memePrompt').value = generatedImages.meme.prompt || '';
 
-                // Add text overlay editing inputs if they don't exist
-                if (!document.getElementById('memeTextTop')) {
+                // Add text overlay controls if they don't exist
+                if (!document.getElementById('memeTextControls')) {
                     const promptContainer = document.getElementById('memePrompt').parentElement;
-                    const textSize = generatedImages.meme.textSize || 32;
-                    const textColor = generatedImages.meme.textColor || '#FFFFFF';
-                    const textInputsHTML = `
-                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e5e7eb;">
-                            <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #374151;">Top Text:</label>
-                            <input type="text" id="memeTextTop" value="${textTop}" placeholder="TOP TEXT (optional)"
-                                style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; margin-bottom: 10px; font-family: monospace; text-transform: uppercase;">
-
-                            <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #374151;">Bottom Text:</label>
-                            <input type="text" id="memeTextBottom" value="${textBottom}" placeholder="BOTTOM TEXT (optional)"
-                                style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; margin-bottom: 15px; font-family: monospace; text-transform: uppercase;">
-
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 10px;">
-                                <div>
-                                    <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #374151;">Text Size (px):</label>
-                                    <input type="number" id="memeTextSize" value="${textSize}" min="16" max="80" step="2"
-                                        style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">
-                                </div>
-                                <div>
-                                    <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #374151;">Text Color:</label>
-                                    <input type="color" id="memeTextColor" value="${textColor}"
-                                        style="width: 100%; height: 40px; padding: 4px; border: 1px solid #d1d5db; border-radius: 4px;">
-                                </div>
+                    const textControlsHTML = `
+                        <div id="memeTextControls" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e5e7eb;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                <h4 style="margin: 0; color: #374151;">Text Overlay Settings</h4>
+                                <button onclick="addMemeTextBox()" class="btn btn-secondary" style="padding: 8px 16px; background: #018181; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                                    + Add Text Box
+                                </button>
                             </div>
 
-                            <button onclick="updateMemeText()" class="btn btn-secondary" style="margin-top: 10px; width: 100%;">Update Text Overlay</button>
+                            <div id="meme-text-box-tabs" style="display: flex; gap: 0.5rem; margin-bottom: 15px; flex-wrap: wrap;">
+                                <!-- Text box tabs will be rendered here -->
+                            </div>
+
+                            <div id="meme-text-box-controls">
+                                <p style="color: #999; text-align: center; padding: 20px;">Click "Add Text Box" to add text to your meme</p>
+                            </div>
                         </div>
                     `;
-                    promptContainer.insertAdjacentHTML('beforeend', textInputsHTML);
-                } else {
-                    // Update existing inputs
-                    document.getElementById('memeTextTop').value = textTop;
-                    document.getElementById('memeTextBottom').value = textBottom;
-                    const textSize = generatedImages.meme.textSize || 32;
-                    const textColor = generatedImages.meme.textColor || '#FFFFFF';
-                    document.getElementById('memeTextSize').value = textSize;
-                    document.getElementById('memeTextColor').value = textColor;
+                    promptContainer.insertAdjacentHTML('beforeend', textControlsHTML);
                 }
+
+                // Render text boxes after a brief delay to ensure DOM is ready
+                setTimeout(() => {
+                    renderAllMemeTextBoxes();
+                    renderMemeTextBoxControls();
+                }, 100);
             }
 
             // Display news image
@@ -2514,20 +2505,266 @@
             // });
         }
 
-        // Update meme text overlay
-        function updateMemeText() {
-            const textTop = document.getElementById('memeTextTop')?.value.toUpperCase() || '';
-            const textBottom = document.getElementById('memeTextBottom')?.value.toUpperCase() || '';
-            const textSize = parseInt(document.getElementById('memeTextSize')?.value) || 32;
-            const textColor = document.getElementById('memeTextColor')?.value || '#FFFFFF';
+        // ============================================================================
+        // MEME DRAGGABLE TEXT BOX FUNCTIONS
+        // ============================================================================
 
-            if (generatedImages.meme) {
-                generatedImages.meme.text_top = textTop;
-                generatedImages.meme.text_bottom = textBottom;
-                generatedImages.meme.textSize = textSize;
-                generatedImages.meme.textColor = textColor;
-                displayImages();
+        function addMemeTextBox() {
+            const newTextBox = {
+                text: 'NEW TEXT',
+                x: 50,
+                y: 20 + (memeTextOverlays.length * 25) % 60, // Stagger vertically
+                fontSize: 32,
+                textColor: '#FFFFFF',
+                fontFamily: 'Impact',
+                textShadow: true
+            };
+
+            memeTextOverlays.push(newTextBox);
+            selectedMemeTextBox = memeTextOverlays.length - 1;
+
+            renderAllMemeTextBoxes();
+            renderMemeTextBoxControls();
+        }
+
+        function deleteMemeTextBox(boxIndex) {
+            if (memeTextOverlays.length <= 1) {
+                // Clear the last text box instead of deleting
+                memeTextOverlays[0].text = '';
+                selectedMemeTextBox = 0;
+            } else {
+                memeTextOverlays.splice(boxIndex, 1);
+                if (selectedMemeTextBox >= memeTextOverlays.length) {
+                    selectedMemeTextBox = memeTextOverlays.length - 1;
+                }
             }
+
+            renderAllMemeTextBoxes();
+            renderMemeTextBoxControls();
+        }
+
+        function selectMemeTextBox(boxIndex) {
+            selectedMemeTextBox = boxIndex;
+            renderAllMemeTextBoxes();
+            renderMemeTextBoxControls();
+        }
+
+        function renderMemeTextBoxControls() {
+            const controlsContainer = document.getElementById('meme-text-box-controls');
+            const tabsContainer = document.getElementById('meme-text-box-tabs');
+
+            if (!controlsContainer || !tabsContainer) return;
+
+            if (memeTextOverlays.length === 0 || selectedMemeTextBox < 0 || selectedMemeTextBox >= memeTextOverlays.length) {
+                tabsContainer.innerHTML = '';
+                controlsContainer.innerHTML = `
+                    <p style="color: #999; text-align: center; padding: 20px;">Click "Add Text Box" to add text to your meme</p>
+                `;
+                return;
+            }
+
+            const box = memeTextOverlays[selectedMemeTextBox];
+
+            // Render tabs
+            tabsContainer.innerHTML = memeTextOverlays.map((b, i) => `
+                <button onclick="selectMemeTextBox(${i})"
+                        style="padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.85rem; cursor: pointer;
+                               background: ${i === selectedMemeTextBox ? '#018181' : '#f3f4f6'};
+                               color: ${i === selectedMemeTextBox ? 'white' : '#374151'};
+                               border: 2px solid ${i === selectedMemeTextBox ? '#018181' : '#e5e7eb'};">
+                    Text ${i + 1}
+                </button>
+            `).join('');
+
+            // Render controls for selected text box
+            controlsContainer.innerHTML = `
+                <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #374151;">Text Content:</label>
+                <textarea id="meme-overlay-text"
+                       placeholder="Enter your text..."
+                       rows="2"
+                       style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; margin-bottom: 15px; font-size: 14px; font-family: inherit; text-transform: uppercase;"
+                       oninput="updateSelectedMemeTextBox()">${box.text}</textarea>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                    <div>
+                        <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #374151; font-size: 0.9rem;">Font</label>
+                        <select id="meme-overlay-font" onchange="updateSelectedMemeTextBox()"
+                                style="width: 100%; padding: 8px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 0.9rem;">
+                            <option value="Impact" ${box.fontFamily === 'Impact' ? 'selected' : ''}>Impact (Classic Meme)</option>
+                            <option value="Arial Black" ${box.fontFamily === 'Arial Black' ? 'selected' : ''}>Arial Black</option>
+                            <option value="Comic Sans MS" ${box.fontFamily === 'Comic Sans MS' ? 'selected' : ''}>Comic Sans</option>
+                            <option value="Helvetica" ${box.fontFamily === 'Helvetica' ? 'selected' : ''}>Helvetica</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #374151; font-size: 0.9rem;">Text Color</label>
+                        <input type="color" id="meme-overlay-color" value="${box.textColor}"
+                               onchange="updateSelectedMemeTextBox()"
+                               style="width: 100%; height: 38px; padding: 4px; border: 2px solid #e5e7eb; border-radius: 6px; cursor: pointer;">
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" id="meme-overlay-shadow" ${box.textShadow ? 'checked' : ''} onchange="updateSelectedMemeTextBox()"
+                               style="width: 18px; height: 18px; cursor: pointer;">
+                        <span style="font-weight: 600; color: #374151;">Text Shadow (Meme Style)</span>
+                    </label>
+                </div>
+
+                <button onclick="deleteMemeTextBox(${selectedMemeTextBox})" class="btn btn-secondary"
+                        style="width: 100%; padding: 10px; color: #dc2626; border: 2px solid #dc2626; background: white; border-radius: 6px; cursor: pointer;">
+                    Delete This Text Box
+                </button>
+            `;
+        }
+
+        function updateSelectedMemeTextBox() {
+            if (selectedMemeTextBox < 0 || selectedMemeTextBox >= memeTextOverlays.length) return;
+
+            const box = memeTextOverlays[selectedMemeTextBox];
+            box.text = document.getElementById('meme-overlay-text')?.value.toUpperCase() || '';
+            box.fontFamily = document.getElementById('meme-overlay-font')?.value || 'Impact';
+            box.textColor = document.getElementById('meme-overlay-color')?.value || '#FFFFFF';
+            box.textShadow = document.getElementById('meme-overlay-shadow')?.checked ?? true;
+
+            renderAllMemeTextBoxes();
+        }
+
+        function renderAllMemeTextBoxes() {
+            const container = document.getElementById('meme-text-boxes-container');
+            if (!container) return;
+
+            container.innerHTML = '';
+
+            memeTextOverlays.forEach((box, boxIdx) => {
+                if (!box.text) return;
+
+                const isSelected = boxIdx === selectedMemeTextBox;
+                const shadowStyle = box.textShadow
+                    ? 'text-shadow: 2px 2px 4px black, -2px -2px 4px black, 2px -2px 4px black, -2px 2px 4px black;'
+                    : '';
+
+                const textBoxEl = document.createElement('div');
+                textBoxEl.className = 'meme-draggable-text-box';
+                textBoxEl.dataset.boxIndex = boxIdx;
+                textBoxEl.style.cssText = `
+                    position: absolute;
+                    top: ${box.y}%;
+                    left: ${box.x}%;
+                    transform: translate(-50%, -50%);
+                    cursor: move;
+                    pointer-events: auto;
+                    ${isSelected ? 'outline: 3px dashed #018181; outline-offset: 4px;' : ''}
+                `;
+
+                textBoxEl.innerHTML = `
+                    <div style="display: inline-block; padding: 5px 15px; text-align: center; position: relative;">
+                        <p style="color: ${box.textColor}; font-family: '${box.fontFamily}', Impact, sans-serif; font-size: ${box.fontSize}px; font-weight: bold; margin: 0; line-height: 1.2; text-transform: uppercase; ${shadowStyle} white-space: pre-line;">${box.text}</p>
+                        ${isSelected ? `
+                            <div class="meme-resize-handle meme-resize-br" style="position: absolute; bottom: -8px; right: -8px; width: 16px; height: 16px; background: #018181; border-radius: 50%; cursor: se-resize; border: 2px solid white;"></div>
+                            <div class="meme-resize-handle meme-resize-bl" style="position: absolute; bottom: -8px; left: -8px; width: 16px; height: 16px; background: #018181; border-radius: 50%; cursor: sw-resize; border: 2px solid white;"></div>
+                            <div class="meme-resize-handle meme-resize-tr" style="position: absolute; top: -8px; right: -8px; width: 16px; height: 16px; background: #018181; border-radius: 50%; cursor: ne-resize; border: 2px solid white;"></div>
+                            <div class="meme-resize-handle meme-resize-tl" style="position: absolute; top: -8px; left: -8px; width: 16px; height: 16px; background: #018181; border-radius: 50%; cursor: nw-resize; border: 2px solid white;"></div>
+                        ` : ''}
+                    </div>
+                `;
+
+                container.appendChild(textBoxEl);
+
+                // Setup drag and resize handlers
+                setupMemeTextBoxHandlers(textBoxEl, boxIdx);
+            });
+        }
+
+        function setupMemeTextBoxHandlers(element, boxIndex) {
+            const container = document.getElementById('meme-preview-container');
+            if (!container) return;
+
+            let isDragging = false;
+            let isResizing = false;
+            let resizeDirection = '';
+            let startX, startY, startLeft, startTop, startFontSize;
+
+            // Click to select
+            element.addEventListener('click', (e) => {
+                if (!isResizing) {
+                    selectMemeTextBox(boxIndex);
+                }
+            });
+
+            // Drag to move
+            element.addEventListener('mousedown', (e) => {
+                if (e.target.classList.contains('meme-resize-handle')) {
+                    // Start resizing
+                    isResizing = true;
+                    resizeDirection = e.target.classList.contains('meme-resize-br') ? 'br' :
+                                     e.target.classList.contains('meme-resize-bl') ? 'bl' :
+                                     e.target.classList.contains('meme-resize-tr') ? 'tr' : 'tl';
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    startFontSize = memeTextOverlays[boxIndex].fontSize;
+                } else {
+                    // Start dragging
+                    isDragging = true;
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    startLeft = memeTextOverlays[boxIndex].x;
+                    startTop = memeTextOverlays[boxIndex].y;
+                }
+                e.preventDefault();
+                e.stopPropagation();
+            });
+
+            const handleMouseMove = (e) => {
+                if (isDragging) {
+                    const rect = container.getBoundingClientRect();
+                    const deltaX = e.clientX - startX;
+                    const deltaY = e.clientY - startY;
+
+                    let newX = startLeft + (deltaX / rect.width) * 100;
+                    let newY = startTop + (deltaY / rect.height) * 100;
+
+                    newX = Math.max(5, Math.min(95, newX));
+                    newY = Math.max(5, Math.min(95, newY));
+
+                    memeTextOverlays[boxIndex].x = newX;
+                    memeTextOverlays[boxIndex].y = newY;
+
+                    element.style.left = newX + '%';
+                    element.style.top = newY + '%';
+                } else if (isResizing) {
+                    const deltaY = e.clientY - startY;
+                    const deltaX = e.clientX - startX;
+
+                    // Calculate resize based on diagonal movement
+                    let delta = 0;
+                    if (resizeDirection === 'br') delta = (deltaX + deltaY) / 3;
+                    else if (resizeDirection === 'bl') delta = (-deltaX + deltaY) / 3;
+                    else if (resizeDirection === 'tr') delta = (deltaX - deltaY) / 3;
+                    else delta = (-deltaX - deltaY) / 3;
+
+                    const newFontSize = Math.max(16, Math.min(80, startFontSize + delta));
+                    memeTextOverlays[boxIndex].fontSize = Math.round(newFontSize);
+
+                    renderAllMemeTextBoxes();
+                }
+            };
+
+            const handleMouseUp = () => {
+                isDragging = false;
+                isResizing = false;
+            };
+
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+        }
+
+        // Legacy function for backwards compatibility
+        function updateMemeText() {
+            // This function is kept for backwards compatibility
+            // The new system uses draggable text boxes
+            renderAllMemeTextBoxes();
         }
 
         // Handle meme upload
