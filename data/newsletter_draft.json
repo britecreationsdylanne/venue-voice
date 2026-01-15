@@ -1,0 +1,61 @@
+{
+  "generated_at": "2026-01-06T11:10:47.812693",
+  "sections": {
+    "news": {
+      "title": "Branded Weddings Take the Spotlight",
+      "short_version": "61% of couples say they are open to brand sponsorships \u2014 and venues could be their billboard.",
+      "whats_happening": "A recent survey revealed that 61% of Americans would accept a brand-subsidized wedding, especially if it covered 50-75% of their costs. Think: A skincare brand gifting luxury welcome bags, a spirits company sponsoring signature drinks, or even signage and shoutouts mid-ceremony. Gen Z is driving this trend, as they put less emphasis on tradition and more interest in value and novelty. The development is also fueled by increasing costs due to rising inflation and social media's influence on wedding aesthetics.",
+      "why_matters": "It opens the door to venue-brand partnerships. If a couple is comfortable having their big day \"brought to you by\", the venue can become a platform. Offering optional brand collabs could set your space apart \u2014 and create new revenue streams without raising rental fees.",
+      "source_url": "https://nypost.com/2024/10/13/lifestyle/shocking-number-of-americans-open-to-having-their-wedding-sponsored/",
+      "section_type": "news",
+      "generated_at": "2026-01-06T11:10:47.811944"
+    },
+    "tip": {
+      "title": "Hyper-Personalize the Client Experience",
+      "subtitle": "Make every wedding feel uniquely crafted to the individual client",
+      "content": "In today's competitive wedding market, personalization is what sets standout venues apart. The first step is to utilize data to tailor communication templates and automate responses to the wedding, allowing you to free up your time to focus on genuine human connections. A strong venue management system can also streamline operations behind the scenes, giving you the bandwidth to add personal touches like custom welcome notes, curated music playlists, or small surprise upgrades that make couples and guests feel valued.\n\nGo beyond automation by tracking insights like inquiry sources, style preferences, and guest demographics to anticipate needs before they're voiced. When your system integrates CRM, booking, and analytics tools, personalization becomes effortless \u2014 turning each event into a unique experience that feels both thoughtful and intentional.",
+      "read_more_url": "https://www.theglobeandmail.com/life/article-hyper-personalized-weddings/",
+      "section_type": "tip",
+      "generated_at": "2026-01-06T11:10:47.811978"
+    },
+    "trend": {
+      "title": "Fall 2025 Wedding Trends",
+      "subtitle": "Seasonal style and experiential design dominate autumn 'I do's'",
+      "content": "This year's fall weddings are embracing rich jewel tones, sculptural lighting, and guest-centered details. Couples are opting for emerald and burgundy palettes, textured florals mixing fresh and dried blooms, and cozy comforts like warm cocktails and soft throws. The overall mood is intentional and elevated \u2014 luxurious yet grounded \u2014 with sustainability and locally-sourced design at the heart of the celebration.",
+      "read_more_url": "https://example.com/fall-2025-trends",
+      "section_type": "trend",
+      "generated_at": "2026-01-06T11:10:47.811986"
+    }
+  },
+  "brand_checks": {
+    "news": {
+      "passed": true,
+      "total_issues": 0,
+      "total_warnings": 0,
+      "issues": [],
+      "warnings": [],
+      "checked_at": "2026-01-06T11:10:47.812348"
+    },
+    "tip": {
+      "passed": true,
+      "total_issues": 0,
+      "total_warnings": 0,
+      "issues": [],
+      "warnings": [],
+      "checked_at": "2026-01-06T11:10:47.812545"
+    },
+    "trend": {
+      "passed": true,
+      "total_issues": 0,
+      "total_warnings": 0,
+      "issues": [],
+      "warnings": [],
+      "checked_at": "2026-01-06T11:10:47.812670"
+    }
+  },
+  "image_prompts": {
+    "news": "Branded Weddings Take the Spotlight - Professional, elegant, modern wedding venue photography, warm natural lighting, high-end aesthetic, sophisticated composition, editorial style, newsworthy scene, subtle branding elements, contemporary venue space",
+    "tip": "Hyper-Personalize the Client Experience - Professional, elegant, modern wedding venue photography, warm natural lighting, high-end aesthetic, sophisticated composition, intimate venue details, personalized touches, client-focused perspective, welcoming atmosphere",
+    "trend": "Fall 2025 Wedding Trends - Professional, elegant, modern wedding venue photography, warm natural lighting, high-end aesthetic, sophisticated composition, seasonal wedding decor, trendy color palette, stylish arrangements, inspirational setting"
+  }
+}

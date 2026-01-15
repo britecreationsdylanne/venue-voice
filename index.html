@@ -1,0 +1,3659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Venue Newsletter Generator - AI Powered</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #018181 0%, #272d3f 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: #272d3f;
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #FE8916;
+            font-size: 14px;
+            letter-spacing: 2px;
+        }
+
+        .progress {
+            background: #e5e7eb;
+            height: 8px;
+            margin: 0 40px;
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, #018181, #FE8916);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .step {
+            padding: 40px;
+            display: none;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        .step h2 {
+            color: #272d3f;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .step p {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .month-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 30px auto;
+            max-width: 400px;
+        }
+
+        .month-card {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 15px 20px;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .month-card:hover {
+            border-color: #018181;
+            transform: translateX(5px);
+            box-shadow: 0 2px 8px rgba(1,129,129,0.15);
+        }
+
+        .month-card.selected {
+            background: #018181;
+            border-color: #018181;
+            color: white;
+        }
+
+        .month-card .name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .month-card .season {
+            font-size: 13px;
+            color: #999;
+            text-transform: capitalize;
+        }
+
+        .month-card.selected .season {
+            color: rgba(255,255,255,0.7);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #e5e7eb;
+            border-top-color: #018181;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .topic-list {
+            display: grid;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .topic-card {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .topic-card:hover {
+            border-color: #018181;
+            transform: translateX(4px);
+        }
+
+        .topic-card.selected {
+            border-color: #018181;
+            background: #f0f9f9;
+        }
+
+        .topic-card .title {
+            font-weight: 600;
+            color: #272d3f;
+            margin-bottom: 8px;
+        }
+
+        .topic-card .description {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .topic-card .source {
+            color: #018181;
+            font-size: 13px;
+            text-decoration: none;
+        }
+
+        .btn {
+            background: #018181;
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: #016666;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(1,129,129,0.3);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #666;
+        }
+
+        .btn-secondary:hover {
+            background: #555;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        .content-section {
+            background: #f9fafb;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 20px 0;
+        }
+
+        .content-section h3 {
+            color: #018181;
+            margin-bottom: 15px;
+        }
+
+        .error {
+            background: #fee;
+            border: 2px solid #fcc;
+            color: #c00;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Venue Voice Generator</h1>
+        </div>
+
+        <div class="progress">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <!-- Step 1: Select Month -->
+        <div class="step active" id="step1">
+            <h2>Select Newsletter Month</h2>
+            <p>Choose the month for seasonal content and trends</p>
+
+            <div class="month-grid" id="monthGrid">
+                <!-- Months will be generated here -->
+            </div>
+
+            <div class="buttons">
+                <button class="btn" id="monthNextBtn" disabled onclick="searchTopics()">Search for Topics →</button>
+            </div>
+        </div>
+
+        <!-- Step 2: Loading -->
+        <div class="step" id="step2">
+            <div class="loading">
+                <div class="spinner"></div>
+                <h3>Searching for Current Articles...</h3>
+                <p style="color: #666;">Searching recent 2025-2026 wedding industry news</p>
+            </div>
+        </div>
+
+        <!-- Step 3: Select News Topic -->
+        <div class="step" id="step3">
+            <h2>📰 Select News Topic</h2>
+            <p>Current wedding industry news from 2025-2026</p>
+
+            <div id="newsTopics" class="topic-list">
+                <!-- Topics will be loaded here -->
+            </div>
+
+            <div id="newsError" class="error" style="display: none;"></div>
+
+            <div style="margin: 20px 0; padding: 20px; background: #f9fafb; border-radius: 8px; border: 2px dashed #e5e7eb;">
+                <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #666;">📎 Or Add Your Own Article URL</h3>
+                <input type="text" id="newsUrlInput" placeholder="Paste article URL here..." style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 4px; font-size: 14px; margin-bottom: 10px;">
+                <input type="text" id="newsTitleInput" placeholder="Article title..." style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 4px; font-size: 14px; margin-bottom: 10px;">
+                <input type="text" id="newsDescInput" placeholder="Brief description..." style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 4px; font-size: 14px; margin-bottom: 10px;">
+                <button class="btn" onclick="addCustomNews()" style="padding: 8px 16px; font-size: 14px;">Add Custom Article</button>
+            </div>
+
+            <div class="buttons">
+                <button class="btn" id="newsNextBtn" disabled onclick="loadTips()">Continue →</button>
+            </div>
+        </div>
+
+        <!-- Step 4: Loading Tips -->
+        <div class="step" id="step4">
+            <div class="loading">
+                <div class="spinner"></div>
+                <h3>Searching for venue management tips...</h3>
+                <p style="color: #666;">Finding actionable advice from industry experts</p>
+            </div>
+        </div>
+
+        <!-- Step 5: Select Tip -->
+        <div class="step" id="step5">
+            <h2>💡 Select Tip Topic</h2>
+            <p>Practical venue management advice</p>
+
+            <div id="tipTopics" class="topic-list">
+                <!-- Tips will be loaded here -->
+            </div>
+
+            <div id="tipError" class="error" style="display: none;"></div>
+
+            <div style="margin: 20px 0; padding: 20px; background: #f9fafb; border-radius: 8px; border: 2px dashed #e5e7eb;">
+                <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #666;">📎 Or Add Your Own Tip Article URL</h3>
+                <input type="text" id="tipUrlInput" placeholder="Paste article URL here..." style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 4px; font-size: 14px; margin-bottom: 10px;">
+                <input type="text" id="tipTitleInput" placeholder="Article title..." style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 4px; font-size: 14px; margin-bottom: 10px;">
+                <input type="text" id="tipDescInput" placeholder="Brief description..." style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 4px; font-size: 14px; margin-bottom: 10px;">
+                <button class="btn" onclick="addCustomTip()" style="padding: 8px 16px; font-size: 14px;">Add Custom Tip</button>
+            </div>
+
+            <div class="buttons">
+                <button class="btn-secondary btn" onclick="showStep(3)">← Back</button>
+                <button class="btn" id="tipNextBtn" disabled onclick="loadTrends()">Continue →</button>
+            </div>
+        </div>
+
+        <!-- Step 6: Loading Trends -->
+        <div class="step" id="step6">
+            <div class="loading">
+                <div class="spinner"></div>
+                <h3>Searching for seasonal wedding trends...</h3>
+                <p style="color: #666;" id="trendSeasonText">Finding current trends for your newsletter</p>
+            </div>
+        </div>
+
+        <!-- Step 7: Select Trend -->
+        <div class="step" id="step7">
+            <h2>📈 Select Trend Topic</h2>
+            <p id="trendSeasonLabel">Seasonal trends</p>
+
+            <div id="trendTopics" class="topic-list">
+                <!-- Trends will be loaded here -->
+            </div>
+
+            <div id="trendError" class="error" style="display: none;"></div>
+
+            <div style="margin: 20px 0; padding: 20px; background: #f9fafb; border-radius: 8px; border: 2px dashed #e5e7eb;">
+                <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #666;">📎 Or Add Your Own Trend Article URL</h3>
+                <input type="text" id="trendUrlInput" placeholder="Paste article URL here..." style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 4px; font-size: 14px; margin-bottom: 10px;">
+                <input type="text" id="trendTitleInput" placeholder="Article title..." style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 4px; font-size: 14px; margin-bottom: 10px;">
+                <input type="text" id="trendDescInput" placeholder="Brief description..." style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 4px; font-size: 14px; margin-bottom: 10px;">
+                <button class="btn" onclick="addCustomTrend()" style="padding: 8px 16px; font-size: 14px;">Add Custom Trend</button>
+            </div>
+
+            <div class="buttons">
+                <button class="btn-secondary btn" onclick="showStep(5)">← Back</button>
+                <button class="btn" id="trendNextBtn" disabled onclick="showStep(8)">Select AI Model To Write →</button>
+            </div>
+        </div>
+
+        <!-- Step 8: Select AI Model -->
+        <div class="step" id="step8">
+            <h2>🤖 Select AI Model</h2>
+            <p>Select AI Model To Write</p>
+
+            <div class="topic-list">
+                <div class="topic-card" onclick="selectAI('chatgpt', this)" style="cursor: pointer;">
+                    <div class="title">💬 ChatGPT (GPT-4o)</div>
+                    <div class="description">Fast, reliable, and excellent for creative content. Best for general-purpose newsletter writing.</div>
+                    <div style="margin-top: 10px; font-size: 12px; color: #666;">
+                        ⚡ Speed: Fast | 💰 Cost: $$ | ✨ Quality: Excellent
+                    </div>
+                </div>
+
+                <div class="topic-card" onclick="selectAI('claude', this)" style="cursor: pointer;">
+                    <div class="title">🧠 Claude (Sonnet 4.5)</div>
+                    <div class="description">Thoughtful, nuanced writing with strong brand voice adherence. Best for professional, polished content.</div>
+                    <div style="margin-top: 10px; font-size: 12px; color: #666;">
+                        ⚡ Speed: Medium | 💰 Cost: $$$ | ✨ Quality: Premium
+                    </div>
+                </div>
+
+                <div class="topic-card" onclick="selectAI('gemini', this)" style="cursor: pointer;">
+                    <div class="title">💎 Gemini (1.5 Pro)</div>
+                    <div class="description">Google's advanced model with strong reasoning. Good balance of speed and quality.</div>
+                    <div style="margin-top: 10px; font-size: 12px; color: #666;">
+                        ⚡ Speed: Fast | 💰 Cost: $ | ✨ Quality: Very Good
+                    </div>
+                </div>
+            </div>
+
+            <div class="buttons">
+                <button class="btn-secondary btn" onclick="showStep(7)">← Back</button>
+                <button class="btn" id="aiNextBtn" disabled onclick="generateContent()">Generate Content →</button>
+            </div>
+        </div>
+
+        <!-- Step 9: Generating -->
+        <div class="step" id="step9">
+            <div class="loading">
+                <div class="spinner"></div>
+                <h3>Generating Newsletter Content...</h3>
+                <p style="color: #666;" id="aiModelText">AI is writing your newsletter...</p>
+            </div>
+        </div>
+
+        <!-- Step 10: Review Content -->
+        <div class="step" id="step10">
+            <h2>✏️ Review & Edit Content</h2>
+            <p>Your AI-generated newsletter is ready! Edit any section before continuing.</p>
+
+            <div id="generatedContent" class="content-section" contenteditable="true" style="border: 2px dashed #e5e7eb; padding: 20px; border-radius: 8px; min-height: 400px;">
+                <!-- Content will be displayed here -->
+            </div>
+
+            <div class="buttons">
+                <button class="btn-secondary btn" onclick="showStep(8)">← Back</button>
+                <button class="btn-secondary btn" onclick="exportAllCopy()">📋 Export All Copy</button>
+                <button class="btn" onclick="checkBrandGuidelines()">Check Brand Guidelines →</button>
+            </div>
+        </div>
+
+        <!-- Step 11: Brand Guidelines Check -->
+        <div class="step" id="step11">
+            <div class="loading">
+                <div class="spinner"></div>
+                <h3>Checking Brand Guidelines...</h3>
+                <p style="color: #666;">AI is reviewing content for tone, style, and brand consistency</p>
+            </div>
+        </div>
+
+        <!-- Step 12: Brand Guidelines Results -->
+        <div class="step" id="step12">
+            <h2>✅ Brand Guidelines Check</h2>
+            <p>Your content has been reviewed for brand consistency.</p>
+
+            <div id="brandCheckResults" style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <!-- Results will be displayed here -->
+            </div>
+
+            <div class="buttons">
+                <button class="btn-secondary btn" onclick="showStep(10)">← Back to Edit</button>
+                <button class="btn-secondary btn" onclick="exportBrandCheckResults()">📋 Export Results</button>
+                <button class="btn" onclick="generateImages()">Continue to Image Prompts →</button>
+            </div>
+        </div>
+
+        <!-- Step 13: Edit Image Prompts -->
+        <div class="step" id="step13">
+            <h2>🎨 Image Generation</h2>
+            <p>Review prompts and select styles, then generate images</p>
+
+            <div id="promptGenerationLoading">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <h3>Generating Prompts...</h3>
+                    <p style="color: #666;">Analyzing your articles with Claude AI...</p>
+                </div>
+            </div>
+
+            <div id="promptEditing" style="display: none;">
+                <!-- News Prompt -->
+                <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #e5e7eb;">
+                    <h3 style="margin: 0 0 5px 0;">📰 News Image Prompt</h3>
+                    <p style="font-size: 13px; color: #666; margin-bottom: 15px;" id="newsPromptArticle"></p>
+                    <div style="margin-bottom: 12px;">
+                        <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 14px;">Image Style:</label>
+                        <select id="newsImageStyle" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 14px; background: white;" onchange="updatePromptWithStyle('news')">
+                            <option value="photorealistic">Photorealistic (Default)</option>
+                            <option value="sketch">Sketch / Illustration</option>
+                            <option value="watercolor">Watercolor</option>
+                            <option value="modern-flat">Modern Flat Design</option>
+                            <option value="magazine">Magazine Editorial</option>
+                            <option value="cartoon">Cartoon</option>
+                            <option value="infographic">Infographic / Data Viz</option>
+                        </select>
+                    </div>
+                    <textarea id="newsImagePromptText" rows="3" style="width: 100%; padding: 12px; border: 2px solid #3b82f6; border-radius: 6px; font-size: 14px; font-family: inherit;" placeholder="Prompt will appear here..."></textarea>
+                </div>
+
+                <!-- Tip Prompt -->
+                <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #e5e7eb;">
+                    <h3 style="margin: 0 0 5px 0;">💡 Tip Image Prompt</h3>
+                    <p style="font-size: 13px; color: #666; margin-bottom: 15px;" id="tipPromptArticle"></p>
+                    <div style="margin-bottom: 12px;">
+                        <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 14px;">Image Style:</label>
+                        <select id="tipImageStyle" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 14px; background: white;" onchange="updatePromptWithStyle('tip')">
+                            <option value="photorealistic">Photorealistic (Default)</option>
+                            <option value="sketch">Sketch / Illustration</option>
+                            <option value="watercolor">Watercolor</option>
+                            <option value="modern-flat">Modern Flat Design</option>
+                            <option value="magazine">Magazine Editorial</option>
+                            <option value="cartoon">Cartoon</option>
+                            <option value="infographic">Infographic / Data Viz</option>
+                        </select>
+                    </div>
+                    <textarea id="tipImagePromptText" rows="3" style="width: 100%; padding: 12px; border: 2px solid #3b82f6; border-radius: 6px; font-size: 14px; font-family: inherit;" placeholder="Prompt will appear here..."></textarea>
+                </div>
+
+                <!-- Trend Prompt -->
+                <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #e5e7eb;">
+                    <h3 style="margin: 0 0 5px 0;">📈 Trend Image Prompt</h3>
+                    <p style="font-size: 13px; color: #666; margin-bottom: 15px;" id="trendPromptArticle"></p>
+                    <div style="margin-bottom: 12px;">
+                        <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 14px;">Image Style:</label>
+                        <select id="trendImageStyle" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 14px; background: white;" onchange="updatePromptWithStyle('trend')">
+                            <option value="photorealistic">Photorealistic (Default)</option>
+                            <option value="sketch">Sketch / Illustration</option>
+                            <option value="watercolor">Watercolor</option>
+                            <option value="modern-flat">Modern Flat Design</option>
+                            <option value="magazine">Magazine Editorial</option>
+                            <option value="cartoon">Cartoon</option>
+                            <option value="infographic">Infographic / Data Viz</option>
+                        </select>
+                    </div>
+                    <textarea id="trendImagePromptText" rows="3" style="width: 100%; padding: 12px; border: 2px solid #3b82f6; border-radius: 6px; font-size: 14px; font-family: inherit;" placeholder="Prompt will appear here..."></textarea>
+                </div>
+
+                <!-- Info callout about image sizing -->
+                <div style="background: #f0f9ff; border-left: 4px solid #3b82f6; padding: 15px 20px; border-radius: 6px; margin-bottom: 20px;">
+                    <div style="display: flex; align-items: start; gap: 10px;">
+                        <div style="font-size: 20px;">ℹ️</div>
+                        <div>
+                            <div style="font-weight: 600; color: #1e40af; margin-bottom: 5px;">Images Auto-Sized for Newsletter</div>
+                            <div style="font-size: 14px; color: #64748b; line-height: 1.5;">
+                                Generated images will be automatically resized to the correct dimensions for hosting on Ontraport:
+                                <strong>News (480×260px)</strong>, <strong>Tip (210×200px)</strong>, <strong>Trend (210×200px)</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="buttons">
+                    <button class="btn-secondary btn" onclick="showStep(12)">← Back</button>
+                    <button class="btn" onclick="generateImagesFromPrompts()">Generate Images →</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 14: Generating Images -->
+        <div class="step" id="step14">
+            <div class="loading">
+                <div class="spinner"></div>
+                <h3>Generating Images...</h3>
+                <p style="color: #666;" id="imageGenStatus2">Creating images with Gemini...</p>
+                <div style="background: #f0f9ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 15px; margin-top: 20px; max-width: 500px; margin-left: auto; margin-right: auto;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-size: 14px; font-weight: 600; color: #1e40af;">Progress</span>
+                        <span style="font-size: 14px; font-weight: 600; color: #1e40af;" id="imageGenProgress2">0%</span>
+                    </div>
+                    <div style="background: #dbeafe; height: 8px; border-radius: 4px; overflow: hidden;">
+                        <div id="imageGenProgressBar2" style="background: linear-gradient(90deg, #3b82f6, #2563eb); height: 100%; width: 0%; transition: width 0.5s ease;"></div>
+                    </div>
+                    <p style="margin-top: 10px; margin-bottom: 0; font-size: 13px; color: #64748b; text-align: center;" id="imageGenTime2">Estimated time: ~20-30 seconds</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 15: Review Article Images (News, Tip, Trend) -->
+        <div class="step" id="step15">
+            <h2>🖼️ Article Images</h2>
+            <p>Review and customize images for your newsletter sections</p>
+
+            <!-- Info callout about downloading at correct size -->
+            <div style="background: #ecfdf5; border-left: 4px solid #10b981; padding: 15px 20px; border-radius: 6px; margin-bottom: 20px;">
+                <div style="display: flex; align-items: start; gap: 10px;">
+                    <div style="font-size: 20px;">✓</div>
+                    <div>
+                        <div style="font-weight: 600; color: #047857; margin-bottom: 5px;">Ready for Ontraport</div>
+                        <div style="font-size: 14px; color: #065f46; line-height: 1.5;">
+                            When you download these images using the <strong>📥 Export</strong> button, they'll already be sized correctly for hosting on Ontraport — no resizing needed!
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- News Image -->
+            <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #e5e7eb;">
+                <h3 style="margin: 0 0 10px 0;">📰 News Section Image</h3>
+                <p style="font-size: 14px; color: #666; margin-bottom: 15px;" id="newsImageTitle">For your news article</p>
+
+                <div id="newsImagePreview" style="background: #f5f5f5; border: 2px dashed #ddd; border-radius: 8px; min-height: 300px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
+                    <div style="text-align: center; color: #999;">
+                        <div class="spinner" style="margin: 0 auto 10px;"></div>
+                        <div>Generating image...</div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 10px;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 5px;">Image Prompt:</label>
+                    <textarea id="newsPrompt" rows="2" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 4px; font-size: 14px;" placeholder="Describe the image you want..."></textarea>
+                </div>
+                <button class="btn-secondary btn" onclick="regenerateImage('news')" style="margin-right: 10px;">🔄 Regenerate</button>
+                <button class="btn-secondary btn" onclick="exportImage('news')" style="margin-right: 10px;">📥 Export</button>
+                <button class="btn-secondary btn" onclick="resizeImage('news')">🔍 Resize</button>
+            </div>
+
+            <!-- Tip Image -->
+            <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #e5e7eb;">
+                <h3 style="margin: 0 0 10px 0;">💡 Tip Section Image</h3>
+                <p style="font-size: 14px; color: #666; margin-bottom: 15px;" id="tipImageTitle">For your tip article</p>
+
+                <div id="tipImagePreview" style="background: #f5f5f5; border: 2px dashed #ddd; border-radius: 8px; min-height: 300px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
+                    <div style="text-align: center; color: #999;">
+                        <div class="spinner" style="margin: 0 auto 10px;"></div>
+                        <div>Generating image...</div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 10px;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 5px;">Image Prompt:</label>
+                    <textarea id="tipPrompt" rows="2" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 4px; font-size: 14px;" placeholder="Describe the image you want..."></textarea>
+                </div>
+                <button class="btn-secondary btn" onclick="regenerateImage('tip')" style="margin-right: 10px;">🔄 Regenerate</button>
+                <button class="btn-secondary btn" onclick="exportImage('tip')" style="margin-right: 10px;">📥 Export</button>
+                <button class="btn-secondary btn" onclick="resizeImage('tip')">🔍 Resize</button>
+            </div>
+
+            <!-- Trend Image -->
+            <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #e5e7eb;">
+                <h3 style="margin: 0 0 10px 0;">📈 Trend Section Image</h3>
+                <p style="font-size: 14px; color: #666; margin-bottom: 15px;" id="trendImageTitle">For your trend article</p>
+
+                <div id="trendImagePreview" style="background: #f5f5f5; border: 2px dashed #ddd; border-radius: 8px; min-height: 300px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
+                    <div style="text-align: center; color: #999;">
+                        <div class="spinner" style="margin: 0 auto 10px;"></div>
+                        <div>Generating image...</div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 10px;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 5px;">Image Prompt:</label>
+                    <textarea id="trendPrompt" rows="2" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 4px; font-size: 14px;" placeholder="Describe the image you want..."></textarea>
+                </div>
+                <button class="btn-secondary btn" onclick="regenerateImage('trend')" style="margin-right: 10px;">🔄 Regenerate</button>
+                <button class="btn-secondary btn" onclick="exportImage('trend')" style="margin-right: 10px;">📥 Export</button>
+                <button class="btn-secondary btn" onclick="resizeImage('trend')">🔍 Resize</button>
+            </div>
+
+            <div class="buttons">
+                <button class="btn-secondary btn" onclick="showStep(13)">← Back to Prompts</button>
+                <button class="btn" onclick="generateMemePrompt()">Continue to Meme →</button>
+            </div>
+        </div>
+
+        <!-- Step 15.4: Generating Meme Concept (Loading) -->
+        <div class="step" id="step15_4">
+            <div class="loading">
+                <div class="spinner"></div>
+                <h3>Generating Meme Concept...</h3>
+                <p style="color: #666;">Claude is analyzing your newsletter content to create a custom meme concept...</p>
+                <p style="color: #999; font-size: 14px; margin-top: 10px;">This will take just a moment...</p>
+            </div>
+        </div>
+
+        <!-- Step 15.5: Meme Prompt Generation -->
+        <div class="step" id="step15_5">
+            <h2>💡 Meme Concept</h2>
+            <p>Based on your newsletter content, here's a suggested meme concept</p>
+
+            <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <h3 style="margin: 0 0 15px 0;">AI-Generated Meme Concept</h3>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 5px;">Visual Scene:</label>
+                    <textarea id="memeScenePrompt" rows="2" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 4px; font-size: 14px;" placeholder="Description of what the image should show..."></textarea>
+                    <p style="font-size: 12px; color: #666; margin-top: 5px;">Describe what the meme image should visually show (15-25 words)</p>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 5px;">Top Text:</label>
+                    <input type="text" id="memeTopText" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 4px; font-size: 14px; text-transform: uppercase;" placeholder="TOP TEXT (3-6 WORDS)">
+                    <p style="font-size: 12px; color: #666; margin-top: 5px;">The setup (3-6 words, all caps)</p>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 5px;">Bottom Text:</label>
+                    <input type="text" id="memeBottomText" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 4px; font-size: 14px; text-transform: uppercase;" placeholder="BOTTOM TEXT (3-8 WORDS)">
+                    <p style="font-size: 12px; color: #666; margin-top: 5px;">The punchline (3-8 words, all caps)</p>
+                </div>
+
+                <button class="btn-secondary btn" onclick="generateMemePrompt()" style="margin-top: 10px;">🔄 Regenerate Concept</button>
+            </div>
+
+            <div class="buttons">
+                <button class="btn-secondary btn" onclick="showStep(15)">← Back to Images</button>
+                <button class="btn" onclick="proceedToMemeGeneration()">Generate Meme →</button>
+            </div>
+        </div>
+
+        <!-- Step 16: Meme Generation -->
+        <div class="step" id="step16">
+            <h2>😄 Monthly Meme</h2>
+            <p>Generate or upload a fun meme for your newsletter header</p>
+
+            <!-- Info callout about meme sizing -->
+            <div style="background: #ecfdf5; border-left: 4px solid #10b981; padding: 15px 20px; border-radius: 6px; margin-bottom: 20px;">
+                <div style="display: flex; align-items: start; gap: 10px;">
+                    <div style="font-size: 20px;">✓</div>
+                    <div>
+                        <div style="font-weight: 600; color: #047857; margin-bottom: 5px;">Ready for Ontraport</div>
+                        <div style="font-size: 14px; color: #065f46; line-height: 1.5;">
+                            Your meme will be automatically sized to <strong>480×480px</strong> — perfect for hosting on Ontraport!
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #e5e7eb;">
+                <h3 style="margin: 0 0 10px 0;">📱 Monthly Meme</h3>
+                <p style="font-size: 14px; color: #666; margin-bottom: 15px;">Funny, shareable image for the top of your newsletter</p>
+
+                <div id="memePreview" style="background: #f5f5f5; border: 2px dashed #ddd; border-radius: 8px; min-height: 300px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
+                    <div style="text-align: center; color: #999;">
+                        <div class="spinner" style="margin: 0 auto 10px;"></div>
+                        <div>Generating meme...</div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 5px;">Meme Prompt:</label>
+                    <textarea id="memePrompt" rows="2" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 4px; font-size: 14px;" placeholder="Describe the meme you want..."></textarea>
+                </div>
+
+                <button class="btn-secondary btn" onclick="regenerateImage('meme')" style="margin-right: 10px;">🔄 Regenerate</button>
+                <button class="btn-secondary btn" onclick="exportImage('meme')" style="margin-right: 10px;">📥 Export</button>
+                <button class="btn-secondary btn" onclick="resizeImage('meme')">📐 Resize</button>
+
+                <div style="margin: 20px 0; padding: 15px; background: #f9fafb; border-radius: 8px; border: 2px dashed #e5e7eb;">
+                    <h4 style="margin: 0 0 10px 0; font-size: 14px;">Or Upload Your Own:</h4>
+                    <input type="file" id="memeUpload" accept="image/*" style="display: none;" onchange="handleMemeUpload(event)">
+                    <button class="btn-secondary btn" onclick="document.getElementById('memeUpload').click()">📁 Upload Image</button>
+                </div>
+            </div>
+
+            <div class="buttons">
+                <button class="btn-secondary btn" onclick="showStep(15)">← Back to Images</button>
+                <button class="btn" onclick="showStep(17)">Continue to Subject Line →</button>
+            </div>
+        </div>
+
+        <!-- Step 17: Subject Line & Preheader -->
+        <div class="step" id="step17">
+            <h2>✉️ Subject Line & Preheader</h2>
+            <p>Claude will analyze your content and suggest compelling subject lines and preheaders</p>
+
+            <!-- Tone Selection (shown first) -->
+            <div id="toneSelection" style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #3b82f6;">
+                <h3 style="margin: 0 0 10px 0;">🎨 Select Tone</h3>
+                <p style="font-size: 14px; color: #666; margin-bottom: 15px;">Choose the tone for your subject line and preheader</p>
+                <select id="subjectLineTone" style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 14px; background: white; margin-bottom: 15px;">
+                    <option value="professional">Professional & Informative</option>
+                    <option value="friendly">Friendly & Conversational</option>
+                    <option value="urgent">Urgent & Action-Oriented</option>
+                    <option value="playful">Playful & Fun</option>
+                    <option value="exclusive">Exclusive & Premium</option>
+                </select>
+                <button class="btn" onclick="generateWithSelectedTone()" style="width: 100%;">Generate Subject Lines →</button>
+            </div>
+
+            <div id="subjectLineLoading" style="display: none;">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <h3>Generating Options...</h3>
+                    <p style="color: #666;">Claude is reviewing your newsletter content...</p>
+                </div>
+            </div>
+
+            <div id="subjectLineOptions" style="display: none;">
+                <!-- Subject Line Options -->
+                <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #e5e7eb;">
+                    <h3 style="margin: 0 0 15px 0;">📧 Subject Line Options</h3>
+                    <p style="font-size: 14px; color: #666; margin-bottom: 15px;">Choose one or edit to create your own</p>
+
+                    <div id="subjectOptions" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;">
+                        <!-- Options will be populated here -->
+                    </div>
+
+                    <div style="margin-top: 15px;">
+                        <label style="display: block; font-weight: 600; margin-bottom: 5px;">Your Subject Line:</label>
+                        <input type="text" id="finalSubjectLine" placeholder="Selected or custom subject line" style="width: 100%; padding: 12px; border: 2px solid #3b82f6; border-radius: 4px; font-size: 16px; font-weight: 500;">
+                    </div>
+                </div>
+
+                <!-- Preheader Options -->
+                <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #e5e7eb;">
+                    <h3 style="margin: 0 0 15px 0;">👁️ Preheader Options</h3>
+                    <p style="font-size: 14px; color: #666; margin-bottom: 15px;">Choose one or edit to create your own</p>
+
+                    <div id="preheaderOptions" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;">
+                        <!-- Options will be populated here -->
+                    </div>
+
+                    <div style="margin-top: 15px;">
+                        <label style="display: block; font-weight: 600; margin-bottom: 5px;">Your Preheader:</label>
+                        <input type="text" id="finalPreheader" placeholder="Selected or custom preheader" style="width: 100%; padding: 12px; border: 2px solid #3b82f6; border-radius: 4px; font-size: 16px;">
+                    </div>
+                </div>
+
+                <!-- Regenerate with different tone -->
+                <div style="background: #f9fafb; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 2px dashed #e5e7eb;">
+                    <p style="margin: 0 0 10px 0; font-size: 14px; color: #666;">Not satisfied? Try a different tone:</p>
+                    <select id="regenerateTone" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 4px; font-size: 14px; background: white; margin-bottom: 10px;">
+                        <option value="professional">Professional & Informative</option>
+                        <option value="friendly">Friendly & Conversational</option>
+                        <option value="urgent">Urgent & Action-Oriented</option>
+                        <option value="playful">Playful & Fun</option>
+                        <option value="exclusive">Exclusive & Premium</option>
+                    </select>
+                    <button class="btn-secondary btn" onclick="regenerateSubjectLines()" style="width: 100%;">🔄 Regenerate with New Tone</button>
+                </div>
+            </div>
+
+            <div class="buttons">
+                <button class="btn-secondary btn" onclick="showStep(16)">← Back to Meme</button>
+                <button class="btn" onclick="showNewsletterPreview()">Continue to Preview →</button>
+            </div>
+        </div>
+
+        <!-- Step 18: Get HTML Code -->
+        <div class="step" id="step18">
+            <h2>💻 Newsletter Preview</h2>
+            <p>Review your complete newsletter before sending</p>
+
+            <!-- Editing Instructions -->
+            <div style="background: #e0f2fe; border: 2px solid #0284c7; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <p style="margin: 0; font-size: 14px; color: #0c4a6e;"><strong>✏️ Live Editing:</strong> Click any text in the preview below to edit it directly. Changes are automatically saved!</p>
+            </div>
+
+            <!-- Subject Line & Preheader Display -->
+            <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #3b82f6;">
+                <h3 style="margin: 0 0 15px 0;">📧 Email Info</h3>
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 14px; color: #666;">Subject Line:</label>
+                    <div id="previewSubjectLine" contenteditable="true" onblur="saveSubjectEdit(this)" style="padding: 12px; background: #f9fafb; border-radius: 6px; font-size: 16px; font-weight: 500; color: #333; border: 2px solid transparent; transition: border-color 0.2s;" onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='transparent'; saveSubjectEdit(this)">Your subject line will appear here</div>
+                </div>
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 14px; color: #666;">Preheader:</label>
+                    <div id="previewPreheader" contenteditable="true" onblur="savePreheaderEdit(this)" style="padding: 12px; background: #f9fafb; border-radius: 6px; font-size: 14px; color: #666; border: 2px solid transparent; transition: border-color 0.2s;" onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='transparent'; savePreheaderEdit(this)">Your preheader will appear here</div>
+                </div>
+            </div>
+
+            <div id="newsletterPreview" style="background: #f5f5f5; border: 1px solid #ddd; border-radius: 8px; padding: 40px 20px; max-width: 640px; margin: 20px auto;">
+                <!-- Full newsletter HTML will be displayed here -->
+            </div>
+
+            <div id="htmlCodeView" style="display: none; background: #1e1e1e; color: #d4d4d4; padding: 20px; border-radius: 8px; margin: 20px 0; max-height: 500px; overflow-y: auto;">
+                <pre id="htmlCode" style="margin: 0; white-space: pre-wrap; word-wrap: break-word; font-family: 'Courier New', monospace; font-size: 12px;"></pre>
+            </div>
+
+            <div class="buttons">
+                <button class="btn-secondary btn" onclick="showStep(17)">← Back to Subject Line</button>
+                <button class="btn-secondary btn" onclick="toggleHTMLView()" id="htmlViewBtn">📝 View HTML Code</button>
+                <button class="btn-secondary btn" onclick="copyHTMLCode()">📋 Copy HTML</button>
+                <button class="btn" onclick="showStep(20)">Push to Ontraport →</button>
+            </div>
+        </div>
+
+        <!-- Step 19: Send Test Email -->
+        <div class="step" id="step19">
+            <h2>📧 Send Test Email</h2>
+            <p>Send a test version to your email to preview before pushing to Ontraport</p>
+
+            <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #e5e7eb;">
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 5px;">Test Email Address:</label>
+                    <input type="email" id="testEmail" placeholder="your@email.com" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 4px; font-size: 14px;">
+                </div>
+
+                <button class="btn" onclick="sendTestEmail()">📧 Send Test</button>
+            </div>
+
+            <div class="buttons">
+                <button class="btn-secondary btn" onclick="showStep(18)">← Back to HTML Code</button>
+                <button class="btn" onclick="showStep(20)">Push to Ontraport →</button>
+            </div>
+        </div>
+
+        <!-- Step 20: Push to Ontraport -->
+        <div class="step" id="step20">
+            <h2>🚀 Push to Ontraport</h2>
+            <p>Send your newsletter to Ontraport with pre-configured BriteCo settings</p>
+
+            <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #e5e7eb;">
+                <div style="margin-bottom: 20px; padding: 15px; background-color: #f9fafb; border-radius: 6px; border-left: 4px solid #008181;">
+                    <p style="margin: 0 0 8px 0; font-weight: 600; color: #272d3f;">Pre-configured Settings:</p>
+                    <ul style="margin: 0; padding-left: 20px; font-size: 14px; color: #555;">
+                        <li>From: BriteCo Event Insurance (eventinsurance@brite.co)</li>
+                        <li>Reply-To: eventinsurance@brite.co</li>
+                    </ul>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 5px;">Subject Line:</label>
+                    <input type="text" id="subject" placeholder="Your Monthly Venue Newsletter" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 4px; font-size: 14px;">
+                </div>
+
+                <button class="btn" onclick="pushToOntraport(event)">🚀 Push to Ontraport</button>
+            </div>
+
+            <div class="buttons">
+                <button class="btn-secondary btn" onclick="showStep(17)">← Back to Test Email</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Newsletter Archive Section -->
+    <div style="padding: 80px 20px; margin-top: 60px; background: #466F88;">
+        <div style="max-width: 1200px; margin: 0 auto;">
+            <div style="margin-bottom: 40px; text-align: center;">
+                <h2 style="font-size: 36px; color: white; margin-bottom: 12px; font-weight: 700;">Previous Newsletters</h2>
+                <p style="color: rgba(255,255,255,0.8); font-size: 16px;">View past newsletters sent to your subscribers</p>
+            </div>
+
+            <div id="newsletterArchiveGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 28px;">
+                <!-- Archive cards will be loaded here -->
+            </div>
+
+            <div id="newsletterArchiveEmpty" style="text-align: center; padding: 60px 20px; color: #999; display: none;">
+                <div style="font-size: 64px; margin-bottom: 16px; opacity: 0.3;">📭</div>
+                <h3 style="color: #666;">No Previous Newsletters</h3>
+                <p>Newsletters you publish will appear here</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Newsletter View Modal -->
+    <div id="newsletterModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 10000; overflow: auto;">
+        <div style="max-width: 800px; margin: 40px auto; background: white; border-radius: 12px; position: relative;">
+            <button onclick="closeNewsletterModal()" style="position: absolute; top: 20px; right: 20px; background: white; border: 2px solid #e5e7eb; border-radius: 50%; width: 40px; height: 40px; font-size: 24px; cursor: pointer; z-index: 10;">×</button>
+            <div id="newsletterModalContent" style="padding: 20px; max-height: 80vh; overflow: auto;">
+                <!-- Newsletter HTML will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API base URL
+        const API_BASE = window.location.origin;
+
+        // State
+        let selectedMonth = '';
+        let selectedSeason = '';
+        let selectedNews = null;
+        let selectedTip = null;
+        let selectedTrend = null;
+        let selectedAI = null;
+        let newsTopics = [];
+        let tipTopics = [];
+        let trendTopics = [];
+
+        // Track shown articles to avoid duplicates on refresh
+        let shownNewsArticles = [];
+        let shownTipArticles = [];
+        let shownTrendArticles = [];
+
+        // Month data
+        const months = [
+            { name: 'january', emoji: '❄️', season: 'winter' },
+            { name: 'february', emoji: '💝', season: 'winter' },
+            { name: 'march', emoji: '🌷', season: 'spring' },
+            { name: 'april', emoji: '🌸', season: 'spring' },
+            { name: 'may', emoji: '🌺', season: 'spring' },
+            { name: 'june', emoji: '☀️', season: 'summer' },
+            { name: 'july', emoji: '🎆', season: 'summer' },
+            { name: 'august', emoji: '🌻', season: 'summer' },
+            { name: 'september', emoji: '🍂', season: 'fall' },
+            { name: 'october', emoji: '🎃', season: 'fall' },
+            { name: 'november', emoji: '🦃', season: 'fall' },
+            { name: 'december', emoji: '🎄', season: 'winter' }
+        ];
+
+        // Global helper functions for content extraction
+        function cleanContent(content) {
+            if (!content) return 'Content not available';
+
+            // If it has a 'raw' property, extract from it
+            if (content.raw) {
+                try {
+                    // Remove markdown code blocks
+                    let cleaned = content.raw.replace(/```json\n/g, '').replace(/\n```/g, '');
+                    return JSON.parse(cleaned);
+                } catch (e) {
+                    return content.raw;
+                }
+            }
+            return content;
+        }
+
+        function extractContentText(content) {
+            if (!content) return '';
+
+            // If it has raw JSON, parse it
+            if (content.raw) {
+                try {
+                    const cleaned = content.raw.replace(/```json\n/g, '').replace(/\n```/g, '');
+                    const parsed = JSON.parse(cleaned);
+
+                    // Extract text based on structure
+                    if (parsed.short_version) {
+                        return `${parsed.short_version} ${parsed.whats_happening || ''} ${parsed.why_matters || ''}`;
+                    } else if (parsed.content) {
+                        // New single paragraph format for tip/trend
+                        return parsed.content;
+                    } else if (parsed.intro) {
+                        return `${parsed.intro} ${(parsed.steps || []).join(' ')}`;
+                    } else if (parsed.overview) {
+                        return `${parsed.overview} ${(parsed.examples || []).join(' ')} ${parsed.opportunity || ''}`;
+                    }
+                    return JSON.stringify(parsed);
+                } catch (e) {
+                    return content.raw.substring(0, 500);
+                }
+            }
+
+            if (typeof content === 'string') return content;
+            if (content.content) return content.content;
+            if (content.short_version) return `${content.short_version} ${content.whats_happening || ''} ${content.why_matters || ''}`;
+            return JSON.stringify(content).substring(0, 500);
+        }
+
+        // Initialize months
+        function initMonths() {
+            const grid = document.getElementById('monthGrid');
+            months.forEach(month => {
+                const card = document.createElement('div');
+                card.className = 'month-card';
+                card.innerHTML = `
+                    <div class="name">${month.name.charAt(0).toUpperCase() + month.name.slice(1)}</div>
+                    <div class="season">${month.season}</div>
+                `;
+                card.onclick = () => selectMonth(month.name, month.season, card);
+                grid.appendChild(card);
+            });
+        }
+
+        function selectMonth(month, season, element) {
+            selectedMonth = month;
+            selectedSeason = season;
+
+            document.querySelectorAll('.month-card').forEach(card => card.classList.remove('selected'));
+            element.classList.add('selected');
+            document.getElementById('monthNextBtn').disabled = false;
+        }
+
+        async function searchTopics() {
+            showStep(2);
+
+            try {
+                const response = await fetch(`${API_BASE}/api/search-news`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        month: selectedMonth,
+                        exclude_titles: shownNewsArticles
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    newsTopics = data.articles;
+                    // Track these articles to avoid showing them again
+                    newsTopics.forEach(article => {
+                        if (!shownNewsArticles.includes(article.title)) {
+                            shownNewsArticles.push(article.title);
+                        }
+                    });
+                    displayNews();
+                    showStep(3);
+                } else {
+                    throw new Error(data.error || 'Failed to load news');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('newsError').textContent = `Error: ${error.message}. Make sure the API server is running!`;
+                document.getElementById('newsError').style.display = 'block';
+                showStep(3);
+            }
+        }
+
+        function displayNews() {
+            const container = document.getElementById('newsTopics');
+            container.innerHTML = '';
+
+            newsTopics.forEach((topic, index) => {
+                const card = document.createElement('div');
+                card.className = 'topic-card';
+                card.innerHTML = `
+                    <div class="title">📰 ${topic.title}</div>
+                    ${topic.age ? `<div style="color: #666; font-size: 0.85em; margin-top: 4px;">Published: ${topic.age}</div>` : ''}
+                    <div class="description">${topic.description}</div>
+                    ${topic.source_url ? `<a href="${topic.source_url}" target="_blank" class="source" onclick="event.stopPropagation()">Read source article →</a>` : ''}
+                `;
+                card.onclick = () => selectNews(index, card);
+                container.appendChild(card);
+            });
+        }
+
+        function selectNews(index, element) {
+            selectedNews = newsTopics[index];
+            document.querySelectorAll('#newsTopics .topic-card').forEach(card => card.classList.remove('selected'));
+            element.classList.add('selected');
+            document.getElementById('newsNextBtn').disabled = false;
+        }
+
+        async function loadTips() {
+            showStep(4);
+
+            try {
+                const response = await fetch(`${API_BASE}/api/search-tips`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        month: selectedMonth,
+                        exclude_titles: shownTipArticles
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    tipTopics = data.tips;
+                    // Track these articles
+                    tipTopics.forEach(tip => {
+                        if (!shownTipArticles.includes(tip.title)) {
+                            shownTipArticles.push(tip.title);
+                        }
+                    });
+                    displayTips();
+                    showStep(5);
+                } else {
+                    throw new Error(data.error || 'Failed to load tips');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('tipError').textContent = `Error: ${error.message}`;
+                document.getElementById('tipError').style.display = 'block';
+                showStep(5);
+            }
+        }
+
+        function displayTips() {
+            const container = document.getElementById('tipTopics');
+            container.innerHTML = '';
+
+            tipTopics.forEach((topic, index) => {
+                const card = document.createElement('div');
+                card.className = 'topic-card';
+                card.innerHTML = `
+                    <div class="title">💡 ${topic.title}</div>
+                    ${topic.age ? `<div style="color: #666; font-size: 0.85em; margin-top: 4px;">Published: ${topic.age}</div>` : ''}
+                    <div class="description">${topic.description}</div>
+                    ${topic.source_url ? `<a href="${topic.source_url}" target="_blank" class="source" onclick="event.stopPropagation()">Read source article →</a>` : ''}
+                `;
+                card.onclick = () => selectTip(index, card);
+                container.appendChild(card);
+            });
+        }
+
+        function selectTip(index, element) {
+            selectedTip = tipTopics[index];
+            document.querySelectorAll('#tipTopics .topic-card').forEach(card => card.classList.remove('selected'));
+            element.classList.add('selected');
+            document.getElementById('tipNextBtn').disabled = false;
+        }
+
+        async function loadTrends() {
+            showStep(6);
+            document.getElementById('trendSeasonText').textContent = `Loading ${selectedSeason} trends...`;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/get-trends`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        month: selectedMonth,
+                        exclude_titles: shownTrendArticles
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    trendTopics = data.trends;
+                    // Track these articles
+                    trendTopics.forEach(trend => {
+                        if (!shownTrendArticles.includes(trend.title)) {
+                            shownTrendArticles.push(trend.title);
+                        }
+                    });
+                    selectedSeason = data.season; // Update from server
+                    document.getElementById('trendSeasonLabel').textContent = `Seasonal trends for ${selectedSeason}`;
+                    displayTrends();
+                    showStep(7);
+                } else {
+                    throw new Error(data.error || 'Failed to load trends');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('trendError').textContent = `Error: ${error.message}`;
+                document.getElementById('trendError').style.display = 'block';
+                showStep(7);
+            }
+        }
+
+        function displayTrends() {
+            const container = document.getElementById('trendTopics');
+            container.innerHTML = '';
+
+            trendTopics.forEach((topic, index) => {
+                const card = document.createElement('div');
+                card.className = 'topic-card';
+                card.innerHTML = `
+                    <div class="title">📈 ${topic.title}</div>
+                    ${topic.age ? `<div style="color: #666; font-size: 0.85em; margin-top: 4px;">Published: ${topic.age}</div>` : ''}
+                    <div class="description">${topic.description}</div>
+                    ${topic.source_url ? `<a href="${topic.source_url}" target="_blank" class="source" onclick="event.stopPropagation()">Read source article →</a>` : ''}
+                `;
+                card.onclick = () => selectTrend(index, card);
+                container.appendChild(card);
+            });
+        }
+
+        function selectTrend(index, element) {
+            selectedTrend = trendTopics[index];
+            document.querySelectorAll('#trendTopics .topic-card').forEach(card => card.classList.remove('selected'));
+            element.classList.add('selected');
+            document.getElementById('trendNextBtn').disabled = false;
+        }
+
+        function selectAI(aiModel, element) {
+            selectedAI = aiModel;
+            document.querySelectorAll('#step8 .topic-card').forEach(card => card.classList.remove('selected'));
+            element.classList.add('selected');
+            document.getElementById('aiNextBtn').disabled = false;
+
+            // Update the loading text for next step
+            const modelNames = {
+                'chatgpt': 'ChatGPT (GPT-4o)',
+                'claude': 'Claude (Sonnet 4.5)',
+                'gemini': 'Gemini (1.5 Pro)'
+            };
+            document.getElementById('aiModelText').textContent = `AI is writing your newsletter using ${modelNames[aiModel]}...`;
+        }
+
+        let generatedNewsContent = null;
+        let generatedTipContent = null;
+        let generatedTrendContent = null;
+        let generatedTipTitle = null;  // Short AI-generated title
+        let generatedTrendTitle = null;  // Short AI-generated title
+
+        async function generateContent() {
+            showStep(9);
+
+            try {
+                const response = await fetch(`${API_BASE}/api/generate-content`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        month: selectedMonth,
+                        news_topic: selectedNews,
+                        tip_topic: selectedTip,
+                        trend_topic: selectedTrend,
+                        ai_model: selectedAI
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    console.log('Content generated:', data.content);
+
+                    // Store generated content
+                    generatedNewsContent = data.content.news;
+                    generatedTipContent = data.content.tip;
+                    generatedTrendContent = data.content.trend;
+
+                    // Store AI-generated short titles (if available)
+                    generatedTipTitle = data.content.tip_title || null;
+                    generatedTrendTitle = data.content.trend_title || null;
+
+                    console.log('Generated titles - Tip:', generatedTipTitle, 'Trend:', generatedTrendTitle);
+
+                    // Display content
+                    displayGeneratedContent();
+
+                    // Move to review step
+                    showStep(10);
+                } else {
+                    throw new Error(data.error || 'Failed to generate content');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert(`Error: ${error.message}. Make sure the API server is running!`);
+                showStep(8); // Go back to AI selection
+            }
+        }
+
+        function displayGeneratedContent() {
+            const container = document.getElementById('generatedContent');
+
+            // Helper function to strip white color from content for preview display
+            function cleanContentForDisplay(content) {
+                if (!content) return 'Content not available';
+
+                // Convert to string if needed
+                let contentStr = typeof content === 'string' ? content : JSON.stringify(content);
+
+                // Strip white color styling (used for dark boxes in email, but preview has white background)
+                contentStr = contentStr.replace(/color:\s*#ffffff;?/gi, 'color: #1f2937;');
+
+                return contentStr;
+            }
+
+            // Get content as strings (backend returns HTML with <p> tags)
+            let newsContent = typeof generatedNewsContent === 'string' ? generatedNewsContent : '';
+            let tipContent = typeof generatedTipContent === 'string' ? generatedTipContent : '';
+            let trendContent = cleanContentForDisplay(generatedTrendContent); // Strip white color
+
+            // Use AI-generated short titles if available, otherwise fall back to original
+            const displayTipTitle = generatedTipTitle || selectedTip?.title || 'Tip of the Month';
+            const displayTrendTitle = generatedTrendTitle || selectedTrend?.title || 'Trend Alert';
+
+            let html = '';
+
+            // NEWS SECTION - Compact display
+            html += '<div style="margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 15px;">';
+            html += '<h3 style="margin: 0 0 5px 0; color: #008181;">📰 News You Can Use</h3>';
+            html += `<h4 style="margin: 0 0 8px 0; color: #1f2937; font-size: 16px;">${selectedNews.title}</h4>`;
+            html += `<div id="newsContentBox" contenteditable="true" style="outline: none; color: #555; font-size: 14px; line-height: 1.6;">${newsContent}</div>`;
+            html += `<button class="btn-secondary btn" style="font-size: 12px; padding: 6px 12px; margin-top: 8px;" onclick="editSection('news')">✏️ Edit</button>`;
+            html += `</div>`;
+
+            // TIP SECTION - Compact display
+            html += '<div style="margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 15px;">';
+            html += '<h3 style="margin: 0 0 5px 0; color: #008181;">💡 Tip of the Month</h3>';
+            html += `<h4 style="margin: 0 0 8px 0; color: #1f2937; font-size: 16px;">${displayTipTitle}</h4>`;
+            html += `<div id="tipContentBox" contenteditable="true" style="outline: none; color: #555; font-size: 14px; line-height: 1.6;">${tipContent}</div>`;
+            html += `<button class="btn-secondary btn" style="font-size: 12px; padding: 6px 12px; margin-top: 8px;" onclick="editSection('tip')">✏️ Edit</button>`;
+            html += `</div>`;
+
+            // TREND SECTION - Compact display
+            html += '<div style="margin-bottom: 20px;">';
+            html += '<h3 style="margin: 0 0 5px 0; color: #008181;">📈 Trend Watch</h3>';
+            html += `<h4 style="margin: 0 0 8px 0; color: #1f2937; font-size: 16px;">${displayTrendTitle}</h4>`;
+            html += `<div id="trendContentBox" contenteditable="true" style="outline: none; color: #555; font-size: 14px; line-height: 1.6;">${trendContent}</div>`;
+            html += `<button class="btn-secondary btn" style="font-size: 12px; padding: 6px 12px; margin-top: 8px;" onclick="editSection('trend')">✏️ Edit</button>`;
+            html += `</div>`;
+
+            container.innerHTML = html;
+        }
+
+        function editSection(sectionType) {
+            const boxId = `${sectionType}ContentBox`;
+            const box = document.getElementById(boxId);
+            if (box) {
+                box.focus();
+                // Highlight the section briefly
+                box.style.border = '2px solid #2563eb';
+                box.style.padding = '10px';
+                box.style.borderRadius = '4px';
+                setTimeout(() => {
+                    box.style.border = 'none';
+                    box.style.padding = '0';
+                }, 2000);
+            }
+        }
+
+        async function checkBrandGuidelines() {
+            try {
+                showStep(11); // Show loading screen
+
+                // Get the edited content from the contenteditable divs
+                const newsContent = document.getElementById('newsContentBox')?.innerHTML || '';
+                const tipContent = document.getElementById('tipContentBox')?.innerHTML || '';
+                const trendContent = document.getElementById('trendContentBox')?.innerHTML || '';
+
+                const response = await fetch(`${API_BASE}/api/check-brand-guidelines`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        month: selectedMonth,
+                        news_content: newsContent,
+                        tip_content: tipContent,
+                        trend_content: trendContent,
+                        ai_model: selectedAI
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayBrandCheckResults(data.check_results);
+                    showStep(12); // Show results
+                } else {
+                    alert('Error checking brand guidelines: ' + (data.error || 'Unknown error'));
+                    showStep(10); // Go back to edit
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error checking brand guidelines: ' + error.message);
+                showStep(10);
+            }
+        }
+
+        function displayBrandCheckResults(results) {
+            const container = document.getElementById('brandCheckResults');
+
+            let html = '';
+
+            // Check if we have suggestions
+            const suggestions = results.suggestions || [];
+
+            if (suggestions.length === 0) {
+                // No issues found
+                html += `<div style="text-align: center; padding: 40px; background: #10b98120; border-radius: 8px; margin-bottom: 20px;">`;
+                html += `<h2 style="margin: 0; color: #10b981; font-size: 36px;">✅ Looks Great!</h2>`;
+                html += `<p style="margin: 10px 0 0 0; color: #666;">No brand guideline issues found. Your content is ready to go!</p>`;
+                html += `</div>`;
+            } else {
+                // Show header
+                html += `<div style="text-align: center; padding: 20px; background: #fef3c7; border-radius: 8px; margin-bottom: 20px;">`;
+                html += `<h2 style="margin: 0; color: #f59e0b; font-size: 32px;">📝 Suggested Changes</h2>`;
+                html += `<p style="margin: 10px 0 0 0; color: #666;">Yellow highlights show what needs changing. Green highlights show suggested replacements.</p>`;
+                html += `</div>`;
+            }
+
+            // Get the full newsletter content with highlighting
+            const newsContent = highlightContent(
+                document.getElementById('newsContentBox')?.innerHTML || '',
+                suggestions.filter(s => s.section === 'news')
+            );
+            const tipContent = highlightContent(
+                document.getElementById('tipContentBox')?.innerHTML || '',
+                suggestions.filter(s => s.section === 'tip')
+            );
+            const trendContent = highlightContent(
+                document.getElementById('trendContentBox')?.innerHTML || '',
+                suggestions.filter(s => s.section === 'trend')
+            );
+
+            // Display full newsletter with highlights
+            html += '<h3 style="margin: 30px 0 15px 0; color: #272d3f;">📰 News You Can Use</h3>';
+            html += `<div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #e5e7eb;">`;
+            html += newsContent;
+            html += `</div>`;
+
+            html += '<h3 style="margin: 30px 0 15px 0; color: #272d3f;">💡 Tip of the Month</h3>';
+            html += `<div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #e5e7eb;">`;
+            html += tipContent;
+            html += `</div>`;
+
+            html += '<h3 style="margin: 30px 0 15px 0; color: #272d3f;">📈 Trend Watch</h3>';
+            html += `<div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #e5e7eb;">`;
+            html += trendContent;
+            html += `</div>`;
+
+            // If there are suggestions, show the legend
+            if (suggestions.length > 0) {
+                html += `<div style="margin-top: 30px; padding: 15px; background: #f9fafb; border-radius: 8px; border: 2px dashed #e5e7eb;">`;
+                html += `<h4 style="margin: 0 0 10px 0; color: #666;">Legend:</h4>`;
+                html += `<div style="display: flex; gap: 20px; flex-wrap: wrap;">`;
+                html += `<div style="display: flex; align-items: center; gap: 8px;">`;
+                html += `<div style="width: 20px; height: 20px; background: #fef3c7; border: 2px solid #f59e0b; border-radius: 4px;"></div>`;
+                html += `<span style="font-size: 14px; color: #666;">Current text (needs changing)</span>`;
+                html += `</div>`;
+                html += `<div style="display: flex; align-items: center; gap: 8px;">`;
+                html += `<div style="width: 20px; height: 20px; background: #d1fae5; border: 2px solid #10b981; border-radius: 4px;"></div>`;
+                html += `<span style="font-size: 14px; color: #666;">Suggested replacement</span>`;
+                html += `</div>`;
+                html += `</div>`;
+
+                // Show issue count summary
+                html += `<div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e5e7eb;">`;
+                html += `<strong style="color: #f59e0b;">${suggestions.length} issue${suggestions.length === 1 ? '' : 's'} found</strong> - `;
+                html += `Hover over highlighted text to see suggested changes.`;
+                html += `</div>`;
+                html += `</div>`;
+            }
+
+            container.innerHTML = html;
+        }
+
+        function highlightContent(content, suggestions) {
+            if (suggestions.length === 0) {
+                return content;
+            }
+
+            let highlighted = content;
+
+            // Apply highlighting for each suggestion with Accept/Ignore buttons
+            suggestions.forEach((suggestion, index) => {
+                const original = suggestion.original;
+                const suggested = suggestion.suggested;
+                const reason = suggestion.reason;
+                const section = suggestion.section;
+
+                // Create unique ID for this suggestion
+                const suggestionId = `suggestion-${section}-${index}`;
+
+                // Create the highlighted HTML with Accept/Ignore buttons
+                const highlightedText = `<span id="${suggestionId}" style="position: relative; display: inline-block; margin: 4px 0;">
+                    <span style="background: #fef3c7; border-bottom: 3px solid #f59e0b; padding: 2px 4px; text-decoration: line-through;"
+                          title="${reason}">${original}</span>
+                    <span style="background: #d1fae5; border-bottom: 3px solid #10b981; padding: 2px 4px; margin-left: 4px; font-weight: 600;"
+                          title="${reason}">${suggested}</span>
+                    <span style="display: inline-block; margin-left: 8px;">
+                        <button onclick="acceptSuggestion('${suggestionId}', '${escapeForAttribute(original)}', '${escapeForAttribute(suggested)}', '${section}')"
+                                style="background: #10b981; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; margin-right: 4px;"
+                                title="Accept this change">✓ Accept</button>
+                        <button onclick="ignoreSuggestion('${suggestionId}')"
+                                style="background: #ef4444; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;"
+                                title="Ignore this suggestion">✗ Ignore</button>
+                    </span>
+                </span>`;
+
+                // Replace the original text with highlighted version
+                // Use a case-insensitive search to find the text
+                const regex = new RegExp(escapeRegExp(original), 'gi');
+                highlighted = highlighted.replace(regex, highlightedText);
+            });
+
+            return highlighted;
+        }
+
+        function escapeRegExp(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        function escapeForAttribute(string) {
+            return string.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        }
+
+        function acceptSuggestion(suggestionId, original, suggested, section) {
+            // Get the content box for this section
+            const contentBox = document.getElementById(`${section}ContentBox`);
+            if (!contentBox) return;
+
+            // Replace the original text with suggested text in the content box
+            let content = contentBox.innerHTML;
+
+            // Remove the suggestion highlight span and replace with just the suggested text
+            const suggestionElement = document.getElementById(suggestionId);
+            if (suggestionElement) {
+                // Find and replace just this instance
+                const parent = suggestionElement.parentElement;
+                const textNode = document.createTextNode(suggested);
+                parent.replaceChild(textNode, suggestionElement);
+            }
+
+            // Show success message
+            const toast = document.createElement('div');
+            toast.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #10b981; color: white; padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 9999; animation: slideIn 0.3s ease;';
+            toast.textContent = '✓ Change accepted';
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+        }
+
+        function ignoreSuggestion(suggestionId) {
+            // Get the suggestion element
+            const suggestionElement = document.getElementById(suggestionId);
+            if (!suggestionElement) return;
+
+            // Get the original text (the strikethrough part)
+            const originalSpan = suggestionElement.querySelector('span[style*="line-through"]');
+            if (!originalSpan) return;
+
+            const originalText = originalSpan.textContent;
+
+            // Replace the entire suggestion span with just the original text
+            const parent = suggestionElement.parentElement;
+            const textNode = document.createTextNode(originalText);
+            parent.replaceChild(textNode, suggestionElement);
+
+            // Show info message
+            const toast = document.createElement('div');
+            toast.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #6b7280; color: white; padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 9999;';
+            toast.textContent = 'Suggestion ignored';
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+        }
+
+        // Store generated images
+        let generatedImages = {
+            meme: null,
+            news: null,
+            tip: null,
+            trend: null
+        };
+
+        // Helper to extract readable text from content objects
+        function extractContentText(content) {
+            if (!content) return '';
+
+            // If it has raw JSON, parse it
+            if (content.raw) {
+                try {
+                    const cleaned = content.raw.replace(/```json\n/g, '').replace(/\n```/g, '');
+                    const parsed = JSON.parse(cleaned);
+
+                    // Extract text based on structure
+                    if (parsed.short_version) {
+                        return `${parsed.short_version} ${parsed.whats_happening || ''} ${parsed.why_matters || ''}`;
+                    } else if (parsed.content) {
+                        // New single paragraph format for tip/trend
+                        return parsed.content;
+                    } else if (parsed.intro) {
+                        return `${parsed.intro} ${(parsed.steps || []).join(' ')}`;
+                    } else if (parsed.overview) {
+                        return `${parsed.overview} ${(parsed.examples || []).join(' ')} ${parsed.opportunity || ''}`;
+                    }
+                    return JSON.stringify(parsed);
+                } catch (e) {
+                    return content.raw.substring(0, 500);
+                }
+            }
+
+            // Direct text content
+            if (typeof content === 'string') return content;
+
+            // Extract text based on content structure (for parsed JSON)
+            if (content.short_version) {
+                // News article
+                return `${content.short_version} ${content.whats_happening || ''} ${content.why_matters || ''}`;
+            }
+            if (content.content) {
+                // New single paragraph format for tip/trend
+                return content.content;
+            }
+            if (content.intro) {
+                // Tip (old format)
+                const stepsText = (content.steps || []).join(' ');
+                return `${content.intro} ${stepsText} ${content.pro_tip || ''}`;
+            }
+            if (content.overview) {
+                // Trend (old format)
+                const examplesText = (content.examples || []).join(' ');
+                return `${content.overview} ${examplesText} ${content.opportunity || ''}`;
+            }
+
+            return JSON.stringify(content).substring(0, 500);
+        }
+
+        function exportBrandCheckResults() {
+            const resultsContainer = document.getElementById('brandCheckResults');
+            if (!resultsContainer) {
+                alert('No brand check results to export');
+                return;
+            }
+
+            // Get the text content (strip HTML for clean copy)
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = resultsContainer.innerHTML;
+
+            // Remove buttons and interactive elements
+            tempDiv.querySelectorAll('button').forEach(btn => btn.remove());
+
+            const textContent = tempDiv.innerText || tempDiv.textContent;
+
+            // Copy to clipboard
+            navigator.clipboard.writeText(textContent).then(() => {
+                alert('✓ Brand check results copied to clipboard!');
+            }).catch(err => {
+                // Fallback: create downloadable text file
+                const blob = new Blob([textContent], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `brand-check-results-${selectedMonth}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                alert('✓ Brand check results downloaded!');
+            });
+        }
+
+        function exportAllCopy() {
+            // Gather all newsletter content
+            const newsTitle = selectedNews?.title || '';
+            const newsContent = cleanContent(generatedNewsContent);
+
+            // Use AI-generated short titles if available
+            const tipTitle = generatedTipTitle || selectedTip?.title || '';
+            const tipContent = cleanContent(generatedTipContent);
+
+            const trendTitle = generatedTrendTitle || selectedTrend?.title || '';
+            const trendContent = cleanContent(generatedTrendContent);
+
+            // Create HTML document for Word-compatible output
+            const htmlDoc = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Newsletter Content - ${selectedMonth}</title>
+    <style>
+        body {
+            font-family: 'Calibri', 'Arial', sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            color: #333;
+        }
+        h1 {
+            color: #272d3f;
+            border-bottom: 3px solid #008181;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #008181;
+            margin-top: 40px;
+            margin-bottom: 15px;
+            font-size: 18px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        h3 {
+            color: #272d3f;
+            margin-top: 10px;
+            margin-bottom: 15px;
+            font-size: 22px;
+        }
+        p {
+            margin-bottom: 15px;
+        }
+        .section {
+            margin-bottom: 50px;
+            page-break-inside: avoid;
+        }
+        .meta {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+        hr {
+            border: none;
+            border-top: 1px solid #e5e7eb;
+            margin: 40px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Newsletter Content - ${selectedMonth.charAt(0).toUpperCase() + selectedMonth.slice(1)}</h1>
+    <p class="meta">Generated: ${new Date().toLocaleDateString()}</p>
+
+    <div class="section">
+        <h2>📰 News You Can Use</h2>
+        <h3>${newsTitle}</h3>
+        <div>${newsContent}</div>
+    </div>
+
+    <hr>
+
+    <div class="section">
+        <h2>💡 BriteCo Insight</h2>
+        <h3>${tipTitle}</h3>
+        <div>${tipContent}</div>
+    </div>
+
+    <hr>
+
+    <div class="section">
+        <h2>📈 Trend Alert</h2>
+        <h3>${trendTitle}</h3>
+        <div>${trendContent}</div>
+    </div>
+</body>
+</html>
+            `.trim();
+
+            // Create Word-compatible HTML file (.doc extension opens in Word)
+            const blob = new Blob([htmlDoc], { type: 'application/msword' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `newsletter-copy-${selectedMonth}.doc`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            alert('✓ Newsletter copy exported as Word document!');
+        }
+
+        async function generateImages() {
+            try {
+                // STEP 1: Generate prompts only
+                showStep(13);
+                document.getElementById('promptGenerationLoading').style.display = 'block';
+                document.getElementById('promptEditing').style.display = 'none';
+
+                // Extract content text
+                const newsText = extractContentText(generatedNewsContent);
+                const tipText = extractContentText(generatedTipContent);
+                const trendText = extractContentText(generatedTrendContent);
+
+                // DEBUG: Log what content was extracted
+                console.log('[FRONTEND DEBUG] ===== CONTENT EXTRACTION =====');
+                console.log('[FRONTEND DEBUG] generatedNewsContent object:', generatedNewsContent);
+                console.log('[FRONTEND DEBUG] generatedTipContent object:', generatedTipContent);
+                console.log('[FRONTEND DEBUG] generatedTrendContent object:', generatedTrendContent);
+                console.log('[FRONTEND DEBUG] Extracted news content:', newsText?.substring(0, 300));
+                console.log('[FRONTEND DEBUG] Extracted tip content:', tipText?.substring(0, 300));
+                console.log('[FRONTEND DEBUG] Extracted trend content:', trendText?.substring(0, 300));
+
+                const sections = {
+                    news: { title: selectedNews.title, content: newsText, month: selectedMonth },
+                    tip: { title: selectedTip.title, content: tipText, month: selectedMonth },
+                    trend: { title: selectedTrend.title, content: trendText, month: selectedMonth }
+                };
+
+                console.log('[FRONTEND DEBUG] ===== SECTIONS BEING SENT TO API =====');
+                console.log('[FRONTEND DEBUG] News title:', selectedNews.title);
+                console.log('[FRONTEND DEBUG] Tip title:', selectedTip.title);
+                console.log('[FRONTEND DEBUG] Trend title:', selectedTrend.title);
+                console.log('[FRONTEND DEBUG] Full sections object:', JSON.stringify(sections, null, 2));
+
+                // Call API to generate prompts
+                const response = await fetch(`${API_BASE}/api/generate-image-prompts`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sections })
+                });
+
+                const data = await response.json();
+
+                console.log('[FRONTEND DEBUG] Received prompts from API:', data.prompts);
+
+                if (!data.success) {
+                    alert('Error generating image prompts: ' + (data.error || 'Unknown error'));
+                    showStep(12);
+                    return;
+                }
+
+                // Display prompts in textareas
+                // Store base prompts (without style modifiers)
+                basePrompts.news = data.prompts.news;
+                basePrompts.tip = data.prompts.tip;
+                basePrompts.trend = data.prompts.trend;
+
+                document.getElementById('newsImagePromptText').value = data.prompts.news;
+                document.getElementById('tipImagePromptText').value = data.prompts.tip;
+                document.getElementById('trendImagePromptText').value = data.prompts.trend;
+
+                console.log('[FRONTEND DEBUG] Set newsImagePromptText to:', data.prompts.news);
+                console.log('[FRONTEND DEBUG] Set tipImagePromptText to:', data.prompts.tip);
+                console.log('[FRONTEND DEBUG] Set trendImagePromptText to:', data.prompts.trend);
+
+                // Show article titles
+                document.getElementById('newsPromptArticle').textContent = `For: ${selectedNews.title}`;
+                document.getElementById('tipPromptArticle').textContent = `For: ${selectedTip.title}`;
+                document.getElementById('trendPromptArticle').textContent = `For: ${selectedTrend.title}`;
+
+                // Show editing UI
+                document.getElementById('promptGenerationLoading').style.display = 'none';
+                document.getElementById('promptEditing').style.display = 'block';
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error generating prompts: ' + error.message);
+                showStep(12);
+            }
+        }
+
+        // Store base prompts for each section (without style modifiers)
+        let basePrompts = {
+            news: '',
+            tip: '',
+            trend: ''
+        };
+
+        function updatePromptWithStyle(section) {
+            const styleSelect = document.getElementById(`${section}ImageStyle`);
+            const promptTextarea = document.getElementById(`${section}ImagePromptText`);
+            const style = styleSelect.value;
+
+            // Get base prompt (without any style modifiers)
+            let basePrompt = basePrompts[section] || promptTextarea.value;
+
+            // Remove any existing style modifiers (more comprehensive matching)
+            basePrompt = basePrompt
+                .replace(/,?\s*realistic\s+(photo|photography|image)/gi, '')
+                .replace(/,?\s*photorealistic/gi, '')
+                .replace(/,?\s*professional\s+(photography|magazine\s+photography|architectural\s+photography)/gi, '')
+                .replace(/,?\s*high-end\s+(photography|quality|magazine)/gi, '')
+                .replace(/,?\s*magazine\s+(quality|photography|style)/gi, '')
+                .replace(/,?\s*AI\s+generated(\s+art)?/gi, '')
+                .replace(/,?\s*digital\s+art(\s+style)?/gi, '')
+                .replace(/,?\s*generative\s+art/gi, '')
+                .replace(/,?\s*cartoon(\s+illustration)?/gi, '')
+                .replace(/,?\s*illustration/gi, '')
+                .replace(/,?\s*illustrated/gi, '')
+                .replace(/,?\s*hand-drawn(\s+style)?/gi, '')
+                .replace(/,?\s*comic\s+style/gi, '')
+                .replace(/,?\s*infographic(\s+design)?/gi, '')
+                .replace(/,?\s*data\s+visualization/gi, '')
+                .replace(/,?\s*graphic\s+design/gi, '')
+                .replace(/,?\s*flat\s+(design|graphic)/gi, '')
+                .replace(/,\s*,/g, ',')  // Remove double commas
+                .replace(/,\s*$/g, '')    // Remove trailing comma
+                .trim();
+
+            // Add style modifier based on selection
+            let styleModifier = '';
+            switch(style) {
+                case 'photorealistic':
+                    styleModifier = '. Professional photorealistic photography, high-end magazine quality, natural lighting';
+                    break;
+                case 'sketch':
+                    styleModifier = '. Sketch illustration style, hand-drawn pencil or ink, artistic linework';
+                    break;
+                case 'watercolor':
+                    styleModifier = '. Watercolor painting style, soft edges, artistic brushstrokes, elegant and romantic';
+                    break;
+                case 'modern-flat':
+                    styleModifier = '. Modern flat design, minimalist geometric shapes, bold colors, clean aesthetic';
+                    break;
+                case 'magazine':
+                    styleModifier = '. Magazine editorial photography, professional styling, high-fashion aesthetic';
+                    break;
+                case 'cartoon':
+                    styleModifier = '. Cartoon illustration style, colorful hand-drawn design, friendly and playful';
+                    break;
+                case 'infographic':
+                    styleModifier = '. Infographic design style, clean flat graphics, data visualization aesthetic';
+                    break;
+            }
+
+            // Update textarea with new prompt (use period instead of comma to separate instructions clearly)
+            promptTextarea.value = basePrompt + styleModifier;
+        }
+
+        async function generateImagesFromPrompts() {
+            try {
+                // Show loading overlay on Step 13 instead of changing steps
+                document.getElementById('promptGenerationLoading').style.display = 'block';
+                document.getElementById('promptGenerationLoading').innerHTML = `
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <h3>Generating Images...</h3>
+                        <p style="color: #666;">Using Nano Banana (Gemini) to create article-specific images...</p>
+                        <p style="color: #999; font-size: 14px; margin-top: 10px;">This may take 20-30 seconds...</p>
+                    </div>
+                `;
+                document.getElementById('promptEditing').style.display = 'none';
+
+                // Read prompts from textareas
+                const prompts = {
+                    news: document.getElementById('newsImagePromptText').value,
+                    tip: document.getElementById('tipImagePromptText').value,
+                    trend: document.getElementById('trendImagePromptText').value
+                };
+
+                console.log('[IMAGE GEN] Sending prompts to Nano Banana:', prompts);
+
+                // Extract content text for sections (needed by API)
+                const newsText = extractContentText(generatedNewsContent);
+                const tipText = extractContentText(generatedTipContent);
+                const trendText = extractContentText(generatedTrendContent);
+
+                const sections = {
+                    news: { title: selectedNews.title, content: newsText, month: selectedMonth },
+                    tip: { title: selectedTip.title, content: tipText, month: selectedMonth },
+                    trend: { title: selectedTrend.title, content: trendText, month: selectedMonth }
+                };
+
+                // Call API to generate images
+                const response = await fetch(`${API_BASE}/api/generate-images`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sections: sections,
+                        prompts: prompts,
+                        month: selectedMonth
+                    })
+                });
+
+                const data = await response.json();
+
+                console.log('[IMAGE GEN] Received images:', data);
+
+                if (!data.success) {
+                    alert('Error generating images: ' + (data.error || 'Unknown error'));
+                    document.getElementById('promptGenerationLoading').style.display = 'none';
+                    document.getElementById('promptEditing').style.display = 'block';
+                    return;
+                }
+
+                // Store images with their prompts
+                generatedImages.news = { url: data.images.news, prompt: prompts.news };
+                generatedImages.tip = { url: data.images.tip, prompt: prompts.tip };
+                generatedImages.trend = { url: data.images.trend, prompt: prompts.trend };
+
+                console.log('[IMAGE GEN] Images stored successfully');
+
+                // Display images and go to Step 15
+                displayImages();
+                showStep(15);
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error generating images: ' + error.message);
+                showStep(13);
+            }
+        }
+
+        async function generateMemePrompt() {
+            try {
+                // Show loading screen first
+                showStep('15_4');
+
+                // Wait a tiny bit for UI to update
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                // Gather newsletter content
+                const newsContent = extractContentText(cleanContent(generatedNewsContent));
+                const tipContent = extractContentText(cleanContent(generatedTipContent));
+                const trendContent = extractContentText(cleanContent(generatedTrendContent));
+
+                console.log('Calling Claude API to generate meme concept...');
+                console.log('News content:', newsContent.substring(0, 100));
+
+                const response = await fetch(`${API_BASE}/api/generate-meme-prompt`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sections: {
+                            news: { content: newsContent },
+                            tip: { content: tipContent },
+                            trend: { content: trendContent }
+                        },
+                        month: selectedMonth
+                    })
+                });
+
+                console.log('Response status:', response.status);
+                const data = await response.json();
+                console.log('Response data:', data);
+
+                if (data.success) {
+                    console.log('✓ Claude generated meme concept successfully');
+                    console.log('Scene:', data.scene);
+                    console.log('Top text:', data.text_top);
+                    console.log('Bottom text:', data.text_bottom);
+
+                    // Show step 15_5 with the results
+                    showStep('15_5');
+
+                    // Fill in the form fields with generated content
+                    document.getElementById('memeScenePrompt').value = data.scene || '';
+                    document.getElementById('memeTopText').value = data.text_top || '';
+                    document.getElementById('memeBottomText').value = data.text_bottom || '';
+                } else {
+                    throw new Error(data.error || 'Failed to generate meme prompt');
+                }
+
+            } catch (error) {
+                console.error('Error generating meme prompt:', error);
+
+                // Show step 15_5 even on error
+                showStep('15_5');
+
+                alert('Error generating meme concept: ' + error.message);
+                // Set default values
+                document.getElementById('memeScenePrompt').value = 'Wedding venue professional looking stressed during peak season';
+                document.getElementById('memeTopText').value = 'WEDDING SEASON';
+                document.getElementById('memeBottomText').value = "IT'S HAPPENING";
+            }
+        }
+
+        async function proceedToMemeGeneration() {
+            try {
+                // Get the edited values from the form
+                const scenePrompt = document.getElementById('memeScenePrompt').value;
+                const topText = document.getElementById('memeTopText').value;
+                const bottomText = document.getElementById('memeBottomText').value;
+
+                // Navigate to Step 16
+                showStep(16);
+
+                // Show loading state
+                const memePreview = document.getElementById('memePreview');
+                memePreview.innerHTML = `
+                    <div style="text-align: center; padding: 40px;">
+                        <div class="spinner" style="margin: 0 auto 20px;"></div>
+                        <div style="color: #666;">Generating meme with your concept...</div>
+                    </div>
+                `;
+
+                // Generate meme with the custom prompt and text overlay
+                const response = await fetch(`${API_BASE}/api/generate-meme`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: scenePrompt,
+                        text_top: topText.toUpperCase(),
+                        text_bottom: bottomText.toUpperCase(),
+                        month: selectedMonth
+                    })
+                });
+
+                const data = await response.json();
+
+                console.log('Meme generation response:', data);
+
+                if (data.success && data.url) {
+                    generatedImages.meme = {
+                        url: data.url,
+                        prompt: scenePrompt,
+                        text_top: topText.toUpperCase(),
+                        text_bottom: bottomText.toUpperCase(),
+                        textSize: 32,
+                        textColor: '#FFFFFF'
+                    };
+
+                    // Update meme prompt field on Step 16
+                    document.getElementById('memePrompt').value = scenePrompt;
+
+                    // Display the generated meme
+                    displayImages();
+                } else {
+                    throw new Error(data.error || 'Failed to generate meme');
+                }
+
+            } catch (error) {
+                console.error('Error generating meme:', error);
+                document.getElementById('memePreview').innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #dc2626;">
+                        <div style="font-size: 48px; margin-bottom: 10px;">❌</div>
+                        <div>Error: ${error.message}</div>
+                        <button class="btn-secondary btn" onclick="proceedToMemeGeneration()" style="margin-top: 20px;">🔄 Try Again</button>
+                    </div>
+                `;
+            }
+        }
+
+        async function generateMeme(showLoadingOverStep16 = false) {
+            try {
+                if (showLoadingOverStep16) {
+                    // Show loading overlay on Step 16
+                    const memePreview = document.getElementById('memePreview');
+                    memePreview.innerHTML = `
+                        <div style="text-align: center; padding: 40px;">
+                            <div class="spinner" style="margin: 0 auto 20px;"></div>
+                            <h3 style="color: #333; margin: 0 0 10px 0;">Generating Meme...</h3>
+                            <p style="color: #666; margin: 0;">Using Nano Banana (Gemini) to create a fun monthly meme...</p>
+                            <p style="color: #999; font-size: 14px; margin-top: 10px;">Estimated time: ~15-20 seconds</p>
+                        </div>
+                    `;
+                }
+
+                const response = await fetch(`${API_BASE}/api/generate-meme`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        month: selectedMonth
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    generatedImages.meme = {
+                        url: data.url,
+                        prompt: data.prompt,  // Store the prompt for editing
+                        text_top: data.text_top || '',
+                        text_bottom: data.text_bottom || ''
+                    };
+
+                    // Update display if we're showing loading
+                    if (showLoadingOverStep16) {
+                        displayImages();
+                    }
+                } else {
+                    console.error('Error generating meme:', data.error);
+                    if (showLoadingOverStep16) {
+                        document.getElementById('memePreview').innerHTML = `
+                            <div style="text-align: center; padding: 40px; color: #dc2626;">
+                                <p>Error generating meme. Please try again.</p>
+                            </div>
+                        `;
+                    }
+                }
+            } catch (error) {
+                console.error('Error generating meme:', error);
+                if (showLoadingOverStep16) {
+                    document.getElementById('memePreview').innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: #dc2626;">
+                            <p>Error generating meme: ${error.message}</p>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        async function regenerateImage(imageType) {
+            try {
+                // Show loading in the specific preview
+                // For meme, use 'memePreview', for others use '{type}ImagePreview'
+                const previewId = imageType === 'meme' ? 'memePreview' : `${imageType}ImagePreview`;
+                const preview = document.getElementById(previewId);
+
+                if (!preview) {
+                    console.error(`[REGENERATE ERROR] Preview element not found: ${previewId}`);
+                    alert(`Error: Preview element ${previewId} not found. Are you on the correct step?`);
+                    return;
+                }
+
+                preview.innerHTML = `
+                    <div style="text-align: center; color: #999;">
+                        <div class="spinner" style="margin: 0 auto 10px;"></div>
+                        <div>Regenerating...</div>
+                    </div>
+                `;
+
+                if (imageType === 'meme') {
+                    // Get custom prompt from textarea
+                    const promptTextarea = document.getElementById('memePrompt');
+                    const customPrompt = promptTextarea ? promptTextarea.value.trim() : '';
+
+                    if (customPrompt) {
+                        console.log('[REGENERATE] Calling API to regenerate meme with custom prompt:', customPrompt);
+                        // Use custom prompt for meme regeneration
+                        const response = await fetch(`${API_BASE}/api/generate-meme`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                month: selectedMonth,
+                                customPrompt: customPrompt
+                            })
+                        });
+
+                        const data = await response.json();
+                        if (data.success) {
+                            // Store meme with URL, prompt, and text overlay
+                            generatedImages.meme = {
+                                url: data.url,
+                                prompt: data.prompt,
+                                text_top: data.text_top || '',
+                                text_bottom: data.text_bottom || ''
+                            };
+                            console.log('[REGENERATE] Successfully regenerated meme');
+                        } else {
+                            throw new Error(data.error || 'Failed to regenerate meme');
+                        }
+                    } else {
+                        console.log('[REGENERATE] No custom prompt, using default meme generation');
+                        await generateMeme();
+                    }
+                } else {
+                    // Get custom prompt from textarea for section images
+                    const promptTextarea = document.getElementById(`${imageType}Prompt`);
+                    const customPrompt = promptTextarea ? promptTextarea.value.trim() : '';
+
+                    if (!customPrompt) {
+                        alert('Please enter a prompt to regenerate the image.');
+                        preview.innerHTML = `<div style="text-align: center; color: #dc2626;">No prompt provided</div>`;
+                        return;
+                    }
+
+                    // Regenerate section image with custom prompt
+                    const section = imageType === 'news' ? selectedNews :
+                                    imageType === 'tip' ? selectedTip : selectedTrend;
+
+                    // Get the generated content for this section and extract text
+                    const sectionContentObj = imageType === 'news' ? generatedNewsContent :
+                                             imageType === 'tip' ? generatedTipContent :
+                                             generatedTrendContent;
+
+                    // Use same extraction helper as generateImages
+                    function extractContentText(content) {
+                        if (!content) return '';
+                        if (content.raw) {
+                            try {
+                                const cleaned = content.raw.replace(/```json\n/g, '').replace(/\n```/g, '');
+                                const parsed = JSON.parse(cleaned);
+                                if (parsed.short_version) return `${parsed.short_version} ${parsed.whats_happening || ''} ${parsed.why_matters || ''}`;
+                                if (parsed.content) return parsed.content;
+                                if (parsed.intro) return `${parsed.intro} ${(parsed.steps || []).join(' ')}`;
+                                if (parsed.overview) return `${parsed.overview} ${(parsed.trends || []).map(t => t.description || '').join(' ')}`;
+                                return JSON.stringify(parsed);
+                            } catch (e) {
+                                return content.raw.substring(0, 500);
+                            }
+                        }
+                        if (typeof content === 'string') return content;
+                        if (content.content) return content.content;
+                        if (content.short_version) return `${content.short_version} ${content.whats_happening || ''} ${content.why_matters || ''}`;
+                        return JSON.stringify(content).substring(0, 500);
+                    }
+
+                    const sectionContent = extractContentText(sectionContentObj);
+
+                    console.log(`[REGENERATE] Calling API to regenerate ${imageType} with custom prompt:`, customPrompt);
+
+                    const response = await fetch(`${API_BASE}/api/generate-images`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            month: selectedMonth,
+                            sections: {
+                                [imageType]: {
+                                    title: section.title,
+                                    content: sectionContent,
+                                    month: selectedMonth,
+                                    season: section.season
+                                }
+                            },
+                            prompts: { [imageType]: customPrompt }
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        // Store image with URL and prompt structure
+                        generatedImages[imageType] = {
+                            url: data.images[imageType],
+                            prompt: customPrompt
+                        };
+                        console.log(`[REGENERATE] Successfully regenerated ${imageType} image`);
+                    } else {
+                        throw new Error(data.error || 'Failed to regenerate image');
+                    }
+                }
+
+                // Redisplay images
+                displayImages();
+            } catch (error) {
+                console.error('Error regenerating image:', error);
+                alert('Error regenerating image: ' + error.message);
+            }
+        }
+
+        function displayImages() {
+            // Display meme with text overlay
+            if (generatedImages.meme) {
+                const textTop = generatedImages.meme.text_top || '';
+                const textBottom = generatedImages.meme.text_bottom || '';
+                const textSize = generatedImages.meme.textSize || 32;
+                const textColor = generatedImages.meme.textColor || '#FFFFFF';
+
+                document.getElementById('memePreview').innerHTML = `
+                    <div style="position: relative; display: inline-block; max-width: 100%;">
+                        <img src="${generatedImages.meme.url}" alt="Monthly Meme" style="max-width: 100%; border-radius: 8px; display: block;" />
+                        ${textTop ? `<div style="position: absolute; top: 20px; left: 0; right: 0; text-align: center; color: ${textColor}; font-family: Impact, Arial Black, sans-serif; font-size: ${textSize}px; font-weight: bold; text-transform: uppercase; text-shadow: 2px 2px 4px black, -2px -2px 4px black, 2px -2px 4px black, -2px 2px 4px black; padding: 0 10px; line-height: 1.2;">${textTop}</div>` : ''}
+                        ${textBottom ? `<div style="position: absolute; bottom: 20px; left: 0; right: 0; text-align: center; color: ${textColor}; font-family: Impact, Arial Black, sans-serif; font-size: ${textSize}px; font-weight: bold; text-transform: uppercase; text-shadow: 2px 2px 4px black, -2px -2px 4px black, 2px -2px 4px black, -2px 2px 4px black; padding: 0 10px; line-height: 1.2;">${textBottom}</div>` : ''}
+                    </div>
+                `;
+                document.getElementById('memePrompt').value = generatedImages.meme.prompt || '';
+
+                // Add text overlay editing inputs if they don't exist
+                if (!document.getElementById('memeTextTop')) {
+                    const promptContainer = document.getElementById('memePrompt').parentElement;
+                    const textSize = generatedImages.meme.textSize || 32;
+                    const textColor = generatedImages.meme.textColor || '#FFFFFF';
+                    const textInputsHTML = `
+                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e5e7eb;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #374151;">Top Text:</label>
+                            <input type="text" id="memeTextTop" value="${textTop}" placeholder="TOP TEXT (optional)"
+                                style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; margin-bottom: 10px; font-family: monospace; text-transform: uppercase;">
+
+                            <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #374151;">Bottom Text:</label>
+                            <input type="text" id="memeTextBottom" value="${textBottom}" placeholder="BOTTOM TEXT (optional)"
+                                style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; margin-bottom: 15px; font-family: monospace; text-transform: uppercase;">
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 10px;">
+                                <div>
+                                    <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #374151;">Text Size (px):</label>
+                                    <input type="number" id="memeTextSize" value="${textSize}" min="16" max="80" step="2"
+                                        style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">
+                                </div>
+                                <div>
+                                    <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #374151;">Text Color:</label>
+                                    <input type="color" id="memeTextColor" value="${textColor}"
+                                        style="width: 100%; height: 40px; padding: 4px; border: 1px solid #d1d5db; border-radius: 4px;">
+                                </div>
+                            </div>
+
+                            <button onclick="updateMemeText()" class="btn btn-secondary" style="margin-top: 10px; width: 100%;">Update Text Overlay</button>
+                        </div>
+                    `;
+                    promptContainer.insertAdjacentHTML('beforeend', textInputsHTML);
+                } else {
+                    // Update existing inputs
+                    document.getElementById('memeTextTop').value = textTop;
+                    document.getElementById('memeTextBottom').value = textBottom;
+                    const textSize = generatedImages.meme.textSize || 32;
+                    const textColor = generatedImages.meme.textColor || '#FFFFFF';
+                    document.getElementById('memeTextSize').value = textSize;
+                    document.getElementById('memeTextColor').value = textColor;
+                }
+            }
+
+            // Display news image
+            if (generatedImages.news) {
+                document.getElementById('newsImagePreview').innerHTML = `
+                    <img src="${generatedImages.news.url}" alt="News Image" style="max-width: 100%; border-radius: 8px;" />
+                `;
+                document.getElementById('newsPrompt').value = generatedImages.news.prompt || '';
+            }
+
+            // Display tip image
+            if (generatedImages.tip) {
+                document.getElementById('tipImagePreview').innerHTML = `
+                    <img src="${generatedImages.tip.url}" alt="Tip Image" style="max-width: 100%; border-radius: 8px;" />
+                `;
+                document.getElementById('tipPrompt').value = generatedImages.tip.prompt || '';
+            }
+
+            // Display trend image
+            if (generatedImages.trend) {
+                document.getElementById('trendImagePreview').innerHTML = `
+                    <img src="${generatedImages.trend.url}" alt="Trend Image" style="max-width: 100%; border-radius: 8px;" />
+                `;
+                document.getElementById('trendPrompt').value = generatedImages.trend.prompt || '';
+            }
+        }
+
+        // Export image as download
+        function exportImage(imageType) {
+            const imageData = generatedImages[imageType];
+            if (!imageData || !imageData.url) {
+                alert('No image to export. Please generate an image first.');
+                return;
+            }
+
+            // Create a temporary link and trigger download
+            const link = document.createElement('a');
+            link.href = imageData.url;
+            link.download = `${imageType}-image-${Date.now()}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Resize image with quality options
+        async function resizeImage(imageType) {
+            const imageData = generatedImages[imageType];
+            if (!imageData || !imageData.url) {
+                alert('No image to resize. Please generate an image first.');
+                return;
+            }
+
+            // Ask user for size preference
+            const size = prompt('Choose image size:\n1 = 1K (1024×1024)\n2 = 2K (2048×2048)\n3 = 4K (4096×4096)\n\nEnter 1, 2, or 3:', '1');
+
+            if (!size || !['1', '2', '3'].includes(size)) {
+                return; // User cancelled or invalid input
+            }
+
+            const dimensions = {
+                '1': 1024,
+                '2': 2048,
+                '3': 4096
+            };
+
+            const targetSize = dimensions[size];
+
+            // For now, just show info since backend needs to handle actual resizing
+            alert(`Image will be resized to ${targetSize}×${targetSize}.\n\nNote: This feature requires backend implementation for proper image scaling.`);
+
+            // TODO: Call backend API to resize image
+            // const response = await fetch(`${API_BASE}/api/resize-image`, {
+            //     method: 'POST',
+            //     headers: { 'Content-Type': 'application/json' },
+            //     body: JSON.stringify({
+            //         image_data: imageData.url,
+            //         size: targetSize
+            //     })
+            // });
+        }
+
+        // Update meme text overlay
+        function updateMemeText() {
+            const textTop = document.getElementById('memeTextTop')?.value.toUpperCase() || '';
+            const textBottom = document.getElementById('memeTextBottom')?.value.toUpperCase() || '';
+            const textSize = parseInt(document.getElementById('memeTextSize')?.value) || 32;
+            const textColor = document.getElementById('memeTextColor')?.value || '#FFFFFF';
+
+            if (generatedImages.meme) {
+                generatedImages.meme.text_top = textTop;
+                generatedImages.meme.text_bottom = textBottom;
+                generatedImages.meme.textSize = textSize;
+                generatedImages.meme.textColor = textColor;
+                displayImages();
+            }
+        }
+
+        // Handle meme upload
+        function handleMemeUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const imageUrl = e.target.result;
+                generatedImages.meme = {
+                    url: imageUrl,
+                    prompt: 'Uploaded custom meme',
+                    text_top: '',
+                    text_bottom: '',
+                    textSize: 32,
+                    textColor: '#FFFFFF'
+                };
+
+                // Use displayImages() to show with text overlay capability
+                displayImages();
+
+                alert('✓ Meme uploaded successfully! You can add text overlays below.');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function searchWebMeme() {
+            try {
+                // Show loading in preview
+                document.getElementById('memePreview').innerHTML = `
+                    <div style="text-align: center; padding: 40px;">
+                        <div class="spinner" style="margin: 0 auto 10px;"></div>
+                        <div>Searching web for wedding memes...</div>
+                    </div>
+                `;
+
+                // Call backend to search for memes via Google Images API or similar
+                const response = await fetch(`${API_BASE}/api/search-memes`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        month: selectedMonth,
+                        query: 'wedding meme funny'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.images && data.images.length > 0) {
+                    // Show first 6 results in a grid
+                    const images = data.images.slice(0, 6);
+                    document.getElementById('memePreview').innerHTML = `
+                        <div style="padding: 15px;">
+                            <h4 style="margin: 0 0 10px 0;">Select a meme:</h4>
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                                ${images.map((img, i) => `
+                                    <div onclick="selectSearchedMeme('${img.url.replace(/'/g, "\\'")}', '${img.title.replace(/'/g, "\\'")}', '${img.source || ''}')"
+                                         style="cursor: pointer; border: 2px solid #e5e7eb; border-radius: 8px; overflow: hidden; transition: all 0.2s;"
+                                         onmouseover="this.style.borderColor='#008181'"
+                                         onmouseout="this.style.borderColor='#e5e7eb'">
+                                        <img src="${img.thumbnail || img.url}" alt="${img.title}" style="width: 100%; height: 100px; object-fit: cover;" />
+                                        <div style="padding: 5px; font-size: 10px; text-align: center; background: white;">${img.title.substring(0, 25)}...</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <p style="margin-top: 10px; font-size: 12px; color: #666;">Click an image to select it</p>
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('memePreview').innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: #666;">
+                            <p>No memes found. Try generating with AI or uploading your own!</p>
+                            <button class="btn-secondary btn" onclick="regenerateImage('meme')" style="margin-top: 10px;">Generate with AI Instead</button>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error searching memes:', error);
+                alert('Failed to search for memes. Please try generating with AI or upload your own.');
+            }
+        }
+
+        function selectSearchedMeme(url, title, source) {
+            generatedImages.meme = {
+                url: url,
+                prompt: title,
+                source: source || 'Web search',
+                text_top: '',
+                text_bottom: '',
+                textSize: 32,
+                textColor: '#FFFFFF'
+            };
+
+            // Use displayImages() to show with text overlay capability
+            displayImages();
+
+            document.getElementById('memePrompt').value = title;
+
+            alert('✓ Meme selected! You can add text overlays below.');
+        }
+
+        async function searchWeddingMemes() {
+            try {
+                const searchResults = document.getElementById('memeSearchResults');
+                const gallery = document.getElementById('memeGallery');
+
+                // Show loading
+                searchResults.style.display = 'block';
+                gallery.innerHTML = '<div style="text-align: center; padding: 20px;"><div class="spinner" style="margin: 0 auto;"></div><div style="margin-top: 10px;">Searching for wedding memes...</div></div>';
+
+                // Call backend to search for memes
+                const response = await fetch(`${API_BASE}/api/search-memes`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ month: selectedMonth })
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.images && data.images.length > 0) {
+                    // Display meme options
+                    gallery.innerHTML = data.images.map((img, index) => `
+                        <div onclick="selectMemeFromGallery('${img.url.replace(/'/g, "\\'")}', '${img.title.replace(/'/g, "\\'")})" style="cursor: pointer; border: 2px solid #e5e7eb; border-radius: 8px; overflow: hidden; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                            <img src="${img.thumbnail || img.url}" alt="${img.title}" style="width: 100%; height: 150px; object-fit: cover;" />
+                            <div style="padding: 5px; font-size: 11px; text-align: center; background: white;">${img.title.substring(0, 30)}...</div>
+                        </div>
+                    `).join('');
+                } else {
+                    gallery.innerHTML = '<p style="text-align: center; color: #666;">No memes found. Try uploading your own or generating one!</p>';
+                }
+            } catch (error) {
+                console.error('Error searching memes:', error);
+                alert('Error searching for memes. Please try again or upload your own.');
+            }
+        }
+
+        function selectMemeFromGallery(url, title) {
+            generatedImages.meme = {
+                url: url,
+                prompt: `Selected meme: ${title}`,
+                text_top: '',
+                text_bottom: '',
+                textSize: 32,
+                textColor: '#FFFFFF'
+            };
+
+            // Use displayImages() to show with text overlay capability
+            displayImages();
+
+            document.getElementById('memeSearchResults').style.display = 'none';
+            showToast('✓ Meme selected! You can add text overlays.');
+        }
+
+        // Toggle HTML code view
+        function toggleHTMLView() {
+            const codeView = document.getElementById('htmlCodeView');
+            const btn = document.getElementById('htmlViewBtn');
+
+            if (codeView.style.display === 'none') {
+                // Generate and show HTML
+                const html = generateNewsletterHTML();
+                document.getElementById('htmlCode').textContent = html;
+                codeView.style.display = 'block';
+                btn.textContent = '👁️ Hide HTML Code';
+            } else {
+                codeView.style.display = 'none';
+                btn.textContent = '📝 View HTML Code';
+            }
+        }
+
+        // Copy HTML code to clipboard
+        function copyHTMLCode() {
+            const html = generateNewsletterHTML();
+            navigator.clipboard.writeText(html).then(() => {
+                const toast = document.createElement('div');
+                toast.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #10b981; color: white; padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 9999;';
+                toast.textContent = '✓ HTML copied to clipboard!';
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 2000);
+            }).catch(err => {
+                alert('Failed to copy HTML: ' + err);
+            });
+        }
+
+        // Generate newsletter HTML
+        function showNewsletterPreview() {
+            try {
+                // Get subject line and preheader
+                const subjectLine = document.getElementById('finalSubjectLine')?.value || 'Your Monthly Newsletter';
+                const preheader = document.getElementById('finalPreheader')?.value || 'Latest insights inside';
+
+                // Generate HTML and populate preview
+                console.log('[PREVIEW] Generating newsletter HTML...');
+                const html = generateNewsletterHTML();
+                console.log('[PREVIEW] HTML generated, length:', html.length);
+
+                // Populate preview
+                document.getElementById('newsletterPreview').innerHTML = html;
+                document.getElementById('htmlCode').textContent = html;
+
+                // Populate subject and preheader displays
+                document.getElementById('previewSubjectLine').textContent = subjectLine;
+                document.getElementById('previewPreheader').textContent = preheader;
+
+                // Enable inline editing
+                setTimeout(() => {
+                    enableNewsletterEditing();
+                }, 100);
+
+                showStep(18);
+            } catch (error) {
+                console.error('[PREVIEW ERROR]', error);
+                alert('Error generating preview: ' + error.message + '\n\nPlease check browser console for details.');
+            }
+        }
+
+        // Briteco Newsletter Template Generator (NEW - uses template file)
+        function generateBritecoHTML(newsData, tipData, trendData, memeUrl, subjectLine, preheader) {
+            // Extract titles and content
+            const newsTitle = newsData.title || 'News Update';
+            // Use AI-generated short titles if available, otherwise use original titles
+            const tipTitle = generatedTipTitle || tipData.title || 'Tip of the Month';
+            const trendTitle = generatedTrendTitle || trendData.title || 'Trend Alert';
+
+            const newsContent = newsData.content || '';
+            const tipContent = tipData.content || '';
+            const trendContent = trendData.content || '';
+
+            const newsImage = newsData.image || '';
+            const tipImage = tipData.image || '';
+            const trendImage = trendData.image || '';
+
+            const newsUrl = newsData.url || '#';
+            const tipUrl = tipData.url || '#';
+            const trendUrl = trendData.url || '#';
+
+            // Load and process template
+            const template = `<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
+  <title>Venue Voice Newsletter</title>
+  <!--[if mso]>
+  <noscript>
+    <xml>
+      <o:OfficeDocumentSettings>
+        <o:PixelsPerInch>96</o:PixelsPerInch>
+      </o:OfficeDocumentSettings>
+    </xml>
+  </noscript>
+  <![endif]-->
+  <style>
+    :root { color-scheme: light dark; supported-color-schemes: light dark; }
+    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
+    body { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+
+    @media screen and (max-width: 600px) {
+      .mobile-full { width: 100% !important; }
+      .mobile-padding { padding-left: 20px !important; padding-right: 20px !important; }
+      .mobile-stack { display: block !important; width: 100% !important; }
+      .mobile-center { text-align: center !important; }
+      .mobile-img { width: 100% !important; height: auto !important; }
+      .mobile-column { display: block !important; width: 100% !important; padding-right: 0 !important; padding-left: 0 !important; padding-bottom: 12px !important; }
+      .mobile-column-last { padding-bottom: 0 !important; }
+      .mobile-hide { display: none !important; }
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .dark-mode-bg { background-color: #1a1a1a !important; }
+      .dark-mode-card { background-color: #272d3f !important; }
+      .dark-mode-text { color: #ffffff !important; }
+      .dark-mode-secondary { color: #cccccc !important; }
+      .dark-mode-border { border-color: #444444 !important; }
+    }
+  </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f5f5f5;" class="dark-mode-bg">
+
+  <!-- WRAPPER -->
+  <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f5f5f5;" class="dark-mode-bg">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+
+        <!-- CONTAINER -->
+        <table role="presentation" cellpadding="0" cellspacing="0" width="560" class="mobile-full" style="max-width: 560px;">
+
+          <!-- HEADER - NAVY BLOCK -->
+          <tr>
+            <td style="background-color: #272d3f; padding: 24px 40px; border-radius: 4px 4px 0 0;" class="mobile-padding">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td class="mobile-center">
+                    <!-- LOGO: Replace src with your hosted logo -->
+                    <img src="{{LOGO_URL}}" alt="BriteCo" width="140" style="max-width: 140px; height: auto;">
+                  </td>
+                  <td align="right" class="mobile-center" style="padding-top: 4px;">
+                    <a href="{{DASHBOARD_URL}}" style="display: inline-block; background-color: #FE8916; color: #ffffff; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 12px; font-weight: 700; padding: 10px 18px; text-decoration: none; border-radius: 5px;">YOUR DASHBOARD</a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- MAIN CONTENT - WHITE -->
+          <tr>
+            <td style="background-color: #ffffff;" class="dark-mode-card">
+
+              <!-- HERO/MEME IMAGE -->
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td style="padding: 40px 40px 0 40px;" class="mobile-padding">
+                    <img src="{{MEME_IMAGE}}" alt="Monthly Meme" width="480" style="width: 100%; max-width: 480px; height: auto; display: block; border-radius: 4px;">
+                  </td>
+                </tr>
+              </table>
+
+              <!-- AGENDA PANEL - TEAL BLOCK -->
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td style="padding: 40px 40px 0 40px;" class="mobile-padding">
+                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #e5f2f2; border-radius: 8px;">
+                      <tr>
+                        <td style="padding: 28px 32px;">
+                          <!-- AGENDA TITLE -->
+                          <h1 style="margin: 0 0 20px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 28px; font-weight: 600; color: #272d3f; text-align: center; line-height: 36px;" class="dark-mode-text">{{AGENDA_TITLE}}</h1>
+
+                          <!-- AGENDA ITEMS -->
+                          <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                            <tr>
+                              <td style="padding: 12px 0; border-top: 1px solid #ffffff;">
+                                <span style="font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 14px; font-weight: 600; color: #008181;">01</span>
+                                <span style="font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 15px; font-weight: 500; color: #272d3f; padding-left: 16px;">{{NEWS_TITLE}}</span>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="padding: 12px 0; border-top: 1px solid #ffffff;">
+                                <span style="font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 14px; font-weight: 600; color: #008181;">02</span>
+                                <span style="font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 15px; font-weight: 500; color: #272d3f; padding-left: 16px;">{{TIP_TITLE}}</span>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="padding: 12px 0 0 0; border-top: 1px solid #ffffff;">
+                                <span style="font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 14px; font-weight: 600; color: #008181;">03</span>
+                                <span style="font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 15px; font-weight: 500; color: #272d3f; padding-left: 16px;">{{TREND_TITLE}}</span>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- SECTION 1: NEWS WITH FULL IMAGE -->
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td style="padding: 48px 40px;" class="mobile-padding">
+                    <!-- SECTION 1 IMAGE -->
+                    <img src="{{NEWS_IMAGE}}" alt="News Image" width="480" style="width: 100%; max-width: 480px; height: auto; display: block; border-radius: 4px; margin-bottom: 24px;">
+
+                    <p style="margin: 0 0 10px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 12px; font-weight: 600; color: #008181; text-transform: uppercase; letter-spacing: 1.5px;">News You Can Use</p>
+
+                    <h2 style="margin: 0 0 16px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 22px; font-weight: 600; color: #272d3f; line-height: 1.4;" class="dark-mode-text">{{NEWS_TITLE}}</h2>
+
+                    {{NEWS_CONTENT}}
+                  </td>
+                </tr>
+              </table>
+
+              <!-- DIVIDER -->
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td style="padding: 0 40px 48px 40px;" class="mobile-padding">
+                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                      <tr><td style="border-bottom: 1px solid #e5f2f2; height: 1px;"></td></tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- 2x2 GRID: ROW 1 - INSIGHT TEXT + INSIGHT IMAGE -->
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td style="padding: 0 40px 12px 40px;" class="mobile-padding">
+                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                      <tr>
+                        <!-- INSIGHT TEXT BOX (55%) -->
+                        <td width="55%" valign="top" class="mobile-column" style="padding-right: 6px;">
+                          <table role="presentation" cellpadding="0" cellspacing="0" width="100%" height="250" style="background-color: #e5f2f2; border-radius: 8px; height: 250px; max-height: 250px; overflow: hidden;">
+                            <tr>
+                              <td style="padding: 22px;" valign="top">
+                                <p style="margin: 0 0 8px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 11px; font-weight: 600; color: #008181; text-transform: uppercase; letter-spacing: 1.5px;">BriteCo Insight</p>
+
+                                <h3 style="margin: 0 0 10px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 18px; font-weight: 600; color: #272d3f; line-height: 1.3;" class="dark-mode-text">{{TIP_TITLE}}</h3>
+
+                                {{TIP_CONTENT}}
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+
+                        <!-- INSIGHT IMAGE BOX (45%) - Image size: ~210x250px -->
+                        <td width="45%" valign="top" class="mobile-column mobile-hide" style="padding-left: 6px;">
+                          <table role="presentation" cellpadding="0" cellspacing="0" width="100%" height="250" style="height: 250px;">
+                            <tr>
+                              <td>
+                                <img src="{{TIP_IMAGE}}" alt="Insight" width="210" height="250" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px; display: block;">
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- 2x2 GRID: ROW 2 - TREND IMAGE + TREND TEXT -->
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td style="padding: 0 40px 48px 40px;" class="mobile-padding">
+                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                      <tr>
+                        <!-- TREND IMAGE BOX (45%) - Image size: ~210x250px -->
+                        <td width="45%" valign="top" class="mobile-column mobile-hide" style="padding-right: 6px;">
+                          <table role="presentation" cellpadding="0" cellspacing="0" width="100%" height="250" style="height: 250px;">
+                            <tr>
+                              <td>
+                                <img src="{{TREND_IMAGE}}" alt="Trend" width="210" height="250" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px; display: block;">
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+
+                        <!-- TREND TEXT BOX (55%) -->
+                        <td width="55%" valign="top" class="mobile-column mobile-column-last" style="padding-left: 6px;">
+                          <table role="presentation" cellpadding="0" cellspacing="0" width="100%" height="250" style="background-color: #7DA3AF; border-radius: 8px; height: 250px; max-height: 250px; overflow: hidden;">
+                            <tr>
+                              <td style="padding: 22px;" valign="top">
+                                <p style="margin: 0 0 8px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 11px; font-weight: 600; color: #272d3f; text-transform: uppercase; letter-spacing: 1.5px;">Trend Alert</p>
+
+                                <h3 style="margin: 0 0 10px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 18px; font-weight: 600; color: #ffffff; line-height: 1.3;">{{TREND_TITLE}}</h3>
+
+                                {{TREND_CONTENT}}
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+
+          <!-- FOOTER -->
+          <tr>
+            <td style="background-color: #272d3f; padding: 40px; text-align: center; border-radius: 0 0 4px 4px;" class="mobile-padding">
+              <h2 style="margin: 0 0 8px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 26px; font-weight: 600; color: #ffffff;">Let's Connect</h2>
+              <p style="margin: 0 0 20px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 15px; font-weight: 500; color: #ffffff;">Make wedding planning stress-free and inspired.</p>
+              <a href="{{DASHBOARD_URL}}" style="display: inline-block; background-color: #FE8916; color: #ffffff; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 14px; font-weight: 700; padding: 12px 24px; text-decoration: none; border-radius: 5px;">My Dashboard →</a>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>
+`;
+
+            //  Template replacement placeholders
+            const logoUrl = 'https://i.ontraport.com/194428.046960d3d5419045b9bf5943f00547e7.PNG';
+            const dashboardUrl = 'https://insurance.brite.co/events/venue_locations/[Referral Code]/dashboard';
+
+            // Format content - backend already returns <p> wrapped content, just add read more link
+            const formatNewsContent = (content) => {
+                // Content already has <p> tags with styling and margin from backend
+                return `${content}<a href="${newsUrl}" style="font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 14px; font-weight: 700; color: #FE8916; text-decoration: none;">Read more →</a>`;
+            };
+
+            const formatTipContent = (content) => {
+                // Content already has <p> tags with styling and margin from backend
+                return `${content}<a href="${tipUrl}" style="font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 13px; font-weight: 700; color: #FE8916; text-decoration: none;">Read more →</a>`;
+            };
+
+            const formatTrendContent = (content) => {
+                // Content already has <p> tags with styling and margin from backend
+                return `${content}<a href="${trendUrl}" style="font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 13px; font-weight: 700; color: #FE8916; text-decoration: none;">Read more →</a>`;
+            };
+
+            // Generate meme HTML - text is already burned into the image by the server
+            const generateMemeHTML = () => {
+                const meme = generatedImages.meme;
+                if (!meme) {
+                    return memeUrl || 'https://placehold.co/480x280/272d3f/31D7CA?text=Monthly+Meme';
+                }
+
+                // The server already burned the text into the image, so just return the URL
+                // This ensures email clients display the meme correctly
+                return meme.url || memeUrl;
+            };
+
+            // Apply replacements to template
+            return template
+                .replace(/{{LOGO_URL}}/g, logoUrl)
+                .replace(/{{DASHBOARD_URL}}/g, dashboardUrl)
+                .replace(/{{MEME_IMAGE}}/g, generateMemeHTML())
+                .replace(/{{AGENDA_TITLE}}/g, "In This Month's Venue Voice")
+                .replace(/{{NEWS_TITLE}}/g, newsTitle)
+                .replace(/{{TIP_TITLE}}/g, tipTitle)
+                .replace(/{{TREND_TITLE}}/g, trendTitle)
+                .replace(/{{NEWS_IMAGE}}/g, newsImage || 'https://placehold.co/480x260/008181/ffffff?text=News+Image')
+                .replace(/{{NEWS_CONTENT}}/g, formatNewsContent(newsContent))
+                .replace(/{{TIP_IMAGE}}/g, tipImage || 'https://placehold.co/210x250/008181/ffffff?text=210x250')
+                .replace(/{{TIP_CONTENT}}/g, formatTipContent(tipContent))
+                .replace(/{{TREND_IMAGE}}/g, trendImage || 'https://placehold.co/210x250/7DA3AF/ffffff?text=210x250')
+                .replace(/{{TREND_CONTENT}}/g, formatTrendContent(trendContent));
+        }
+
+        function generateNewsletterHTML() {
+            // Get subject line and preheader
+            const subjectLine = document.getElementById('finalSubjectLine')?.value || 'Your Monthly Newsletter';
+            const preheader = document.getElementById('finalPreheader')?.value || 'Latest insights inside';
+
+            // Prepare news data
+            const newsData = {
+                title: selectedNews?.title || 'News Update',
+                content: document.getElementById('newsContentBox')?.innerHTML || generatedNewsContent || '',
+                image: generatedImages.news?.url || '',
+                url: selectedNews?.source_url || selectedNews?.url || '#'
+            };
+
+            // Prepare tip data
+            const tipData = {
+                title: selectedTip?.title || 'Tip of the Month',
+                content: document.getElementById('tipContentBox')?.innerHTML || generatedTipContent || '',
+                image: generatedImages.tip?.url || '',
+                url: selectedTip?.source_url || selectedTip?.url || '#'
+            };
+
+            // Prepare trend data
+            const trendData = {
+                title: selectedTrend?.title || 'Trend Alert',
+                content: document.getElementById('trendContentBox')?.innerHTML || generatedTrendContent || '',
+                image: generatedImages.trend?.url || '',
+                url: selectedTrend?.source_url || selectedTrend?.url || '#'
+            };
+
+            // Get meme URL
+            const memeUrl = generatedImages.meme?.url || '';
+
+            // Call Briteco template function (now embedded above)
+            return generateBritecoHTML(newsData, tipData, trendData, memeUrl, subjectLine, preheader);
+        }
+
+        // Send test email
+        async function sendTestEmail() {
+            const testEmail = document.getElementById('testEmail').value.trim();
+
+            if (!testEmail) {
+                alert('Please enter a test email address');
+                return;
+            }
+
+            if (!testEmail.includes('@')) {
+                alert('Please enter a valid email address');
+                return;
+            }
+
+            try {
+                const html = generateNewsletterHTML();
+
+                const response = await fetch(`${API_BASE}/api/send-test-email`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: testEmail,
+                        html: html
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('✓ Test email sent successfully to ' + testEmail);
+                } else {
+                    alert('Error sending test email: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error sending test email: ' + error.message);
+            }
+        }
+
+        // Push to Ontraport
+        async function pushToOntraport(event) {
+            const subject = document.getElementById('subject').value.trim();
+
+            if (!subject) {
+                alert('⚠️ Please enter a subject line before pushing to Ontraport');
+                return;
+            }
+
+            // Show loading state
+            const originalButton = event.target;
+            const originalText = originalButton.innerHTML;
+            originalButton.innerHTML = '⏳ Pushing to Ontraport...';
+            originalButton.disabled = true;
+
+            try {
+                console.log('[ONTRAPORT] Generating newsletter HTML...');
+                const html = generateNewsletterHTML();
+
+                console.log('[ONTRAPORT] Sending to backend...');
+                const response = await fetch(`${API_BASE}/api/push-to-ontraport`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        html: html,
+                        subject: subject,
+                        month: selectedMonth
+                    })
+                });
+
+                const data = await response.json();
+                console.log('[ONTRAPORT] Response:', data);
+
+                if (data.success) {
+                    // Show prominent success message
+                    alert('✅ SUCCESS!\n\n' +
+                          'Your newsletter has been pushed to Ontraport!\n\n' +
+                          '📧 Campaign: ' + subject + '\n' +
+                          '📅 Month: ' + (selectedMonth || 'Newsletter') + '\n\n' +
+                          'You can now find it in your Ontraport messages and schedule it for sending.');
+                    console.log('✅ Ontraport campaign created:', data.data);
+                } else {
+                    alert('❌ Error pushing to Ontraport:\n\n' + (data.error || 'Unknown error'));
+                    console.error('❌ Ontraport error:', data);
+                }
+            } catch (error) {
+                console.error('❌ Error:', error);
+                alert('❌ Error pushing to Ontraport:\n\n' + error.message);
+            } finally {
+                // Restore button state
+                originalButton.innerHTML = originalText;
+                originalButton.disabled = false;
+            }
+        }
+
+        function showPreview() {
+            // Build the complete newsletter HTML
+            const newsContent = document.getElementById('newsContentBox')?.innerHTML || '';
+            const tipContent = document.getElementById('tipContentBox')?.innerHTML || '';
+            const trendContent = document.getElementById('trendContentBox')?.innerHTML || '';
+
+            let html = `
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <!-- Meme with text overlay -->
+                    ${generatedImages.meme ? `
+                        <div style="margin-bottom: 30px; text-align: center; position: relative; display: inline-block; width: 100%;">
+                            <div style="position: relative; display: inline-block; max-width: 100%;">
+                                <img src="${generatedImages.meme.url}" alt="Monthly Meme" style="max-width: 100%; border-radius: 8px; display: block;" />
+                                ${generatedImages.meme.text_top ? `<div style="position: absolute; top: 20px; left: 0; right: 0; text-align: center; color: ${generatedImages.meme.textColor || '#FFFFFF'}; font-family: Impact, Arial Black, sans-serif; font-size: ${generatedImages.meme.textSize || 32}px; font-weight: bold; text-transform: uppercase; text-shadow: 2px 2px 4px black, -2px -2px 4px black, 2px -2px 4px black, -2px 2px 4px black; padding: 0 10px; line-height: 1.2;">${generatedImages.meme.text_top}</div>` : ''}
+                                ${generatedImages.meme.text_bottom ? `<div style="position: absolute; bottom: 20px; left: 0; right: 0; text-align: center; color: ${generatedImages.meme.textColor || '#FFFFFF'}; font-family: Impact, Arial Black, sans-serif; font-size: ${generatedImages.meme.textSize || 32}px; font-weight: bold; text-transform: uppercase; text-shadow: 2px 2px 4px black, -2px -2px 4px black, 2px -2px 4px black, -2px 2px 4px black; padding: 0 10px; line-height: 1.2;">${generatedImages.meme.text_bottom}</div>` : ''}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <!-- News Section -->
+                    <div style="margin-bottom: 30px;">
+                        <h2 style="color: #1a1a1a; margin-bottom: 15px;">📰 News You Can Use</h2>
+                        ${generatedImages.news ? `
+                            <img src="${generatedImages.news.url}" alt="News Image" style="max-width: 100%; border-radius: 8px; margin-bottom: 15px;" />
+                        ` : ''}
+                        <div style="background: #f9fafb; padding: 20px; border-radius: 8px;">
+                            ${newsContent}
+                        </div>
+                    </div>
+
+                    <!-- Tip Section -->
+                    <div style="margin-bottom: 30px;">
+                        <h2 style="color: #1a1a1a; margin-bottom: 15px;">💡 Tip of the Month</h2>
+                        ${generatedImages.tip ? `
+                            <img src="${generatedImages.tip.url}" alt="Tip Image" style="max-width: 100%; border-radius: 8px; margin-bottom: 15px;" />
+                        ` : ''}
+                        <div style="background: #f9fafb; padding: 20px; border-radius: 8px;">
+                            ${tipContent}
+                        </div>
+                    </div>
+
+                    <!-- Trend Section -->
+                    <div style="margin-bottom: 30px;">
+                        <h2 style="color: #1a1a1a; margin-bottom: 15px;">📈 Trend Watch</h2>
+                        ${generatedImages.trend ? `
+                            <img src="${generatedImages.trend.url}" alt="Trend Image" style="max-width: 100%; border-radius: 8px; margin-bottom: 15px;" />
+                        ` : ''}
+                        <div style="background: #f9fafb; padding: 20px; border-radius: 8px;">
+                            ${trendContent}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('newsletterPreview').innerHTML = html;
+            showStep(15);
+        }
+
+        // Save edited subject line back to state
+        function saveSubjectEdit(element) {
+            const newSubject = element.textContent.trim();
+            if (newSubject && newSubject !== 'Your subject line will appear here') {
+                document.getElementById('finalSubjectLine').value = newSubject;
+                console.log('[EDIT] Subject line updated:', newSubject);
+            }
+        }
+
+        // Save edited preheader back to state
+        function savePreheaderEdit(element) {
+            const newPreheader = element.textContent.trim();
+            if (newPreheader && newPreheader !== 'Your preheader will appear here') {
+                document.getElementById('finalPreheader').value = newPreheader;
+                console.log('[EDIT] Preheader updated:', newPreheader);
+            }
+        }
+
+        // Make newsletter content editable after it's rendered
+        function enableNewsletterEditing() {
+            // Add contenteditable to text elements in the preview
+            const preview = document.getElementById('newsletterPreview');
+            if (!preview) return;
+
+            // Make all paragraph and div text content editable
+            const textElements = preview.querySelectorAll('p, div[style*="font-size"]');
+            textElements.forEach(el => {
+                // Skip elements that are just containers
+                if (el.children.length > 0 && el.textContent.trim().length < 50) return;
+
+                el.setAttribute('contenteditable', 'true');
+                el.style.cursor = 'text';
+                el.style.transition = 'background-color 0.2s';
+
+                // Visual feedback on focus
+                el.addEventListener('focus', () => {
+                    el.style.backgroundColor = '#fef3c7';
+                    el.style.outline = '2px solid #f59e0b';
+                });
+
+                el.addEventListener('blur', () => {
+                    el.style.backgroundColor = '';
+                    el.style.outline = '';
+
+                    // Save changes back by regenerating HTML
+                    console.log('[EDIT] Content updated, regenerating HTML...');
+                    updateNewsletterHTML();
+                });
+            });
+
+            console.log('[EDIT] Enabled editing on', textElements.length, 'elements');
+        }
+
+        // Update the stored HTML after edits
+        function updateNewsletterHTML() {
+            const preview = document.getElementById('newsletterPreview');
+            if (!preview) return;
+
+            const updatedHTML = preview.innerHTML;
+            document.getElementById('htmlCode').textContent = updatedHTML;
+
+            console.log('[EDIT] HTML updated with edited content');
+        }
+
+        async function sendTestEmail() {
+            const email = prompt('Enter email address for test:');
+            if (!email) return;
+
+            try {
+                const newsletterHTML = document.getElementById('newsletterPreview').innerHTML;
+
+                const response = await fetch(`${API_BASE}/api/send-test-email`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: email,
+                        html: newsletterHTML,
+                        month: selectedMonth
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert(`Test email sent to ${email}!\n\nNote: ${data.note || 'Email sent successfully'}`);
+                } else {
+                    alert('Error sending test email: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error sending test email: ' + error.message);
+            }
+        }
+
+        function refreshNews() {
+            searchTopics();
+        }
+
+        function refreshTips() {
+            loadTips();
+        }
+
+        function refreshTrends() {
+            loadTrends();
+        }
+
+        function addCustomNews() {
+            const url = document.getElementById('newsUrlInput').value.trim();
+            const title = document.getElementById('newsTitleInput').value.trim();
+            const description = document.getElementById('newsDescInput').value.trim();
+
+            if (!url || !title || !description) {
+                alert('Please fill in all fields (URL, title, and description)');
+                return;
+            }
+
+            // Create custom article object
+            const customArticle = {
+                title: title,
+                description: description,
+                source_url: url
+            };
+
+            // Add to newsTopics array and display
+            newsTopics.unshift(customArticle);
+            displayNews();
+
+            // Clear inputs
+            document.getElementById('newsUrlInput').value = '';
+            document.getElementById('newsTitleInput').value = '';
+            document.getElementById('newsDescInput').value = '';
+
+            // Show success message
+            alert('✓ Custom article added! Select it from the list above.');
+        }
+
+        function addCustomTip() {
+            const url = document.getElementById('tipUrlInput').value.trim();
+            const title = document.getElementById('tipTitleInput').value.trim();
+            const description = document.getElementById('tipDescInput').value.trim();
+
+            if (!url || !title || !description) {
+                alert('Please fill in all fields (URL, title, and description)');
+                return;
+            }
+
+            // Create custom tip object
+            const customTip = {
+                title: title,
+                description: description,
+                source_url: url
+            };
+
+            // Add to tipTopics array and display
+            tipTopics.unshift(customTip);
+            displayTips();
+
+            // Clear inputs
+            document.getElementById('tipUrlInput').value = '';
+            document.getElementById('tipTitleInput').value = '';
+            document.getElementById('tipDescInput').value = '';
+
+            // Show success message
+            alert('✓ Custom tip added! Select it from the list above.');
+        }
+
+        function addCustomTrend() {
+            const url = document.getElementById('trendUrlInput').value.trim();
+            const title = document.getElementById('trendTitleInput').value.trim();
+            const description = document.getElementById('trendDescInput').value.trim();
+
+            if (!url || !title || !description) {
+                alert('Please fill in all fields (URL, title, and description)');
+                return;
+            }
+
+            // Create custom trend object
+            const customTrend = {
+                title: title,
+                description: description,
+                source_url: url,
+                season: selectedSeason
+            };
+
+            // Add to trendTopics array and display
+            trendTopics.unshift(customTrend);
+            displayTrends();
+
+            // Clear inputs
+            document.getElementById('trendUrlInput').value = '';
+            document.getElementById('trendTitleInput').value = '';
+            document.getElementById('trendDescInput').value = '';
+
+            // Show success message
+            alert('✓ Custom trend added! Select it from the list above.');
+        }
+
+        // Wrapper to generate with selected tone
+        function generateWithSelectedTone() {
+            const tone = document.getElementById('subjectLineTone').value;
+            document.getElementById('toneSelection').style.display = 'none';
+            generateSubjectLineOptions(tone);
+        }
+
+        // Wrapper to regenerate with new tone
+        function regenerateSubjectLines() {
+            const tone = document.getElementById('regenerateTone').value;
+            generateSubjectLineOptions(tone);
+        }
+
+        // Generate subject line and preheader options using Claude
+        async function generateSubjectLineOptions(tone = 'professional') {
+            try {
+                document.getElementById('subjectLineLoading').style.display = 'block';
+                document.getElementById('subjectLineOptions').style.display = 'none';
+
+                // Gather all newsletter content
+                const newsletterContent = {
+                    month: selectedMonth,
+                    news: {
+                        title: selectedNews.title,
+                        content: generatedNewsContent
+                    },
+                    tip: {
+                        title: selectedTip.title,
+                        content: generatedTipContent
+                    },
+                    trend: {
+                        title: selectedTrend.title,
+                        content: generatedTrendContent
+                    }
+                };
+
+                // Call API to generate options with tone
+                const response = await fetch(`${API_BASE}/api/generate-subject-options`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        content: newsletterContent,
+                        tone: tone
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    alert('Error generating options: ' + (data.error || 'Unknown error'));
+                    return;
+                }
+
+                // Display subject line options
+                const subjectContainer = document.getElementById('subjectOptions');
+                subjectContainer.innerHTML = '';
+                data.subject_lines.forEach((subject, index) => {
+                    const option = document.createElement('div');
+                    option.className = 'topic-card';
+                    option.style.cursor = 'pointer';
+                    option.innerHTML = `<div class="title">${index + 1}. ${subject}</div>`;
+                    option.onclick = () => {
+                        document.getElementById('finalSubjectLine').value = subject;
+                        document.querySelectorAll('#subjectOptions .topic-card').forEach(card => card.classList.remove('selected'));
+                        option.classList.add('selected');
+                    };
+                    subjectContainer.appendChild(option);
+                });
+
+                // Display preheader options
+                const preheaderContainer = document.getElementById('preheaderOptions');
+                preheaderContainer.innerHTML = '';
+                data.preheaders.forEach((preheader, index) => {
+                    const option = document.createElement('div');
+                    option.className = 'topic-card';
+                    option.style.cursor = 'pointer';
+                    option.innerHTML = `<div class="title">${index + 1}. ${preheader}</div>`;
+                    option.onclick = () => {
+                        document.getElementById('finalPreheader').value = preheader;
+                        document.querySelectorAll('#preheaderOptions .topic-card').forEach(card => card.classList.remove('selected'));
+                        option.classList.add('selected');
+                    };
+                    preheaderContainer.appendChild(option);
+                });
+
+                // Auto-select first options
+                document.getElementById('finalSubjectLine').value = data.subject_lines[0];
+                document.getElementById('finalPreheader').value = data.preheaders[0];
+
+                // Show options
+                document.getElementById('subjectLineLoading').style.display = 'none';
+                document.getElementById('subjectLineOptions').style.display = 'block';
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error generating options: ' + error.message);
+            }
+        }
+
+        function showStep(stepNum) {
+            document.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
+            document.getElementById(`step${stepNum}`).classList.add('active');
+            updateProgress(stepNum);
+
+            // Note: Meme generation now happens via the prompt step (15_5) → step 16 flow
+            // No longer auto-generate on entering step 16
+
+            // Don't auto-generate subject lines - wait for user to select tone
+            // The tone selection UI will be shown by default
+
+            // Pre-populate subject line for Ontraport from selected subject
+            if (stepNum === 20) {
+                const subjectField = document.getElementById('subject');
+                const finalSubject = document.getElementById('finalSubjectLine');
+                if (subjectField && finalSubject && finalSubject.value) {
+                    subjectField.value = finalSubject.value;
+                } else if (subjectField && !subjectField.value) {
+                    // Fallback if no subject was selected
+                    const monthName = selectedMonth ? selectedMonth.charAt(0).toUpperCase() + selectedMonth.slice(1) : 'Monthly';
+                    subjectField.value = `${monthName} Venue Voice Newsletter - BriteCo`;
+                }
+            }
+        }
+
+        function updateProgress(step) {
+            const progress = ((step - 1) / 14) * 100;  // Updated for 15 total steps
+            document.getElementById('progressBar').style.width = progress + '%';
+        }
+
+        // Initialize
+        initMonths();
+        loadNewsletterArchive();
+
+        // Newsletter Archive Functions
+        async function loadNewsletterArchive() {
+            try {
+                const response = await fetch(`${API_BASE}/api/get-newsletter-archive`);
+                const data = await response.json();
+
+                if (data.success && data.newsletters && data.newsletters.length > 0) {
+                    displayNewsletterArchive(data.newsletters);
+                } else {
+                    document.getElementById('newsletterArchiveEmpty').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error loading newsletter archive:', error);
+                document.getElementById('newsletterArchiveEmpty').style.display = 'block';
+            }
+        }
+
+        function displayNewsletterArchive(newsletters) {
+            const grid = document.getElementById('newsletterArchiveGrid');
+            grid.innerHTML = '';
+
+            newsletters.forEach(newsletter => {
+                const card = document.createElement('div');
+                card.style.cssText = 'background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s; cursor: pointer;';
+                card.onmouseenter = () => {
+                    card.style.transform = 'translateY(-4px)';
+                    card.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)';
+                };
+                card.onmouseleave = () => {
+                    card.style.transform = 'translateY(0)';
+                    card.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                };
+
+                card.innerHTML = `
+                    <div style="width: 100%; height: 180px; background: #272D3F; display: flex; align-items: center; justify-content: center;">
+                        <div style="font-size: 48px; color: #31D7CA; opacity: 0.4;">📰</div>
+                    </div>
+                    <div style="padding: 20px;">
+                        <span style="display: inline-block; background: #272D3F; color: white; padding: 6px 14px; border-radius: 4px; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 16px;">${newsletter.month} ${newsletter.year}</span>
+
+                        <div style="margin: 16px 0;">
+                            <div style="margin-bottom: 14px; padding-left: 12px; border-left: 3px solid #31D7CA;">
+                                <div style="font-size: 11px; text-transform: uppercase; color: #31D7CA; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 4px;">NEWS</div>
+                                <div style="font-size: 14px; color: #272D3F; font-weight: 600; line-height: 1.4;">${newsletter.sections.news?.title || 'News Article'}</div>
+                            </div>
+
+                            <div style="margin-bottom: 14px; padding-left: 12px; border-left: 3px solid #31D7CA;">
+                                <div style="font-size: 11px; text-transform: uppercase; color: #31D7CA; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 4px;">TIP</div>
+                                <div style="font-size: 14px; color: #272D3F; font-weight: 600; line-height: 1.4;">${newsletter.sections.tip?.title || 'Pro Tip'}</div>
+                            </div>
+
+                            <div style="margin-bottom: 14px; padding-left: 12px; border-left: 3px solid #31D7CA;">
+                                <div style="font-size: 11px; text-transform: uppercase; color: #31D7CA; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 4px;">TREND</div>
+                                <div style="font-size: 14px; color: #272D3F; font-weight: 600; line-height: 1.4;">${newsletter.sections.trend?.title || 'Trend Alert'}</div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #eee;">
+                            <button onclick="viewNewsletter('${newsletter.id}')" style="width: 100%; padding: 12px 16px; background: #31D7CA; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s;">View Newsletter</button>
+                        </div>
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
+        }
+
+        function viewNewsletter(newsletterId) {
+            // Fetch and display the newsletter HTML
+            fetch(`${API_BASE}/api/get-newsletter-archive`)
+                .then(res => res.json())
+                .then(data => {
+                    const newsletter = data.newsletters.find(n => n.id === newsletterId);
+                    if (newsletter && newsletter.html_content) {
+                        document.getElementById('newsletterModalContent').innerHTML = newsletter.html_content;
+                        document.getElementById('newsletterModal').style.display = 'block';
+                    }
+                })
+                .catch(error => console.error('Error viewing newsletter:', error));
+        }
+
+        function closeNewsletterModal() {
+            document.getElementById('newsletterModal').style.display = 'none';
+        }
+
+        // Close modal on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeNewsletterModal();
+            }
+        });
+
+        // Close modal on background click
+        document.getElementById('newsletterModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'newsletterModal') {
+                closeNewsletterModal();
+            }
+        });
+    </script>
+
+    <!-- Briteco Newsletter Template -->
+    <script src="briteco_template.js"></script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+[
+  {
+    "id": "venue-2025-12",
+    "month": "December",
+    "year": 2025,
+    "date_published": "2025-12-01",
+    "sections": {
+      "news": {
+        "title": "Over The Moon's Official Top 11 Wedding Trends For 2026"
+      },
+      "tip": {
+        "title": "Wedding Venue Marketing Strategy: How to Position Your Venue"
+      },
+      "trend": {
+        "title": "Top Wedding Trends 2025-2026: Global Community Insights"
+      }
+    },
+    "html_content": "<!-- Full newsletter HTML will be stored here -->",
+    "ontraport_campaign_id": null
+  },
+  {
+    "id": "venue-2025-11",
+    "month": "November",
+    "year": 2025,
+    "date_published": "2025-11-01",
+    "sections": {
+      "news": {
+        "title": "Holiday Wedding Season: What Venues Need to Know"
+      },
+      "tip": {
+        "title": "Managing End-of-Year Wedding Rush Successfully"
+      },
+      "trend": {
+        "title": "Thanksgiving Weekend Weddings on the Rise"
+      }
+    },
+    "html_content": "<!-- Full newsletter HTML will be stored here -->",
+    "ontraport_campaign_id": null
+  },
+  {
+    "id": "venue-2025-10",
+    "month": "October",
+    "year": 2025,
+    "date_published": "2025-10-01",
+    "sections": {
+      "news": {
+        "title": "Fall Wedding Photography: Capturing Autumn Magic"
+      },
+      "tip": {
+        "title": "Autumn Venue Decoration Ideas That Wow"
+      },
+      "trend": {
+        "title": "Rustic Elegance: Fall's Hottest Wedding Style"
+      }
+    },
+    "html_content": "<!-- Full newsletter HTML will be stored here -->",
+    "ontraport_campaign_id": null
+  }
+]

@@ -1,0 +1,59 @@
+[
+  {
+    "id": "planner-2025-12",
+    "month": "December",
+    "year": 2025,
+    "date_published": "2025-12-01",
+    "sections": {
+      "news": {
+        "title": "2026 Wedding Planning Trends: What Planners Need to Know"
+      },
+      "tip": {
+        "title": "Client Communication Strategies for Busy Wedding Season"
+      },
+      "trend": {
+        "title": "Vendor Coordination: Best Practices for 2026"
+      }
+    },
+    "html_content": "<!-- Full newsletter HTML will be stored here -->",
+    "ontraport_campaign_id": null
+  },
+  {
+    "id": "planner-2025-11",
+    "month": "November",
+    "year": 2025,
+    "date_published": "2025-11-01",
+    "sections": {
+      "news": {
+        "title": "Holiday Season Client Management Tips"
+      },
+      "tip": {
+        "title": "Streamlining Your Year-End Workflow"
+      },
+      "trend": {
+        "title": "Intimate Holiday Weddings Growing in Popularity"
+      }
+    },
+    "html_content": "<!-- Full newsletter HTML will be stored here -->",
+    "ontraport_campaign_id": null
+  },
+  {
+    "id": "planner-2025-10",
+    "month": "October",
+    "year": 2025,
+    "date_published": "2025-10-01",
+    "sections": {
+      "news": {
+        "title": "Fall Wedding Season: Planner Insights and Data"
+      },
+      "tip": {
+        "title": "Managing Multiple October Weddings Efficiently"
+      },
+      "trend": {
+        "title": "Autumnal Color Palettes Clients Are Requesting"
+      }
+    },
+    "html_content": "<!-- Full newsletter HTML will be stored here -->",
+    "ontraport_campaign_id": null
+  }
+]
