@@ -3015,20 +3015,20 @@
             const logoUrl = 'https://i.ontraport.com/194428.046960d3d5419045b9bf5943f00547e7.PNG';
             const dashboardUrl = 'https://insurance.brite.co/events/venue_locations/[Referral Code]/dashboard';
 
-            // Format content - backend already returns <p> wrapped content, just add read more link
+            // Format content - backend already returns <p> wrapped content, add read more link on new line
             const formatNewsContent = (content) => {
                 // Content already has <p> tags with styling and margin from backend
-                return `${content}<a href="${newsUrl}" style="font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 14px; font-weight: 700; color: #FE8916; text-decoration: none;">Read more →</a>`;
+                return `${content}<p style="margin-top: 12px;"><a href="${newsUrl}" style="font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 14px; font-weight: 700; color: #FE8916; text-decoration: none;">Read more →</a></p>`;
             };
 
             const formatTipContent = (content) => {
                 // Content already has <p> tags with styling and margin from backend
-                return `${content}<a href="${tipUrl}" style="font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 13px; font-weight: 700; color: #FE8916; text-decoration: none;">Read more →</a>`;
+                return `${content}<p style="margin-top: 12px;"><a href="${tipUrl}" style="font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 13px; font-weight: 700; color: #FE8916; text-decoration: none;">Read more →</a></p>`;
             };
 
             const formatTrendContent = (content) => {
                 // Content already has <p> tags with styling and margin from backend
-                return `${content}<a href="${trendUrl}" style="font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 13px; font-weight: 700; color: #FE8916; text-decoration: none;">Read more →</a>`;
+                return `${content}<p style="margin-top: 12px;"><a href="${trendUrl}" style="font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 13px; font-weight: 700; color: #FE8916; text-decoration: none;">Read more →</a></p>`;
             };
 
             // Generate meme HTML - text is already burned into the image by the server
