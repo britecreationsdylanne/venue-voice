@@ -73,12 +73,24 @@ class GeminiClient:
 
             # Debug: Print response structure
             print(f"[NANO BANANA DEBUG] Response received")
-            print(f"[NANO BANANA DEBUG] Number of parts: {len(response.parts) if hasattr(response, 'parts') else 0}")
+            print(f"[NANO BANANA DEBUG] Response type: {type(response)}")
+
+            # Handle different response formats based on google-genai version
+            parts = []
+            if hasattr(response, 'parts'):
+                parts = response.parts
+            elif hasattr(response, 'candidates') and response.candidates:
+                # Newer API format
+                candidate = response.candidates[0]
+                if hasattr(candidate, 'content') and hasattr(candidate.content, 'parts'):
+                    parts = candidate.content.parts
+
+            print(f"[NANO BANANA DEBUG] Number of parts: {len(parts)}")
 
             # Extract image data from response parts using part.as_image()
             image_data = None
 
-            for i, part in enumerate(response.parts):
+            for i, part in enumerate(parts):
                 print(f"[NANO BANANA DEBUG] Part {i}: has inline_data = {hasattr(part, 'inline_data')}, has text = {hasattr(part, 'text')}")
 
                 # Use the as_image() method to get Image object (per documentation)
@@ -112,9 +124,9 @@ class GeminiClient:
 
             if not image_data:
                 print(f"[NANO BANANA ERROR] No image data found in response")
-                print(f"[NANO BANANA ERROR] Response parts count: {len(response.parts) if hasattr(response, 'parts') else 0}")
-                if hasattr(response, 'parts') and len(response.parts) > 0:
-                    for i, part in enumerate(response.parts):
+                print(f"[NANO BANANA ERROR] Response parts count: {len(parts)}")
+                if len(parts) > 0:
+                    for i, part in enumerate(parts):
                         print(f"[NANO BANANA ERROR] Part {i} has text: {part.text[:200] if hasattr(part, 'text') and part.text else 'None'}")
                 raise ValueError("No image data in response")
 
