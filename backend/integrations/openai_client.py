@@ -170,7 +170,10 @@ Generate the complete section following the structure guidelines."""
             List of search results with title, description (summary), url, publisher, published_date
         """
         try:
-            print(f"[OpenAI Responses API] Searching for {max_results} articles...")
+            print(f"\n{'='*60}")
+            print(f"[OpenAI Responses API] STARTING SEARCH")
+            print(f"[OpenAI Responses API] Query preview: {query[:150]}...")
+            print(f"[OpenAI Responses API] Requesting {max_results} articles...")
 
             # Add exclusion list to prompt if provided
             exclude_urls = exclude_urls or []
@@ -200,16 +203,20 @@ No extra keys. No commentary outside JSON."""
             )
 
             # Diagnostics: Check if web_search actually happened
+            print(f"[OpenAI Responses API] Response received from API")
             outputs = getattr(response, "output", []) or []
+            print(f"[OpenAI Responses API] Response has {len(outputs)} output items")
             web_calls = [o for o in outputs if getattr(o, "type", None) == "web_search_call"]
 
             if not web_calls:
-                print("[OpenAI Responses API] No web_search_call found in response.output")
-                print(f"[OpenAI Responses API] Model may not have used web_search tool")
+                print("[OpenAI Responses API] ERROR: No web_search_call found in response.output")
+                print(f"[OpenAI Responses API] Output types present: {[getattr(o, 'type', 'unknown') for o in outputs]}")
                 output_text = getattr(response, "output_text", "")
                 if output_text:
                     print(f"[OpenAI Responses API] output_text preview: {output_text[:500]}")
                 return []
+
+            print(f"[OpenAI Responses API] Found {len(web_calls)} web_search_call(s)")
 
             # Debug output types
             print(f"[OpenAI Responses API DEBUG] Output item types: {[getattr(o, 'type', None) for o in outputs]}")
@@ -257,18 +264,20 @@ No extra keys. No commentary outside JSON."""
                 data = json.loads(text)
             except json.JSONDecodeError as e:
                 print(f"[OpenAI Responses API ERROR] JSON parsing failed: {e}")
-                # Save to file for inspection instead of printing
-                error_file = "C:\\Users\\DylanneCrugnale\\venue-newsletter-tool\\debug_json_error.txt"
-                with open(error_file, "w", encoding="utf-8") as f:
-                    f.write(text)
-                print(f"[OpenAI Responses API ERROR] Saved problematic text to {error_file}")
+                print(f"[OpenAI Responses API ERROR] Text preview: {text[:200]}...")
                 return []
 
-            if not isinstance(data, dict):
-                print(f"[OpenAI Responses API ERROR] Parsed JSON is not a dict: {type(data)}")
+            # Handle both formats: {"results": [...]} or just [...]
+            if isinstance(data, list):
+                # OpenAI returned array directly
+                raw_results = data
+                print(f"[OpenAI Responses API] Received results as direct array")
+            elif isinstance(data, dict):
+                raw_results = data.get("results", [])
+                print(f"[OpenAI Responses API] Received results in dict format")
+            else:
+                print(f"[OpenAI Responses API ERROR] Unexpected JSON type: {type(data)}")
                 return []
-
-            raw_results = data.get("results", [])
 
             if not isinstance(raw_results, list):
                 print("[OpenAI Responses API] Results is not a list")
@@ -368,8 +377,8 @@ No extra keys. No commentary outside JSON."""
                             if sidx in used_source_indices:
                                 continue
                             best_source, best_score = best_source_for_title(title, [s])
-                            # Require at least 40% similarity (increased from 30% for stricter matching)
-                            if best_score >= 0.4:
+                            # Require at least 30% similarity (lowered from 40% to improve result coverage)
+                            if best_score >= 0.3:
                                 url = str(s.get("url", "")).strip()
                                 # Also update publisher from source if not provided
                                 if not publisher and s.get("publisher"):
@@ -413,11 +422,12 @@ No extra keys. No commentary outside JSON."""
                 if len(cleaned) >= max_results:
                     break
 
-            print(f"[OpenAI Responses API] Returned {len(cleaned)} REAL articles after dedup")
+            print(f"[OpenAI Responses API] FINAL: Returned {len(cleaned)} articles after dedup")
+            print(f"{'='*60}\n")
             return cleaned
 
         except Exception as e:
-            print(f"[OpenAI Responses API] Error: {e}")
+            print(f"[OpenAI Responses API] EXCEPTION: {e}")
             import traceback
             traceback.print_exc()
             return []

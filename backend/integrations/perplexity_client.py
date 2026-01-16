@@ -124,15 +124,28 @@ Important:
 
             data = response.json()
 
+            # Debug: log raw response structure
+            print(f"[Perplexity] Response keys: {data.keys()}")
+
             # Extract content from response
-            content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
+            choice = data.get('choices', [{}])[0]
+            content = choice.get('message', {}).get('content', '')
+
+            # Perplexity returns citations in a separate field
+            citations = data.get('citations', [])
+
+            print(f"[Perplexity] Content length: {len(content)}, Citations: {len(citations)}")
 
             if not content:
                 print("[Perplexity] No content in response")
                 return []
 
-            # Parse JSON from response
-            results = self._parse_results(content, max_results)
+            # If we have citations, use them to build results
+            if citations:
+                results = self._parse_with_citations(content, citations, max_results)
+            else:
+                # Try to parse JSON from response (legacy approach)
+                results = self._parse_results(content, max_results)
 
             # Add source_card field
             for r in results:
@@ -154,8 +167,122 @@ Important:
             traceback.print_exc()
             return []
 
+    def _parse_with_citations(self, content: str, citations: list, max_results: int) -> List[Dict]:
+        """Parse results using Perplexity's citations array with better title extraction"""
+        import re
+
+        results = []
+
+        # Split content into sentences for analysis
+        sentences = re.split(r'(?<=[.!?])\s+', content)
+
+        # Citations is a list of URLs that Perplexity used as sources
+        for i, url in enumerate(citations[:max_results]):
+            if not url or not isinstance(url, str):
+                continue
+
+            # Extract domain for publisher name
+            domain = self._extract_domain(url)
+            citation_marker = f"[{i+1}]"
+
+            # Find ALL sentences containing this citation marker
+            related_sentences = []
+            for sentence in sentences:
+                if citation_marker in sentence:
+                    # Clean up the sentence - remove citation markers
+                    clean = re.sub(r'\[\d+\]', '', sentence).strip()
+                    if clean and len(clean) > 20:
+                        related_sentences.append(clean)
+
+            # Also check for domain mentions if no citation marker found
+            if not related_sentences:
+                for sentence in sentences:
+                    if domain.lower() in sentence.lower():
+                        clean = re.sub(r'\[\d+\]', '', sentence).strip()
+                        if clean and len(clean) > 20:
+                            related_sentences.append(clean)
+                            break
+
+            # Extract a good title from the content
+            title = self._extract_title_from_sentences(related_sentences, domain)
+
+            # Build snippet from remaining sentences
+            snippet = ' '.join(related_sentences[:2])[:300] if related_sentences else f"Source from {domain}"
+
+            # Generate venue implications from the content
+            venue_implications = self._generate_venue_angle(related_sentences)
+
+            results.append({
+                'title': title,
+                'url': url,
+                'publisher': domain,
+                'published_at': '',
+                'snippet': snippet,
+                'venue_implications': venue_implications,
+                'source_card': 'perplexity',
+                'category': 'research'
+            })
+
+        return results
+
+    def _extract_title_from_sentences(self, sentences: list, domain: str) -> str:
+        """Extract a compelling title from sentence content"""
+        if not sentences:
+            return f"Industry Update from {domain}"
+
+        # Take the first sentence as the basis
+        first = sentences[0]
+
+        # If it's too long, try to extract the key phrase
+        if len(first) > 80:
+            # Look for key patterns that make good titles
+            import re
+
+            # Pattern: "X is/are Y" - extract the core claim
+            match = re.search(r'^([^,]{20,70})', first)
+            if match:
+                title = match.group(1).strip()
+                # Clean up trailing words that don't make sense alone
+                title = re.sub(r'\s+(and|or|with|the|a|an|to|for|in|on|by)$', '', title, flags=re.I)
+                if len(title) > 25:
+                    return title
+
+            # Just truncate intelligently at a word boundary
+            words = first.split()
+            title = ''
+            for word in words:
+                if len(title + ' ' + word) > 70:
+                    break
+                title = (title + ' ' + word).strip()
+            return title if title else first[:70]
+
+        return first
+
+    def _generate_venue_angle(self, sentences: list) -> str:
+        """Generate venue-focused implications from content"""
+        if not sentences:
+            return "Review this source for wedding venue insights"
+
+        content = ' '.join(sentences).lower()
+
+        # Check for specific topics and provide targeted implications
+        if any(word in content for word in ['cost', 'price', 'expense', 'budget', 'spending']):
+            return "Consider how these cost trends affect your pricing strategy and client expectations"
+        elif any(word in content for word in ['trend', 'popular', 'growing', 'rising']):
+            return "Evaluate whether to incorporate this trend into your venue offerings"
+        elif any(word in content for word in ['booking', 'demand', 'reservation', 'capacity']):
+            return "Use this insight to optimize your booking strategy and availability"
+        elif any(word in content for word in ['technology', 'digital', 'software', 'app']):
+            return "Assess if this technology could improve your venue operations"
+        elif any(word in content for word in ['staff', 'hiring', 'labor', 'employee']):
+            return "Factor this into your staffing plans and operational costs"
+        elif any(word in content for word in ['sustainable', 'eco', 'green', 'environment']):
+            return "Consider sustainability initiatives that align with these market expectations"
+        else:
+            return "Share this industry insight with couples to demonstrate your expertise"
+
     def _parse_results(self, content: str, max_results: int) -> List[Dict]:
-        """Parse JSON results from Perplexity response"""
+        """Parse JSON results from Perplexity response (legacy approach)"""
         import re
 
         # Try to extract JSON from the response
@@ -277,4 +404,4 @@ Include:
 
 {"Geographic focus: " + geography if geography else "Consider US market primarily."}
 """
-        return self.search(query, time_window, geography, max_results=4)
+        return self.search(query, time_window, geography, max_results=8)

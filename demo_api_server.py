@@ -25,6 +25,7 @@ from integrations.claude_client import ClaudeClient
 from integrations.perplexity_client import PerplexityClient
 # NOTE: Brave Search deprecated - using OpenAI with site: operators instead
 from config.brand_guidelines import BRAND_VOICE, NEWSLETTER_GUIDELINES
+from config.model_config import get_model_config, get_model_for_task
 
 app = Flask(__name__, static_folder='.')
 CORS(app)
@@ -1980,63 +1981,54 @@ def transform_to_shared_schema(results, source_card):
     return transformed
 
 
-@app.route('/api/v2/search-openai', methods=['POST'])
-def search_openai_v2():
+def multi_search(queries: list, max_results: int = 4, exclude_urls: list = None) -> list:
     """
-    OpenAI Search Card - refactored with shared schema and filters
+    Run multiple search queries and merge/deduplicate results.
+
+    Uses a 3-query cascade strategy:
+    1. Specific query (user's intent)
+    2. Broader query (core terms)
+    3. Fallback query (general topic)
+
+    Stops early if we have enough results.
     """
-    try:
-        data = request.json
-        query = data.get('query', 'wedding venue industry news')
-        time_window = data.get('time_window', '30d')  # 7d, 30d, 90d
-        geography = data.get('geography', '')  # optional
-        exclude_urls = data.get('exclude_urls', [])
+    exclude_urls = exclude_urls or []
+    all_results = []
+    seen_urls = set()
 
-        print(f"\n[API v2] OpenAI Search: query='{query}', time_window={time_window}")
+    for i, query in enumerate(queries):
+        print(f"[Multi-Search] Query {i+1}/{len(queries)}: {query[:80]}...")
 
-        # Build search query with filters
-        search_query = f"{query} wedding venue"
-        if geography:
-            search_query += f" {geography}"
-        if time_window == '7d':
-            search_query += " last week recent"
-        elif time_window == '30d':
-            search_query += " this month 2026"
-        elif time_window == '90d':
-            search_query += " 2025 2026"
+        try:
+            results = openai_client.search_web_responses_api(
+                query,
+                max_results=6,  # Get extra to account for deduplication
+                exclude_urls=exclude_urls + list(seen_urls)
+            )
 
-        # Use existing OpenAI search
-        search_results = openai_client.search_wedding_news(
-            month='january',  # Not used for custom query
-            exclude_urls=exclude_urls
-        )
+            for r in results:
+                url = r.get('url', '')
+                if url and url not in seen_urls:
+                    all_results.append(r)
+                    seen_urls.add(url)
 
-        # Transform to shared schema
-        results = transform_to_shared_schema(search_results[:4], 'openai')
+            print(f"[Multi-Search] Query {i+1} returned {len(results)} results, total unique: {len(all_results)}")
 
-        # Add venue implications via AI post-processing
-        for result in results:
-            if not result['venue_implications']:
-                result['venue_implications'] = f"This article discusses trends relevant to wedding venue operators."
+            # Stop early if we have enough
+            if len(all_results) >= max_results:
+                break
 
-        return jsonify({
-            'success': True,
-            'results': results,
-            'source': 'openai',
-            'generated_at': datetime.now().isoformat()
-        })
+        except Exception as e:
+            print(f"[Multi-Search] Query {i+1} failed: {e}")
+            continue
 
-    except Exception as e:
-        print(f"[API v2 ERROR] OpenAI Search: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({'success': False, 'error': str(e), 'results': []}), 500
+    return all_results[:max_results]
 
 
 @app.route('/api/v2/search-sources', methods=['POST'])
 def search_sources_v2():
     """
-    Source Explorer Card - searches specific industry sites using site: operator
+    Source Explorer Card - searches specific industry sites with 3-query cascade
     """
     try:
         data = request.json
@@ -2047,48 +2039,81 @@ def search_sources_v2():
 
         print(f"\n[API v2] Source Explorer: query='{query}', packs={source_packs}")
 
-        # Define source pack sites
+        # Expanded source pack sites (B2B and trade publications added)
         SITE_PACKS = {
-            'wedding': ['theknot.com', 'weddingwire.com', 'brides.com', 'marthastewartweddings.com'],
-            'hospitality': ['bizbash.com', 'specialevents.com', 'hotelnewsnow.com'],
-            'business': ['bizjournals.com', 'restaurant.org', 'nrn.com']
+            'wedding': [
+                'theknot.com', 'weddingwire.com', 'brides.com', 'marthastewartweddings.com',
+                'weddingpro.com', 'catersource.com', 'specialevents.com', 'weddingbusiness.com'
+            ],
+            'hospitality': [
+                'bizbash.com', 'specialevents.com', 'hotelnewsnow.com',
+                'eventindustrynews.com', 'caterersearch.com', 'meetingsnet.com', 'skift.com'
+            ],
+            'business': [
+                'bizjournals.com', 'restaurant.org', 'nrn.com',
+                'forbes.com', 'entrepreneur.com', 'inc.com'
+            ]
         }
 
-        # Build site: query
+        # Collect sites from selected packs
         sites = []
         for pack in source_packs:
             sites.extend(SITE_PACKS.get(pack, []))
 
+        # Build site: queries with 3-query cascade
         if sites:
-            site_query = ' OR '.join([f'site:{s}' for s in sites[:4]])  # Limit to 4 sites
-            full_query = f"({site_query}) {query}"
-        else:
-            full_query = query
+            # Use up to 6 sites per query for better coverage
+            site_query = ' OR '.join([f'site:{s}' for s in sites[:6]])
 
-        print(f"[API v2] Source Explorer full query: {full_query}")
+            queries = [
+                # Query 1: Site-specific with user query
+                f"""Search for: ({site_query}) {query}
 
-        # Use OpenAI search with site-specific query
-        # Note: We'll use the OpenAI Responses API which handles site: operators
-        search_results = openai_client.search_web_responses_api(
-            f"""Search for: {full_query}
-
-Find recent articles about wedding venues from these specific industry sources.
+Find recent articles from these wedding and event industry sources.
 Return results with title, url, publisher, published_date, and summary.""",
-            max_results=4,
-            exclude_urls=exclude_urls
-        )
+
+                # Query 2: Site-specific with broader topic
+                f"""Search for: ({site_query}) wedding venue business news
+
+Find recent business news about wedding venues or event spaces.
+Return results with title, url, publisher, published_date, and summary.""",
+
+                # Query 3: Fallback without site restriction
+                f"""Search for wedding venue industry news from trade publications.
+
+Find articles about: {query}
+Focus on business insights, trends, and industry analysis.
+Return results with title, url, publisher, published_date, and summary."""
+            ]
+        else:
+            queries = [
+                f"""Search for wedding venue industry news.
+Find articles about: {query}
+Return results with title, url, publisher, published_date, and summary."""
+            ]
+
+        print(f"[API v2] Source Explorer using {len(sites)} sites from packs: {source_packs}")
+
+        # Use multi-search with cascade
+        search_results = multi_search(queries, max_results=8, exclude_urls=exclude_urls)
 
         # Transform to shared schema
-        results = transform_to_shared_schema(search_results[:4], 'explorer')
+        results = transform_to_shared_schema(search_results, 'explorer')
 
-        # Add venue implications
-        for result in results:
-            if not result['venue_implications']:
-                result['venue_implications'] = f"Industry insight from {result.get('publisher', 'trade publication')}."
+        # Enrich with GPT-5.2 story angle analysis
+        results = analyze_story_angles(results, query)
+
+        # Query summaries for UI display
+        query_summaries = [
+            f"1. Site-specific: {query} from {', '.join(sites[:3])}...",
+            "2. Broader: wedding venue business news from sites",
+            "3. Fallback: wedding venue industry news (any source)"
+        ]
 
         return jsonify({
             'success': True,
             'results': results,
+            'queries_used': query_summaries,
             'source_packs': source_packs,
             'source': 'explorer',
             'generated_at': datetime.now().isoformat()
@@ -2101,73 +2126,297 @@ Return results with title, url, publisher, published_date, and summary.""",
         return jsonify({'success': False, 'error': str(e), 'results': []}), 500
 
 
+def analyze_story_angles(results: list, user_query: str) -> list:
+    """
+    Use LLM to analyze articles and surface interesting story angles for newsletters.
+    Model selection is driven by config/vision_models.yaml task_assignments.
+    """
+    if not results:
+        return results
+
+    try:
+        # Get model config for research enrichment task
+        model_config = get_model_for_task('research_enrichment')
+        model_id = model_config.get('id', 'gpt-5.2')
+        max_tokens_param = model_config.get('max_tokens_param', 'max_tokens')
+
+        print(f"[Source Explorer] Using model: {model_id}")
+
+        # Build context for GPT
+        results_text = ""
+        for i, r in enumerate(results):
+            results_text += f"""
+Article {i+1}:
+- Title: {r.get('title', '')[:100]}
+- Publisher: {r.get('publisher', '')}
+- Snippet: {r.get('snippet', r.get('description', ''))[:400]}
+"""
+
+        prompt = f"""You are a newsletter editor for wedding venue owners. The user searched for: "{user_query}"
+
+Analyze these articles and surface the most interesting story angles for a venue newsletter.
+
+Here are the articles:
+{results_text}
+
+For EACH article, provide:
+1. story_angle: A compelling newsletter story angle (1-2 sentences) - what's the interesting hook for venue owners?
+2. headline: A catchy headline (5-10 words) that would grab a venue owner's attention
+3. why_it_matters: One sentence on why venue owners should care about this
+4. content_type: One of [trend, tip, news, insight, case_study]
+
+Return a JSON array with exactly {len(results)} objects:
+[
+  {{"story_angle": "...", "headline": "...", "why_it_matters": "...", "content_type": "..."}},
+  ...
+]
+
+Guidelines:
+- Focus on actionable insights venue owners can use
+- Look for data points, trends, or tips that can be turned into content
+- Headlines should be specific and engaging (not generic)
+- Story angles should suggest how to write about this for venue audiences
+
+Return ONLY the JSON array, no other text."""
+
+        # Build API call with correct parameter name based on model
+        api_params = {
+            "model": model_id,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.4,
+        }
+        api_params[max_tokens_param] = 2000
+
+        response = openai_client.client.chat.completions.create(**api_params)
+
+        content = response.choices[0].message.content.strip()
+
+        # Parse JSON response
+        import re
+        if content.startswith("```"):
+            content = re.sub(r"^```[a-zA-Z]*\n", "", content)
+            content = re.sub(r"\n```$", "", content).strip()
+
+        enriched = json.loads(content)
+
+        # Merge enriched data back into results
+        for i, r in enumerate(results):
+            if i < len(enriched):
+                r['story_angle'] = enriched[i].get('story_angle', '')
+                r['headline'] = enriched[i].get('headline', r.get('title', ''))
+                r['why_it_matters'] = enriched[i].get('why_it_matters', '')
+                r['content_type'] = enriched[i].get('content_type', 'insight')
+                # Update venue_implications with the why_it_matters
+                r['venue_implications'] = enriched[i].get('why_it_matters', r.get('venue_implications', ''))
+
+        print(f"[Source Explorer] GPT story analysis complete - enriched {len(results)} results")
+        return results
+
+    except Exception as e:
+        print(f"[Source Explorer] GPT analysis error: {e} - returning original results")
+        # Add default values if GPT fails
+        for r in results:
+            r['story_angle'] = r.get('snippet', '')[:150]
+            r['headline'] = r.get('title', 'Industry Update')
+            r['why_it_matters'] = 'Review this article for potential newsletter content.'
+            r['content_type'] = 'insight'
+        return results
+
+
+def search_all_signals(time_window: str = '30d', exclude_urls: list = None) -> list:
+    """
+    Search ALL 5 signals simultaneously and collect results.
+    Returns deduplicated results across all signal categories.
+    """
+    exclude_urls = exclude_urls or []
+
+    # Signal query definitions - US-focused queries (8 signals)
+    SIGNAL_QUERIES = {
+        'food_costs': 'US food prices grocery costs inflation catering restaurants America recent news',
+        'labor': 'US hospitality staffing shortage wages hiring event industry America recent',
+        'travel': 'US airline hotel travel prices tourism hospitality trends America recent',
+        'weather': 'US weather forecast climate events outdoor venues America seasonal',
+        'economic': 'US consumer spending economy inflation wedding industry America market',
+        'real_estate': 'US commercial real estate property prices venue lease rates America recent',
+        'energy': 'US energy electricity utility costs business commercial rates America recent',
+        'vendors': 'US wedding vendor prices florist catering rental equipment DJ entertainment costs America'
+    }
+
+    all_results = []
+    seen_urls = set(exclude_urls)
+
+    print(f"[Insight Builder] Searching all 8 signals (US focus)...")
+
+    # Search each signal
+    for signal, query_terms in SIGNAL_QUERIES.items():
+        try:
+            prompt = f"""Search for recent US news about {signal.replace('_', ' ')}.
+
+Find articles about the United States with data points, statistics, and business impact.
+Focus on American markets and US-based sources.
+Search terms: {query_terms}
+
+Return results with title, url, publisher, published_date, and summary with key data points."""
+
+            results = openai_client.search_web_responses_api(prompt, max_results=4, exclude_urls=list(seen_urls))
+
+            for r in results:
+                url = r.get('url', '')
+                if url and url not in seen_urls:
+                    r['signal_source'] = signal  # Tag which signal found this
+                    all_results.append(r)
+                    seen_urls.add(url)
+
+            print(f"[Insight Builder] Signal '{signal}' returned {len(results)} results")
+
+        except Exception as e:
+            print(f"[Insight Builder] Error searching signal '{signal}': {e}")
+            continue
+
+    print(f"[Insight Builder] Total unique results: {len(all_results)}")
+    return all_results
+
+
+def analyze_industry_impact(results: list) -> list:
+    """
+    Use LLM to analyze each result for event industry impact.
+    Generates newsletter-ready headlines and impact scores.
+    Model selection is driven by config/vision_models.yaml task_assignments.
+    """
+    if not results:
+        return results
+
+    try:
+        # Get model config for research enrichment task
+        model_config = get_model_for_task('research_enrichment')
+        model_id = model_config.get('id', 'gpt-5.2')
+        max_tokens_param = model_config.get('max_tokens_param', 'max_tokens')
+
+        print(f"[Insight Builder] Using model: {model_id}")
+
+        # Build context for GPT
+        results_text = ""
+        for i, r in enumerate(results):
+            results_text += f"""
+Result {i+1}:
+- Signal: {r.get('signal_source', 'unknown')}
+- Publisher: {r.get('publisher', '')}
+- Raw title: {r.get('title', '')[:100]}
+- Snippet: {r.get('description', r.get('snippet', ''))[:400]}
+"""
+
+        prompt = f"""You are analyzing news articles for a wedding venue industry newsletter.
+
+For each article, determine its impact on event venues (wedding venues, event spaces, catering businesses).
+
+Here are the articles:
+{results_text}
+
+For EACH article, provide:
+1. headline: A newsletter-ready headline (5-12 words, actionable for venue owners)
+2. impact: HIGH (immediate action needed), MEDIUM (worth monitoring), or LOW (FYI only)
+3. signals: Array of affected categories from [food_costs, labor, travel, weather, economic, real_estate, energy, vendors]
+4. so_what: One sentence explaining what venue owners should do about this
+
+Return a JSON array with exactly {len(results)} objects:
+[
+  {{"headline": "...", "impact": "HIGH|MEDIUM|LOW", "signals": ["..."], "so_what": "..."}},
+  ...
+]
+
+Guidelines:
+- HIGH impact: price increases >5%, labor shortages, severe weather, policy changes
+- MEDIUM impact: emerging trends, gradual shifts, industry forecasts
+- LOW impact: general news, minor fluctuations, informational content
+- Headlines should be specific with data when available (e.g., "Grocery Prices Up 4.7% - Catering Costs to Follow")
+
+Return ONLY the JSON array, no other text."""
+
+        # Build API call with correct parameter name based on model
+        api_params = {
+            "model": model_id,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.3,
+        }
+        api_params[max_tokens_param] = 2000
+
+        response = openai_client.client.chat.completions.create(**api_params)
+
+        content = response.choices[0].message.content.strip()
+
+        # Parse JSON response
+        import re
+        if content.startswith("```"):
+            content = re.sub(r"^```[a-zA-Z]*\n", "", content)
+            content = re.sub(r"\n```$", "", content).strip()
+
+        enriched = json.loads(content)
+
+        # Merge enriched data back into results
+        for i, r in enumerate(results):
+            if i < len(enriched):
+                r['headline'] = enriched[i].get('headline', r.get('title', ''))
+                r['impact'] = enriched[i].get('impact', 'MEDIUM')
+                r['signals'] = enriched[i].get('signals', [r.get('signal_source', 'economic')])
+                r['so_what'] = enriched[i].get('so_what', '')
+                # Keep original title as fallback
+                r['title'] = r['headline']
+
+        # Sort by impact: HIGH first, then MEDIUM, then LOW
+        impact_order = {'HIGH': 0, 'MEDIUM': 1, 'LOW': 2}
+        results.sort(key=lambda x: impact_order.get(x.get('impact', 'LOW'), 2))
+
+        print(f"[Insight Builder] GPT analysis complete - enriched {len(results)} results")
+        return results
+
+    except Exception as e:
+        print(f"[Insight Builder] GPT analysis error: {e} - returning original results")
+        # Add default values if GPT fails
+        for r in results:
+            r['headline'] = r.get('title', 'Industry Update')
+            r['impact'] = 'MEDIUM'
+            r['signals'] = [r.get('signal_source', 'economic')]
+            r['so_what'] = 'Monitor this trend for potential business impact.'
+        return results
+
+
 @app.route('/api/v2/search-insights', methods=['POST'])
 def search_insights_v2():
     """
-    Insight Builder Card - searches for signals affecting weddings and extracts insights
+    Insight Builder Card - searches ALL 5 signals and analyzes industry impact
     """
     try:
         data = request.json
-        signal = data.get('signal', 'food_costs')  # food_costs, labor, travel, weather, economic
-        geography = data.get('geography', 'US')
         time_window = data.get('time_window', '30d')
         exclude_urls = data.get('exclude_urls', [])
 
-        print(f"\n[API v2] Insight Builder: signal={signal}, geography={geography}")
+        print(f"\n[API v2] Insight Builder: Searching ALL 5 signals")
 
-        # Define signal search queries
-        SIGNAL_QUERIES = {
-            'food_costs': 'egg prices dairy produce food costs catering restaurant impact 2026',
-            'labor': 'hospitality wages staffing labor shortage restaurant event venue hiring 2026',
-            'travel': 'airline prices flight costs hotel rates destination wedding travel 2026',
-            'weather': 'weather forecast storm hurricane seasonal outlook events weddings 2026',
-            'economic': 'consumer spending inflation wedding industry economic forecast 2026'
-        }
+        # Step 1: Search all 5 signals simultaneously
+        raw_results = search_all_signals(time_window=time_window, exclude_urls=exclude_urls)
 
-        query = SIGNAL_QUERIES.get(signal, SIGNAL_QUERIES['food_costs'])
-        if geography and geography != 'US':
-            query += f" {geography}"
+        # Step 2: Analyze results with GPT for industry impact
+        enriched_results = analyze_industry_impact(raw_results)
 
-        print(f"[API v2] Insight Builder query: {query}")
+        # Step 3: Transform to shared schema and limit to top 8-12 results
+        results = transform_to_shared_schema(enriched_results[:12], 'insight')
 
-        # Search for articles about this signal
-        search_results = openai_client.search_web_responses_api(
-            f"""You are researching signals that affect wedding venues.
+        # Merge back the enriched fields (headline, impact, signals, so_what)
+        for i, result in enumerate(results):
+            if i < len(enriched_results):
+                enriched = enriched_results[i]
+                result['headline'] = enriched.get('headline', result.get('title', ''))
+                result['impact'] = enriched.get('impact', 'MEDIUM')
+                result['signals'] = enriched.get('signals', [])
+                result['so_what'] = enriched.get('so_what', '')
+                result['venue_implications'] = enriched.get('so_what', '')  # Also set as venue_implications
 
-Search for: {query}
-
-Find articles with data points, statistics, and trends about {signal.replace('_', ' ')}.
-For each article, identify:
-1. What changed (specific numbers, percentages, trends)
-2. The source/citation
-3. How this impacts wedding venue businesses
-
-Return results with title, url, publisher, published_date, and summary that includes the key data points.""",
-            max_results=4,
-            exclude_urls=exclude_urls
-        )
-
-        # Transform to shared schema with enhanced implications
-        results = transform_to_shared_schema(search_results[:4], 'insight')
-
-        # Add signal-specific venue implications
-        SIGNAL_IMPLICATIONS = {
-            'food_costs': 'Consider adjusting catering package pricing or renegotiating vendor contracts.',
-            'labor': 'Review staffing costs and consider scheduling optimization or wage adjustments.',
-            'travel': 'May affect destination wedding inquiries and out-of-town guest attendance.',
-            'weather': 'Plan contingencies for outdoor events and communicate with couples early.',
-            'economic': 'Monitor booking patterns and consider flexible payment options.'
-        }
-
-        for result in results:
-            base_implication = SIGNAL_IMPLICATIONS.get(signal, 'Monitor this trend for potential business impact.')
-            result['venue_implications'] = base_implication
-            result['category'] = signal
+        signals_searched = ['food_costs', 'labor', 'travel', 'weather', 'economic', 'real_estate', 'energy', 'vendors']
 
         return jsonify({
             'success': True,
             'results': results,
-            'signal': signal,
+            'signals_searched': signals_searched,
             'source': 'insight',
             'generated_at': datetime.now().isoformat()
         })
@@ -2177,6 +2426,105 @@ Return results with title, url, publisher, published_date, and summary that incl
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e), 'results': []}), 500
+
+
+def enrich_results_with_llm(results: list, original_query: str) -> list:
+    """
+    Use LLM to generate newsletter-ready content from research results.
+    Produces three-section format: headline, industry_data, so_what
+    Model selection is driven by config/vision_models.yaml task_assignments.
+    """
+    if not results:
+        return results
+
+    try:
+        # Get model config for research enrichment task
+        model_config = get_model_for_task('research_enrichment')
+        model_id = model_config.get('id', 'gpt-5.2')
+        max_tokens_param = model_config.get('max_tokens_param', 'max_tokens')
+
+        print(f"[Enrichment] Using model: {model_id}")
+
+        # Build a single prompt to process all results at once
+        results_text = ""
+        for i, r in enumerate(results):
+            results_text += f"""
+Result {i+1}:
+- URL: {r.get('url', '')}
+- Publisher: {r.get('publisher', '')}
+- Raw snippet: {r.get('snippet', '')[:500]}
+"""
+
+        prompt = f"""You are analyzing research findings for a wedding venue newsletter. The user searched for: "{original_query}"
+
+Here are research findings to transform into newsletter-ready content:
+{results_text}
+
+For EACH result, extract/generate:
+1. headline: A compelling newsletter headline (5-12 words, specific and actionable)
+2. industry_data: The key statistic, fact, or data point from this article (1-2 sentences). Extract actual numbers/percentages when available.
+3. so_what: What should venue owners DO with this information? (1 actionable sentence)
+4. impact: HIGH (immediate action needed), MEDIUM (worth monitoring), or LOW (FYI only)
+
+Return a JSON array with exactly {len(results)} objects:
+[
+  {{"headline": "...", "industry_data": "...", "so_what": "...", "impact": "HIGH|MEDIUM|LOW"}},
+  ...
+]
+
+Guidelines:
+- Headlines should be specific with data when available (e.g., "Wedding Costs Up 8% - Couples Seeking Value Packages")
+- industry_data should contain the actual facts/stats from the article, not commentary
+- so_what should be a specific action: "Review your...", "Consider adding...", "Update your..."
+- HIGH impact: significant price changes, labor issues, policy changes affecting venues
+- MEDIUM impact: emerging trends, forecasts, industry shifts
+- LOW impact: general news, minor updates
+
+Return ONLY the JSON array, no other text."""
+
+        # Build API call with correct parameter name based on model
+        api_params = {
+            "model": model_id,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.3,
+        }
+        api_params[max_tokens_param] = 2000
+
+        response = openai_client.client.chat.completions.create(**api_params)
+
+        content = response.choices[0].message.content.strip()
+
+        # Parse the JSON response
+        import re
+        if content.startswith("```"):
+            content = re.sub(r"^```[a-zA-Z]*\n", "", content)
+            content = re.sub(r"\n```$", "", content).strip()
+
+        enriched = json.loads(content)
+
+        # Merge enriched data back into results
+        for i, r in enumerate(results):
+            if i < len(enriched):
+                r['headline'] = enriched[i].get('headline', r.get('title', ''))
+                r['title'] = r['headline']  # Use headline as title too
+                r['industry_data'] = enriched[i].get('industry_data', r.get('snippet', ''))
+                r['so_what'] = enriched[i].get('so_what', r.get('venue_implications', ''))
+                r['impact'] = enriched[i].get('impact', 'MEDIUM')
+                # Keep snippet for backwards compatibility
+                r['snippet'] = r['industry_data']
+
+        # Sort by impact: HIGH first, then MEDIUM, then LOW
+        impact_order = {'HIGH': 0, 'MEDIUM': 1, 'LOW': 2}
+        results.sort(key=lambda x: impact_order.get(x.get('impact', 'LOW'), 2))
+
+        print(f"[LLM Enrichment] Successfully enriched {len(results)} results with GPT-5.2")
+        return results
+
+    except Exception as e:
+        print(f"[LLM Enrichment] Error: {e} - returning original results")
+        import traceback
+        traceback.print_exc()
+        return results
 
 
 @app.route('/api/v2/search-perplexity', methods=['POST'])
@@ -2212,12 +2560,31 @@ def search_perplexity_v2():
         if exclude_urls:
             search_results = [r for r in search_results if r.get('url') not in exclude_urls]
 
-        # Results already match shared schema from perplexity_client
-        results = search_results[:4]
+        # Take top 8 results for more options
+        results = search_results[:8]
+
+        # Enrich results with LLM-generated titles and venue guidance
+        if results:
+            print(f"[API v2] Enriching {len(results)} Perplexity results with LLM...")
+            results = enrich_results_with_llm(results, query)
+
+        # Build query description for UI
+        time_desc = {
+            '7d': 'past week',
+            '30d': 'past month',
+            '90d': 'past 3 months'
+        }.get(time_window, 'recent')
+
+        queries_used = [
+            f"Research query: {query}",
+            f"Time frame: {time_desc}",
+            f"Geographic focus: {geography if geography else 'US market'}"
+        ]
 
         return jsonify({
             'success': True,
             'results': results,
+            'queries_used': queries_used,
             'query': query,
             'source': 'perplexity',
             'generated_at': datetime.now().isoformat()
