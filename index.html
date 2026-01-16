@@ -272,6 +272,128 @@
             margin: 20px 0;
         }
 
+        /* Research Dashboard Tabs */
+        .research-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 0;
+        }
+
+        .research-tab {
+            padding: 12px 24px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 15px;
+            color: #6b7280;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .research-tab:hover {
+            color: #018181;
+        }
+
+        .research-tab.active {
+            color: #018181;
+            border-bottom-color: #018181;
+        }
+
+        .research-tab.completed {
+            color: #059669;
+        }
+
+        .tab-check {
+            color: #059669;
+            font-weight: bold;
+        }
+
+        /* Selection Progress Tracker */
+        .selection-progress-tracker {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8fafc;
+            border-top: 2px solid #e5e7eb;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 0 0 8px 8px;
+        }
+
+        .selection-progress-items {
+            display: flex;
+            gap: 12px;
+        }
+
+        .selection-progress-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .selection-progress-item:hover {
+            border-color: #018181;
+            background: #f0fdfa;
+        }
+
+        .selection-progress-item.active {
+            border-color: #018181;
+            background: #e6f4f4;
+        }
+
+        .selection-progress-item.completed {
+            border-color: #059669;
+            background: #ecfdf5;
+        }
+
+        .selection-progress-item .progress-icon {
+            font-size: 18px;
+        }
+
+        .selection-progress-item .progress-label {
+            font-weight: 600;
+            font-size: 14px;
+            color: #374151;
+        }
+
+        .selection-progress-item.completed .progress-label {
+            color: #059669;
+        }
+
+        .selection-progress-item .progress-check {
+            font-size: 16px;
+            color: #059669;
+            display: none;
+        }
+
+        .selection-progress-item.completed .progress-check {
+            display: inline;
+        }
+
+        .selection-progress-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .selection-progress-actions .btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
         /* 3-Card Research Dashboard Styles */
         .research-dashboard {
             display: grid;
@@ -547,7 +669,24 @@
         <!-- Step 2: Research Dashboard (3-Card Layout) -->
         <div class="step" id="step2-research">
             <h2>🔍 Research Dashboard</h2>
-            <p>Search for topics using multiple sources. Select one result from any card for each newsletter section.</p>
+
+            <!-- Section Tabs -->
+            <div class="research-tabs">
+                <button class="research-tab active" data-section="news" onclick="switchResearchTab('news')">
+                    📰 NEWS
+                    <span class="tab-check" id="newsTabCheck" style="display:none">✓</span>
+                </button>
+                <button class="research-tab" data-section="tip" onclick="switchResearchTab('tip')">
+                    💡 TIP
+                    <span class="tab-check" id="tipTabCheck" style="display:none">✓</span>
+                </button>
+                <button class="research-tab" data-section="trend" onclick="switchResearchTab('trend')">
+                    📈 TREND
+                    <span class="tab-check" id="trendTabCheck" style="display:none">✓</span>
+                </button>
+            </div>
+
+            <p id="researchSectionLabel">Researching for: <strong>NEWS</strong> section. Search and select one article below.</p>
 
             <div class="research-dashboard">
                 <!-- Card 1: Perplexity Research -->
@@ -558,7 +697,7 @@
                     </div>
                     <p class="research-card-description">Searches the web via Perplexity AI, then GPT-5.2 transforms findings into newsletter-ready articles with venue-specific insights.</p>
                     <div class="research-card-filters">
-                        <input type="text" id="perplexityQuery" placeholder="Topic or question..." value="wedding venue trends 2026">
+                        <input type="text" id="perplexityQuery" placeholder="e.g., wedding venue market updates, industry regulations..." value="wedding industry news 2026">
                         <select id="perplexityTimeWindow">
                             <option value="7d">Last 7 days</option>
                             <option value="30d" selected>Last 30 days</option>
@@ -577,7 +716,7 @@
                         <span class="research-card-title">📊 Insight Builder</span>
                         <span class="research-card-badge">All Signals</span>
                     </div>
-                    <p class="research-card-description">Scans 8 market signals simultaneously via Brave Search, then GPT-5.2 analyzes impact on the event industry and generates actionable headlines.</p>
+                    <p class="research-card-description">Scans 8 market signals simultaneously via OpenAI web search, then GPT-5.2 analyzes impact on the event industry and generates actionable headlines.</p>
                     <div class="research-card-filters">
                         <span style="color: #666; font-size: 0.8em;">Food, Labor, Travel, Weather, Economic, Real Estate, Energy, Vendors</span>
                         <select id="insightTimeWindow">
@@ -605,7 +744,7 @@
                             <label><input type="checkbox" value="hospitality" class="explorerPack"> Hospitality</label>
                             <label><input type="checkbox" value="business" class="explorerPack"> Business</label>
                         </div>
-                        <input type="text" id="explorerQuery" placeholder="Keywords..." value="wedding venue trends">
+                        <input type="text" id="explorerQuery" placeholder="e.g., market news, industry updates..." value="wedding venue industry news">
                     </div>
                     <button class="research-card-search-btn" onclick="searchSources()">Search Sources</button>
                     <div class="research-card-results" id="explorerResults">
@@ -614,212 +753,63 @@
                 </div>
             </div>
 
-            <div class="buttons">
-                <button class="btn-secondary btn" onclick="showStep(1)">← Back</button>
-                <button class="btn" id="researchNextBtn" onclick="goToSectionSelection('news')">Select for NEWS Section →</button>
+            <!-- Selection Progress Tracker -->
+            <div class="selection-progress-tracker">
+                <div class="selection-progress-items">
+                    <div class="selection-progress-item" id="progressNews" onclick="switchResearchTab('news')">
+                        <span class="progress-icon">📰</span>
+                        <span class="progress-label">NEWS</span>
+                        <span class="progress-check" id="checkNews"></span>
+                    </div>
+                    <div class="selection-progress-item" id="progressTip" onclick="switchResearchTab('tip')">
+                        <span class="progress-icon">💡</span>
+                        <span class="progress-label">TIP</span>
+                        <span class="progress-check" id="checkTip"></span>
+                    </div>
+                    <div class="selection-progress-item" id="progressTrend" onclick="switchResearchTab('trend')">
+                        <span class="progress-icon">📈</span>
+                        <span class="progress-label">TREND</span>
+                        <span class="progress-check" id="checkTrend"></span>
+                    </div>
+                </div>
+                <div class="selection-progress-actions">
+                    <button class="btn-secondary btn" onclick="showStep(1)">← Back</button>
+                    <button class="btn" id="researchNextBtn" disabled onclick="generateContent()">Generate Newsletter →</button>
+                </div>
             </div>
         </div>
 
-        <!-- Step 2.5: Section Selection for NEWS -->
-        <div class="step" id="step-select-news">
-            <div class="section-selection-header">
-                <h3>📰 Select for NEWS Section</h3>
-                <p>Choose one result from your research to use for the News section</p>
-            </div>
-
-            <div id="allResultsForNews" class="topic-list">
-                <!-- All results from all cards will be shown here -->
-            </div>
-
-            <div class="buttons">
-                <button class="btn-secondary btn" onclick="showStep('2-research')">← Back to Research</button>
-                <button class="btn" id="newsSelectNextBtn" disabled onclick="goToSectionSelection('tip')">Select for TIP Section →</button>
-            </div>
-        </div>
-
-        <!-- Step 2.6: Section Selection for TIP -->
-        <div class="step" id="step-select-tip">
-            <div class="section-selection-header">
-                <h3>💡 Select for TIP Section</h3>
-                <p>Choose one result from your research to use for the Tip section</p>
-            </div>
-
-            <div id="allResultsForTip" class="topic-list">
-                <!-- All results from all cards will be shown here -->
-            </div>
-
-            <div class="buttons">
-                <button class="btn-secondary btn" onclick="goToSectionSelection('news')">← Back</button>
-                <button class="btn" id="tipSelectNextBtn" disabled onclick="goToSectionSelection('trend')">Select for TREND Section →</button>
-            </div>
-        </div>
-
-        <!-- Step 2.7: Section Selection for TREND -->
-        <div class="step" id="step-select-trend">
-            <div class="section-selection-header">
-                <h3>📈 Select for TREND Section</h3>
-                <p>Choose one result from your research to use for the Trend section</p>
-            </div>
-
-            <div id="allResultsForTrend" class="topic-list">
-                <!-- All results from all cards will be shown here -->
-            </div>
-
-            <div class="buttons">
-                <button class="btn-secondary btn" onclick="goToSectionSelection('tip')">← Back</button>
-                <button class="btn" id="trendSelectNextBtn" disabled onclick="showStep(8)">Select AI Model →</button>
-            </div>
-        </div>
-
-        <!-- OLD Step 2: Loading (kept for backwards compatibility) -->
-        <div class="step" id="step2">
+        <!-- Step 3: Researching Articles (GPT-5.2 research stage) -->
+        <div class="step" id="step3">
             <div class="loading">
                 <div class="spinner"></div>
-                <h3>Searching for Current Articles...</h3>
-                <p style="color: #666;">Searching recent 2025-2026 wedding industry news</p>
+                <h3>Researching Your Articles...</h3>
+                <p style="color: #666;">GPT-5.2 is analyzing your selections and building detailed summaries</p>
+                <div class="research-progress" style="margin-top: 20px; text-align: left; max-width: 400px; margin-left: auto; margin-right: auto;">
+                    <div id="researchNewsStatus" style="padding: 8px 0; border-bottom: 1px solid #eee;">
+                        <span style="margin-right: 10px;">📰</span> NEWS: <span style="color: #666;">Waiting...</span>
+                    </div>
+                    <div id="researchTipStatus" style="padding: 8px 0; border-bottom: 1px solid #eee;">
+                        <span style="margin-right: 10px;">💡</span> TIP: <span style="color: #666;">Waiting...</span>
+                    </div>
+                    <div id="researchTrendStatus" style="padding: 8px 0;">
+                        <span style="margin-right: 10px;">📈</span> TREND: <span style="color: #666;">Waiting...</span>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Step 3: Select News Topic -->
-        <div class="step" id="step3">
-            <h2>📰 Select News Topic</h2>
-            <p>Current wedding industry news from 2025-2026</p>
-
-            <div id="newsTopics" class="topic-list">
-                <!-- Topics will be loaded here -->
-            </div>
-
-            <div id="newsError" class="error" style="display: none;"></div>
-
-            <div style="margin: 20px 0; padding: 20px; background: #f9fafb; border-radius: 8px; border: 2px dashed #e5e7eb;">
-                <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #666;">📎 Or Add Your Own Article URL</h3>
-                <input type="text" id="newsUrlInput" placeholder="Paste article URL here..." style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 4px; font-size: 14px; margin-bottom: 10px;">
-                <input type="text" id="newsTitleInput" placeholder="Article title..." style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 4px; font-size: 14px; margin-bottom: 10px;">
-                <input type="text" id="newsDescInput" placeholder="Brief description..." style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 4px; font-size: 14px; margin-bottom: 10px;">
-                <button class="btn" onclick="addCustomNews()" style="padding: 8px 16px; font-size: 14px;">Add Custom Article</button>
-            </div>
-
-            <div class="buttons">
-                <button class="btn" id="newsNextBtn" disabled onclick="loadTips()">Continue →</button>
-            </div>
-        </div>
-
-        <!-- Step 4: Loading Tips -->
+        <!-- Step 4: Writing Content (Opus 4.5 writing stage) -->
         <div class="step" id="step4">
             <div class="loading">
                 <div class="spinner"></div>
-                <h3>Searching for venue management tips...</h3>
-                <p style="color: #666;">Finding actionable advice from industry experts</p>
+                <h3>Writing Newsletter Content...</h3>
+                <p style="color: #666;" id="aiModelText">Claude Opus 4.5 is crafting your newsletter sections...</p>
             </div>
         </div>
 
-        <!-- Step 5: Select Tip -->
+        <!-- Step 5: Review Content -->
         <div class="step" id="step5">
-            <h2>💡 Select Tip Topic</h2>
-            <p>Practical venue management advice</p>
-
-            <div id="tipTopics" class="topic-list">
-                <!-- Tips will be loaded here -->
-            </div>
-
-            <div id="tipError" class="error" style="display: none;"></div>
-
-            <div style="margin: 20px 0; padding: 20px; background: #f9fafb; border-radius: 8px; border: 2px dashed #e5e7eb;">
-                <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #666;">📎 Or Add Your Own Tip Article URL</h3>
-                <input type="text" id="tipUrlInput" placeholder="Paste article URL here..." style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 4px; font-size: 14px; margin-bottom: 10px;">
-                <input type="text" id="tipTitleInput" placeholder="Article title..." style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 4px; font-size: 14px; margin-bottom: 10px;">
-                <input type="text" id="tipDescInput" placeholder="Brief description..." style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 4px; font-size: 14px; margin-bottom: 10px;">
-                <button class="btn" onclick="addCustomTip()" style="padding: 8px 16px; font-size: 14px;">Add Custom Tip</button>
-            </div>
-
-            <div class="buttons">
-                <button class="btn-secondary btn" onclick="showStep(3)">← Back</button>
-                <button class="btn" id="tipNextBtn" disabled onclick="loadTrends()">Continue →</button>
-            </div>
-        </div>
-
-        <!-- Step 6: Loading Trends -->
-        <div class="step" id="step6">
-            <div class="loading">
-                <div class="spinner"></div>
-                <h3>Searching for seasonal wedding trends...</h3>
-                <p style="color: #666;" id="trendSeasonText">Finding current trends for your newsletter</p>
-            </div>
-        </div>
-
-        <!-- Step 7: Select Trend -->
-        <div class="step" id="step7">
-            <h2>📈 Select Trend Topic</h2>
-            <p id="trendSeasonLabel">Seasonal trends</p>
-
-            <div id="trendTopics" class="topic-list">
-                <!-- Trends will be loaded here -->
-            </div>
-
-            <div id="trendError" class="error" style="display: none;"></div>
-
-            <div style="margin: 20px 0; padding: 20px; background: #f9fafb; border-radius: 8px; border: 2px dashed #e5e7eb;">
-                <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #666;">📎 Or Add Your Own Trend Article URL</h3>
-                <input type="text" id="trendUrlInput" placeholder="Paste article URL here..." style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 4px; font-size: 14px; margin-bottom: 10px;">
-                <input type="text" id="trendTitleInput" placeholder="Article title..." style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 4px; font-size: 14px; margin-bottom: 10px;">
-                <input type="text" id="trendDescInput" placeholder="Brief description..." style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 4px; font-size: 14px; margin-bottom: 10px;">
-                <button class="btn" onclick="addCustomTrend()" style="padding: 8px 16px; font-size: 14px;">Add Custom Trend</button>
-            </div>
-
-            <div class="buttons">
-                <button class="btn-secondary btn" onclick="showStep(5)">← Back</button>
-                <button class="btn" id="trendNextBtn" disabled onclick="showStep(8)">Select AI Model To Write →</button>
-            </div>
-        </div>
-
-        <!-- Step 8: Select AI Model -->
-        <div class="step" id="step8">
-            <h2>🤖 Select AI Model</h2>
-            <p>Select AI Model To Write</p>
-
-            <div class="topic-list">
-                <div class="topic-card" onclick="selectAI('chatgpt', this)" style="cursor: pointer;">
-                    <div class="title">💬 ChatGPT (GPT-4o)</div>
-                    <div class="description">Fast, reliable, and excellent for creative content. Best for general-purpose newsletter writing.</div>
-                    <div style="margin-top: 10px; font-size: 12px; color: #666;">
-                        ⚡ Speed: Fast | 💰 Cost: $$ | ✨ Quality: Excellent
-                    </div>
-                </div>
-
-                <div class="topic-card" onclick="selectAI('claude', this)" style="cursor: pointer;">
-                    <div class="title">🧠 Claude (Sonnet 4.5)</div>
-                    <div class="description">Thoughtful, nuanced writing with strong brand voice adherence. Best for professional, polished content.</div>
-                    <div style="margin-top: 10px; font-size: 12px; color: #666;">
-                        ⚡ Speed: Medium | 💰 Cost: $$$ | ✨ Quality: Premium
-                    </div>
-                </div>
-
-                <div class="topic-card" onclick="selectAI('gemini', this)" style="cursor: pointer;">
-                    <div class="title">💎 Gemini (1.5 Pro)</div>
-                    <div class="description">Google's advanced model with strong reasoning. Good balance of speed and quality.</div>
-                    <div style="margin-top: 10px; font-size: 12px; color: #666;">
-                        ⚡ Speed: Fast | 💰 Cost: $ | ✨ Quality: Very Good
-                    </div>
-                </div>
-            </div>
-
-            <div class="buttons">
-                <button class="btn-secondary btn" onclick="showStep(7)">← Back</button>
-                <button class="btn" id="aiNextBtn" disabled onclick="generateContent()">Generate Content →</button>
-            </div>
-        </div>
-
-        <!-- Step 9: Generating -->
-        <div class="step" id="step9">
-            <div class="loading">
-                <div class="spinner"></div>
-                <h3>Generating Newsletter Content...</h3>
-                <p style="color: #666;" id="aiModelText">AI is writing your newsletter...</p>
-            </div>
-        </div>
-
-        <!-- Step 10: Review Content -->
-        <div class="step" id="step10">
             <h2>✏️ Review & Edit Content</h2>
             <p>Your AI-generated newsletter is ready! Edit any section before continuing.</p>
 
@@ -828,14 +818,14 @@
             </div>
 
             <div class="buttons">
-                <button class="btn-secondary btn" onclick="showStep(8)">← Back</button>
+                <button class="btn-secondary btn" onclick="showStep('2-research')">← Back</button>
                 <button class="btn-secondary btn" onclick="exportAllCopy()">📋 Export All Copy</button>
                 <button class="btn" onclick="checkBrandGuidelines()">Check Brand Guidelines →</button>
             </div>
         </div>
 
-        <!-- Step 11: Brand Guidelines Check -->
-        <div class="step" id="step11">
+        <!-- Step 6: Brand Guidelines Check -->
+        <div class="step" id="step6">
             <div class="loading">
                 <div class="spinner"></div>
                 <h3>Checking Brand Guidelines...</h3>
@@ -843,8 +833,8 @@
             </div>
         </div>
 
-        <!-- Step 12: Brand Guidelines Results -->
-        <div class="step" id="step12">
+        <!-- Step 7: Brand Guidelines Results -->
+        <div class="step" id="step7">
             <h2>✅ Brand Guidelines Check</h2>
             <p>Your content has been reviewed for brand consistency.</p>
 
@@ -853,14 +843,14 @@
             </div>
 
             <div class="buttons">
-                <button class="btn-secondary btn" onclick="showStep(10)">← Back to Edit</button>
+                <button class="btn-secondary btn" onclick="showStep(5)">← Back to Edit</button>
                 <button class="btn-secondary btn" onclick="exportBrandCheckResults()">📋 Export Results</button>
                 <button class="btn" onclick="generateImages()">Continue to Image Prompts →</button>
             </div>
         </div>
 
-        <!-- Step 13: Edit Image Prompts -->
-        <div class="step" id="step13">
+        <!-- Step 8: Edit Image Prompts -->
+        <div class="step" id="step8">
             <h2>🎨 Image Generation</h2>
             <p>Review prompts and select styles, then generate images</p>
 
@@ -945,14 +935,15 @@
                 </div>
 
                 <div class="buttons">
-                    <button class="btn-secondary btn" onclick="showStep(12)">← Back</button>
+                    <button class="btn-secondary btn" onclick="showStep(7)">← Back</button>
+                    <button class="btn-secondary btn" onclick="generateImages(true)" style="background: #f59e0b; color: white; border-color: #f59e0b;">🔄 Regenerate Prompts</button>
                     <button class="btn" onclick="generateImagesFromPrompts()">Generate Images →</button>
                 </div>
             </div>
         </div>
 
-        <!-- Step 14: Generating Images -->
-        <div class="step" id="step14">
+        <!-- Step 9: Generating Images -->
+        <div class="step" id="step9">
             <div class="loading">
                 <div class="spinner"></div>
                 <h3>Generating Images...</h3>
@@ -970,8 +961,8 @@
             </div>
         </div>
 
-        <!-- Step 15: Review Article Images (News, Tip, Trend) -->
-        <div class="step" id="step15">
+        <!-- Step 10: Review Article Images (News, Tip, Trend) -->
+        <div class="step" id="step10">
             <h2>🖼️ Article Images</h2>
             <p>Review and customize images for your newsletter sections</p>
 
@@ -1052,13 +1043,14 @@
             </div>
 
             <div class="buttons">
-                <button class="btn-secondary btn" onclick="showStep(13)">← Back to Prompts</button>
+                <button class="btn-secondary btn" onclick="goBackToPrompts()">← Back to Prompts</button>
+                <button class="btn-secondary btn" onclick="generateImagesFromPrompts(true)" style="background: #f59e0b; color: white; border-color: #f59e0b;">🔄 Regenerate All Images</button>
                 <button class="btn" onclick="generateMemePrompt()">Continue to Meme →</button>
             </div>
         </div>
 
-        <!-- Step 15.4: Generating Meme Concept (Loading) -->
-        <div class="step" id="step15_4">
+        <!-- Step 10.4: Generating Meme Concept (Loading) -->
+        <div class="step" id="step10_4">
             <div class="loading">
                 <div class="spinner"></div>
                 <h3>Generating Meme Concept...</h3>
@@ -1067,8 +1059,8 @@
             </div>
         </div>
 
-        <!-- Step 15.5: Meme Prompt Generation -->
-        <div class="step" id="step15_5">
+        <!-- Step 10.5: Meme Prompt Generation -->
+        <div class="step" id="step10_5">
             <h2>💡 Meme Concept</h2>
             <p>Based on your newsletter content, here's a suggested meme concept</p>
 
@@ -1093,17 +1085,17 @@
                     <p style="font-size: 12px; color: #666; margin-top: 5px;">The punchline (3-8 words, all caps)</p>
                 </div>
 
-                <button class="btn-secondary btn" onclick="generateMemePrompt()" style="margin-top: 10px;">🔄 Regenerate Concept</button>
+                <button class="btn-secondary btn" onclick="generateMemePrompt(true)" style="margin-top: 10px;">🔄 Regenerate Concept</button>
             </div>
 
             <div class="buttons">
-                <button class="btn-secondary btn" onclick="showStep(15)">← Back to Images</button>
+                <button class="btn-secondary btn" onclick="goBackToArticleImages()">← Back to Images</button>
                 <button class="btn" onclick="proceedToMemeGeneration()">Generate Meme →</button>
             </div>
         </div>
 
-        <!-- Step 16: Meme Generation -->
-        <div class="step" id="step16">
+        <!-- Step 11: Meme Generation -->
+        <div class="step" id="step11">
             <h2>😄 Monthly Meme</h2>
             <p>Generate or upload a fun meme for your newsletter header</p>
 
@@ -1148,13 +1140,14 @@
             </div>
 
             <div class="buttons">
-                <button class="btn-secondary btn" onclick="showStep(15)">← Back to Images</button>
-                <button class="btn" onclick="showStep(17)">Continue to Subject Line →</button>
+                <button class="btn-secondary btn" onclick="goBackToMemeConceptWithState()">← Back to Concept</button>
+                <button class="btn-secondary btn" onclick="proceedToMemeGeneration(true)" style="background: #f59e0b; color: white; border-color: #f59e0b;">🔄 Regenerate Meme</button>
+                <button class="btn" onclick="showStep(12)">Continue to Subject Line →</button>
             </div>
         </div>
 
-        <!-- Step 17: Subject Line & Preheader -->
-        <div class="step" id="step17">
+        <!-- Step 12: Subject Line & Preheader -->
+        <div class="step" id="step12">
             <h2>✉️ Subject Line & Preheader</h2>
             <p>Claude will analyze your content and suggest compelling subject lines and preheaders</p>
 
@@ -1226,13 +1219,13 @@
             </div>
 
             <div class="buttons">
-                <button class="btn-secondary btn" onclick="showStep(16)">← Back to Meme</button>
+                <button class="btn-secondary btn" onclick="showStep(11)">← Back to Meme</button>
                 <button class="btn" onclick="showNewsletterPreview()">Continue to Preview →</button>
             </div>
         </div>
 
-        <!-- Step 18: Get HTML Code -->
-        <div class="step" id="step18">
+        <!-- Step 13: Get HTML Code -->
+        <div class="step" id="step13">
             <h2>💻 Newsletter Preview</h2>
             <p>Review your complete newsletter before sending</p>
 
@@ -1263,15 +1256,15 @@
             </div>
 
             <div class="buttons">
-                <button class="btn-secondary btn" onclick="showStep(17)">← Back to Subject Line</button>
+                <button class="btn-secondary btn" onclick="showStep(12)">← Back to Subject Line</button>
                 <button class="btn-secondary btn" onclick="toggleHTMLView()" id="htmlViewBtn">📝 View HTML Code</button>
                 <button class="btn-secondary btn" onclick="copyHTMLCode()">📋 Copy HTML</button>
-                <button class="btn" onclick="showStep(20)">Push to Ontraport →</button>
+                <button class="btn" onclick="showStep(15)">Push to Ontraport →</button>
             </div>
         </div>
 
-        <!-- Step 19: Send Test Email -->
-        <div class="step" id="step19">
+        <!-- Step 14: Send Test Email -->
+        <div class="step" id="step14">
             <h2>📧 Send Test Email</h2>
             <p>Send a test version to your email to preview before pushing to Ontraport</p>
 
@@ -1285,13 +1278,13 @@
             </div>
 
             <div class="buttons">
-                <button class="btn-secondary btn" onclick="showStep(18)">← Back to HTML Code</button>
-                <button class="btn" onclick="showStep(20)">Push to Ontraport →</button>
+                <button class="btn-secondary btn" onclick="showStep(13)">← Back to HTML Code</button>
+                <button class="btn" onclick="showStep(15)">Push to Ontraport →</button>
             </div>
         </div>
 
-        <!-- Step 20: Push to Ontraport -->
-        <div class="step" id="step20">
+        <!-- Step 15: Push to Ontraport -->
+        <div class="step" id="step15">
             <h2>🚀 Push to Ontraport</h2>
             <p>Send your newsletter to Ontraport with pre-configured BriteCo settings</p>
 
@@ -1313,7 +1306,7 @@
             </div>
 
             <div class="buttons">
-                <button class="btn-secondary btn" onclick="showStep(17)">← Back to Test Email</button>
+                <button class="btn-secondary btn" onclick="showStep(13)">← Back to Preview</button>
             </div>
         </div>
 
@@ -1358,8 +1351,8 @@
         let selectedSeason = '';
         let selectedNews = null;
         let selectedTip = null;
+        let currentResearchSection = 'news'; // Track which section we're researching for
         let selectedTrend = null;
-        let selectedAI = null;
         let newsTopics = [];
         let tipTopics = [];
         let trendTopics = [];
@@ -1376,6 +1369,22 @@
             perplexity: []
         };
         let allResearchResults = [];  // Combined results from all cards
+
+        // Tab-specific search results and state (each tab has its own searches)
+        let tabSearchState = {
+            news: {
+                results: { insight: [], explorer: [], perplexity: [] },
+                htmlCache: { insight: '', explorer: '', perplexity: '' }
+            },
+            tip: {
+                results: { insight: [], explorer: [], perplexity: [] },
+                htmlCache: { insight: '', explorer: '', perplexity: '' }
+            },
+            trend: {
+                results: { insight: [], explorer: [], perplexity: [] },
+                htmlCache: { insight: '', explorer: '', perplexity: '' }
+            }
+        };
 
         // Meme text overlay state (draggable text boxes)
         let memeTextOverlays = [];
@@ -1656,47 +1665,91 @@
             document.getElementById('trendNextBtn').disabled = false;
         }
 
-        function selectAI(aiModel, element) {
-            selectedAI = aiModel;
-            document.querySelectorAll('#step8 .topic-card').forEach(card => card.classList.remove('selected'));
-            element.classList.add('selected');
-            document.getElementById('aiNextBtn').disabled = false;
-
-            // Update the loading text for next step
-            const modelNames = {
-                'chatgpt': 'ChatGPT (GPT-4o)',
-                'claude': 'Claude (Sonnet 4.5)',
-                'gemini': 'Gemini (1.5 Pro)'
-            };
-            document.getElementById('aiModelText').textContent = `AI is writing your newsletter using ${modelNames[aiModel]}...`;
-        }
-
         let generatedNewsContent = null;
         let generatedTipContent = null;
         let generatedTrendContent = null;
         let generatedTipTitle = null;  // Short AI-generated title
         let generatedTrendTitle = null;  // Short AI-generated title
 
+        // Track what has been generated to avoid re-triggering on back navigation
+        let promptsAlreadyGenerated = false;
+        let imagesAlreadyGenerated = false;
+        let memeConceptGenerated = false;
+        let memeImageGenerated = false;
+
+        // Store meme concept data to preserve on back navigation
+        let memeConceptData = {
+            scene: '',
+            topText: '',
+            bottomText: ''
+        };
+
         async function generateContent() {
-            showStep(9);
+            // STAGE 1: Research with GPT-5.2
+            showStep(3); // Researching step
+
+            // Update status indicators
+            const updateResearchStatus = (section, status, isActive = false) => {
+                const el = document.getElementById(`research${section}Status`);
+                if (el) {
+                    const color = status === 'Done' ? '#10b981' : (isActive ? '#2563eb' : '#666');
+                    const icon = status === 'Done' ? '✓' : (isActive ? '⏳' : '');
+                    el.innerHTML = `<span style="margin-right: 10px;">${section === 'News' ? '📰' : section === 'Tip' ? '💡' : '📈'}</span> ${section.toUpperCase()}: <span style="color: ${color};">${icon} ${status}</span>`;
+                }
+            };
 
             try {
-                const response = await fetch(`${API_BASE}/api/generate-content`, {
+                // Show research starting
+                updateResearchStatus('News', 'Researching...', true);
+                updateResearchStatus('Tip', 'Waiting...');
+                updateResearchStatus('Trend', 'Waiting...');
+
+                console.log('[Research] Starting GPT-5.2 research phase...');
+
+                const researchResponse = await fetch(`${API_BASE}/api/research-articles`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        news_topic: selectedNews,
+                        tip_topic: selectedTip,
+                        trend_topic: selectedTrend
+                    })
+                });
+
+                const researchData = await researchResponse.json();
+
+                if (!researchData.success) {
+                    throw new Error(researchData.error || 'Failed to research articles');
+                }
+
+                console.log('[Research] GPT-5.2 research complete:', researchData.research);
+
+                // Update status to show research complete
+                updateResearchStatus('News', 'Done');
+                updateResearchStatus('Tip', 'Done');
+                updateResearchStatus('Trend', 'Done');
+
+                // Brief pause to show completion
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // STAGE 2: Write with Opus 4.5
+                showStep(4); // Writing step
+
+                console.log('[Writing] Starting Opus 4.5 writing phase...');
+
+                const contentResponse = await fetch(`${API_BASE}/api/generate-content`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         month: selectedMonth,
-                        news_topic: selectedNews,
-                        tip_topic: selectedTip,
-                        trend_topic: selectedTrend,
-                        ai_model: selectedAI
+                        research: researchData.research
                     })
                 });
 
-                const data = await response.json();
+                const data = await contentResponse.json();
 
                 if (data.success) {
-                    console.log('Content generated:', data.content);
+                    console.log('[Writing] Content generated:', data.content);
 
                     // Store generated content
                     generatedNewsContent = data.content.news;
@@ -1713,14 +1766,14 @@
                     displayGeneratedContent();
 
                     // Move to review step
-                    showStep(10);
+                    showStep(5); // Review Content step
                 } else {
                     throw new Error(data.error || 'Failed to generate content');
                 }
             } catch (error) {
                 console.error('Error:', error);
                 alert(`Error: ${error.message}. Make sure the API server is running!`);
-                showStep(8); // Go back to AI selection
+                showStep('2-research'); // Go back to Research Dashboard
             }
         }
 
@@ -1796,7 +1849,7 @@
 
         async function checkBrandGuidelines() {
             try {
-                showStep(11); // Show loading screen
+                showStep(6); // Brand Check loading screen
 
                 // Get the edited content from the contenteditable divs
                 const newsContent = document.getElementById('newsContentBox')?.innerHTML || '';
@@ -1810,8 +1863,7 @@
                         month: selectedMonth,
                         news_content: newsContent,
                         tip_content: tipContent,
-                        trend_content: trendContent,
-                        ai_model: selectedAI
+                        trend_content: trendContent
                     })
                 });
 
@@ -1819,15 +1871,15 @@
 
                 if (data.success) {
                     displayBrandCheckResults(data.check_results);
-                    showStep(12); // Show results
+                    showStep(7); // Check Results
                 } else {
                     alert('Error checking brand guidelines: ' + (data.error || 'Unknown error'));
-                    showStep(10); // Go back to edit
+                    showStep(5); // Go back to Review Content
                 }
             } catch (error) {
                 console.error('Error:', error);
                 alert('Error checking brand guidelines: ' + error.message);
-                showStep(10);
+                showStep(5); // Go back to Review Content
             }
         }
 
@@ -2212,10 +2264,19 @@
             alert('✓ Newsletter copy exported as Word document!');
         }
 
-        async function generateImages() {
+        async function generateImages(forceRegenerate = false) {
+            // Check if prompts already exist and we're not forcing regeneration
+            if (promptsAlreadyGenerated && !forceRegenerate) {
+                console.log('[Navigation] Prompts already generated, showing existing prompts');
+                showStep(8); // Just show the Edit Image Prompts step
+                document.getElementById('promptGenerationLoading').style.display = 'none';
+                document.getElementById('promptEditing').style.display = 'block';
+                return;
+            }
+
             try {
                 // STEP 1: Generate prompts only
-                showStep(13);
+                showStep(8); // Edit Image Prompts step
                 document.getElementById('promptGenerationLoading').style.display = 'block';
                 document.getElementById('promptEditing').style.display = 'none';
 
@@ -2258,7 +2319,7 @@
 
                 if (!data.success) {
                     alert('Error generating image prompts: ' + (data.error || 'Unknown error'));
-                    showStep(12);
+                    showStep(7); // Back to Check Results
                     return;
                 }
 
@@ -2281,13 +2342,16 @@
                 document.getElementById('tipPromptArticle').textContent = `For: ${selectedTip.title}`;
                 document.getElementById('trendPromptArticle').textContent = `For: ${selectedTrend.title}`;
 
+                // Mark prompts as generated
+                promptsAlreadyGenerated = true;
+
                 // Show editing UI
                 document.getElementById('promptGenerationLoading').style.display = 'none';
                 document.getElementById('promptEditing').style.display = 'block';
             } catch (error) {
                 console.error('Error:', error);
                 alert('Error generating prompts: ' + error.message);
-                showStep(12);
+                showStep(7); // Back to Check Results
             }
         }
 
@@ -2359,7 +2423,40 @@
             promptTextarea.value = basePrompt + styleModifier;
         }
 
-        async function generateImagesFromPrompts() {
+        // Helper function to go back to prompts without regenerating
+        function goBackToPrompts() {
+            showStep(8);
+            // Ensure prompts editing UI is visible
+            document.getElementById('promptGenerationLoading').style.display = 'none';
+            document.getElementById('promptEditing').style.display = 'block';
+        }
+
+        // Helper function to go back to meme concept with state preserved
+        function goBackToMemeConceptWithState() {
+            showStep('10_5');
+            // Restore the saved values if they exist
+            if (memeConceptData.scene) {
+                document.getElementById('memeScenePrompt').value = memeConceptData.scene;
+                document.getElementById('memeTopText').value = memeConceptData.topText;
+                document.getElementById('memeBottomText').value = memeConceptData.bottomText;
+            }
+        }
+
+        // Helper function to go back to article images without regenerating
+        function goBackToArticleImages() {
+            showStep(10);
+            displayImages(); // Ensure images are displayed
+        }
+
+        async function generateImagesFromPrompts(forceRegenerate = false) {
+            // Check if images already exist and we're not forcing regeneration
+            if (imagesAlreadyGenerated && !forceRegenerate && generatedImages.news && generatedImages.tip && generatedImages.trend) {
+                console.log('[Navigation] Images already generated, showing existing images');
+                displayImages();
+                showStep(10);
+                return;
+            }
+
             try {
                 // Show loading overlay on Step 13 instead of changing steps
                 document.getElementById('promptGenerationLoading').style.display = 'block';
@@ -2420,22 +2517,36 @@
                 generatedImages.tip = { url: data.images.tip, prompt: prompts.tip };
                 generatedImages.trend = { url: data.images.trend, prompt: prompts.trend };
 
+                // Mark images as generated
+                imagesAlreadyGenerated = true;
+
                 console.log('[IMAGE GEN] Images stored successfully');
 
-                // Display images and go to Step 15
+                // Display images and go to Step 10 (Review Images)
                 displayImages();
-                showStep(15);
+                showStep(10);
             } catch (error) {
                 console.error('Error:', error);
                 alert('Error generating images: ' + error.message);
-                showStep(13);
+                showStep(8); // Back to Edit Prompts
             }
         }
 
-        async function generateMemePrompt() {
+        async function generateMemePrompt(forceRegenerate = false) {
+            // Check if meme concept already exists and we're not forcing regeneration
+            if (memeConceptGenerated && !forceRegenerate && memeConceptData.scene) {
+                console.log('[Navigation] Meme concept already generated, showing existing concept');
+                showStep('10_5');
+                // Restore the saved values
+                document.getElementById('memeScenePrompt').value = memeConceptData.scene;
+                document.getElementById('memeTopText').value = memeConceptData.topText;
+                document.getElementById('memeBottomText').value = memeConceptData.bottomText;
+                return;
+            }
+
             try {
                 // Show loading screen first
-                showStep('15_4');
+                showStep('10_4'); // Generating Meme Concept loading
 
                 // Wait a tiny bit for UI to update
                 await new Promise(resolve => setTimeout(resolve, 100));
@@ -2471,13 +2582,19 @@
                     console.log('Top text:', data.text_top);
                     console.log('Bottom text:', data.text_bottom);
 
-                    // Show step 15_5 with the results
-                    showStep('15_5');
+                    // Store meme concept data
+                    memeConceptData.scene = data.scene || '';
+                    memeConceptData.topText = data.text_top || '';
+                    memeConceptData.bottomText = data.text_bottom || '';
+                    memeConceptGenerated = true;
+
+                    // Show step 10_5 with the results
+                    showStep('10_5');
 
                     // Fill in the form fields with generated content
-                    document.getElementById('memeScenePrompt').value = data.scene || '';
-                    document.getElementById('memeTopText').value = data.text_top || '';
-                    document.getElementById('memeBottomText').value = data.text_bottom || '';
+                    document.getElementById('memeScenePrompt').value = memeConceptData.scene;
+                    document.getElementById('memeTopText').value = memeConceptData.topText;
+                    document.getElementById('memeBottomText').value = memeConceptData.bottomText;
                 } else {
                     throw new Error(data.error || 'Failed to generate meme prompt');
                 }
@@ -2485,8 +2602,8 @@
             } catch (error) {
                 console.error('Error generating meme prompt:', error);
 
-                // Show step 15_5 even on error
-                showStep('15_5');
+                // Show step 10_5 even on error
+                showStep('10_5');
 
                 alert('Error generating meme concept: ' + error.message);
                 // Set default values
@@ -2496,15 +2613,23 @@
             }
         }
 
-        async function proceedToMemeGeneration() {
+        async function proceedToMemeGeneration(forceRegenerate = false) {
+            // Check if meme image already exists and we're not forcing regeneration
+            if (memeImageGenerated && !forceRegenerate && generatedImages.meme && generatedImages.meme.url) {
+                console.log('[Navigation] Meme already generated, showing existing meme');
+                showStep(11);
+                displayImages(); // This will show the existing meme
+                return;
+            }
+
             try {
                 // Get the edited values from the form
                 const scenePrompt = document.getElementById('memeScenePrompt').value;
                 const topText = document.getElementById('memeTopText').value;
                 const bottomText = document.getElementById('memeBottomText').value;
 
-                // Navigate to Step 16
-                showStep(16);
+                // Navigate to Step 11 (Meme Generation)
+                showStep(11);
 
                 // Show loading state
                 const memePreview = document.getElementById('memePreview');
@@ -2541,6 +2666,9 @@
                         textColor: '#FFFFFF'
                     };
 
+                    // Mark meme as generated
+                    memeImageGenerated = true;
+
                     // Update meme prompt field on Step 16
                     document.getElementById('memePrompt').value = scenePrompt;
 
@@ -2556,7 +2684,7 @@
                     <div style="text-align: center; padding: 40px; color: #dc2626;">
                         <div style="font-size: 48px; margin-bottom: 10px;">❌</div>
                         <div>Error: ${error.message}</div>
-                        <button class="btn-secondary btn" onclick="proceedToMemeGeneration()" style="margin-top: 20px;">🔄 Try Again</button>
+                        <button class="btn-secondary btn" onclick="proceedToMemeGeneration(true)" style="margin-top: 20px;">🔄 Try Again</button>
                     </div>
                 `;
             }
@@ -3356,7 +3484,7 @@
                     enableNewsletterEditing();
                 }, 100);
 
-                showStep(18);
+                showStep(13); // Preview step
             } catch (error) {
                 console.error('[PREVIEW ERROR]', error);
                 alert('Error generating preview: ' + error.message + '\n\nPlease check browser console for details.');
@@ -3863,7 +3991,7 @@
             `;
 
             document.getElementById('newsletterPreview').innerHTML = html;
-            showStep(15);
+            showStep(13); // Preview step
         }
 
         // Save edited subject line back to state
@@ -4170,12 +4298,15 @@
             document.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
             document.getElementById('step2-research').classList.add('active');
             updateProgress(2);
+            // Initialize progress tracker
+            updateSelectionProgress();
         }
 
         async function searchPerplexity() {
             const query = document.getElementById('perplexityQuery').value;
             const timeWindow = document.getElementById('perplexityTimeWindow').value;
             const resultsDiv = document.getElementById('perplexityResults');
+            const currentTab = currentResearchSection;
 
             resultsDiv.innerHTML = '<div class="research-card-loading"><div class="spinner"></div><p>Searching with Perplexity AI & analyzing with GPT-5.2...</p></div>';
 
@@ -4189,6 +4320,9 @@
 
                 if (data.success && data.results.length > 0) {
                     researchResults.perplexity = data.results;
+                    // Store results for this specific tab
+                    tabSearchState[currentTab].results.perplexity = data.results;
+
                     // Show queries header then three-section results
                     resultsDiv.innerHTML = '';
                     if (data.queries_used && data.queries_used.length > 0) {
@@ -4199,6 +4333,9 @@
                     }
                     displayThreeSectionResults(data.results, resultsDiv, 'perplexity');
                     updateAllResults();
+
+                    // Cache the HTML for this tab
+                    tabSearchState[currentTab].htmlCache.perplexity = resultsDiv.innerHTML;
                 } else {
                     const errorMsg = data.error || 'No results found. Try a different query.';
                     let html = '';
@@ -4219,6 +4356,7 @@
         async function searchInsights() {
             const timeWindow = document.getElementById('insightTimeWindow').value;
             const resultsDiv = document.getElementById('insightResults');
+            const currentTab = currentResearchSection;
 
             resultsDiv.innerHTML = '<div class="research-card-loading"><div class="spinner"></div><p>Analyzing all 8 market signals...</p></div>';
 
@@ -4232,9 +4370,15 @@
 
                 if (data.success && data.results.length > 0) {
                     researchResults.insight = data.results;
+                    // Store results for this specific tab
+                    tabSearchState[currentTab].results.insight = data.results;
+
                     // Display with impact badges
                     displayInsightResults(data.results, resultsDiv, data.signals_searched);
                     updateAllResults();
+
+                    // Cache the HTML for this tab
+                    tabSearchState[currentTab].htmlCache.insight = resultsDiv.innerHTML;
                 } else {
                     let msg = '<p style="text-align: center; color: #999; padding: 20px;">No insights found. Try again later.</p>';
                     if (data.signals_searched) {
@@ -4253,6 +4397,7 @@
             const packCheckboxes = document.querySelectorAll('.explorerPack:checked');
             const sourcePacks = Array.from(packCheckboxes).map(cb => cb.value);
             const resultsDiv = document.getElementById('explorerResults');
+            const currentTab = currentResearchSection;
 
             if (sourcePacks.length === 0) {
                 resultsDiv.innerHTML = '<p style="color: #c00; padding: 20px;">Please select at least one source pack.</p>';
@@ -4271,8 +4416,14 @@
 
                 if (data.success && data.results.length > 0) {
                     researchResults.explorer = data.results;
+                    // Store results for this specific tab
+                    tabSearchState[currentTab].results.explorer = data.results;
+
                     displayExplorerResults(data.results, resultsDiv, data.queries_used);
                     updateAllResults();
+
+                    // Cache the HTML for this tab
+                    tabSearchState[currentTab].htmlCache.explorer = resultsDiv.innerHTML;
                 } else {
                     let msg = '<p style="text-align: center; color: #999; padding: 20px;">No results found. Try different sources or keywords.</p>';
                     if (data.queries_used) {
@@ -4332,6 +4483,7 @@
                 item.className = 'research-result-item';
                 item.dataset.cardType = cardType;
                 item.dataset.index = index;
+                item.dataset.url = result.url || '';
                 item.style.cssText = 'padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; margin-bottom: 8px; background: #fff; cursor: pointer; position: relative;';
                 item.innerHTML = `
                     <!-- Selection checkbox indicator -->
@@ -4377,6 +4529,168 @@
             });
         }
 
+        // Section-specific search defaults
+        const sectionSearchDefaults = {
+            news: {
+                perplexity: 'wedding industry news 2026',
+                perplexityPlaceholder: 'e.g., wedding venue market updates, industry regulations...',
+                explorer: 'wedding venue industry news',
+                explorerPlaceholder: 'e.g., market news, industry updates...'
+            },
+            tip: {
+                perplexity: 'wedding venue management tips best practices',
+                perplexityPlaceholder: 'e.g., venue operations, customer service tips...',
+                explorer: 'venue management tips',
+                explorerPlaceholder: 'e.g., booking tips, vendor management...'
+            },
+            trend: {
+                perplexity: 'wedding trends 2026',
+                perplexityPlaceholder: 'e.g., wedding decor trends, seasonal themes...',
+                explorer: 'wedding design trends',
+                explorerPlaceholder: 'e.g., color trends, decor styles...'
+            }
+        };
+
+        // Switch between research section tabs (NEWS, TIP, TREND)
+        function switchResearchTab(section) {
+            currentResearchSection = section;
+
+            // Update tab styling
+            document.querySelectorAll('.research-tab').forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.dataset.section === section) {
+                    tab.classList.add('active');
+                }
+            });
+
+            // Update section label
+            const labels = { news: 'NEWS', tip: 'TIP', trend: 'TREND' };
+            document.getElementById('researchSectionLabel').innerHTML =
+                `Researching for: <strong>${labels[section]}</strong> section. Search and select one article below.`;
+
+            // Update search inputs with section-specific defaults
+            const defaults = sectionSearchDefaults[section];
+            if (defaults) {
+                const perplexityInput = document.getElementById('perplexityQuery');
+                const explorerInput = document.getElementById('explorerQuery');
+
+                if (perplexityInput) {
+                    perplexityInput.value = defaults.perplexity;
+                    perplexityInput.placeholder = defaults.perplexityPlaceholder;
+                }
+                if (explorerInput) {
+                    explorerInput.value = defaults.explorer;
+                    explorerInput.placeholder = defaults.explorerPlaceholder;
+                }
+            }
+
+            // Restore cached search results for this tab (or show default placeholders)
+            const tabState = tabSearchState[section];
+            const perplexityResultsDiv = document.getElementById('perplexityResults');
+            const insightResultsDiv = document.getElementById('insightResults');
+            const explorerResultsDiv = document.getElementById('explorerResults');
+
+            if (tabState.htmlCache.perplexity) {
+                perplexityResultsDiv.innerHTML = tabState.htmlCache.perplexity;
+                researchResults.perplexity = tabState.results.perplexity;
+            } else {
+                perplexityResultsDiv.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">Enter a topic and search</p>';
+                researchResults.perplexity = [];
+            }
+
+            if (tabState.htmlCache.insight) {
+                insightResultsDiv.innerHTML = tabState.htmlCache.insight;
+                researchResults.insight = tabState.results.insight;
+            } else {
+                insightResultsDiv.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">Click to analyze all 8 market signals</p>';
+                researchResults.insight = [];
+            }
+
+            if (tabState.htmlCache.explorer) {
+                explorerResultsDiv.innerHTML = tabState.htmlCache.explorer;
+                researchResults.explorer = tabState.results.explorer;
+            } else {
+                explorerResultsDiv.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">Select source packs and search</p>';
+                researchResults.explorer = [];
+            }
+
+            // Re-highlight if this section already has a selection
+            highlightExistingSelection(section);
+
+            // Update progress tracker and next button
+            updateSelectionProgress();
+        }
+
+        // Highlight an already-selected result when switching tabs
+        function highlightExistingSelection(section) {
+            const selected = section === 'news' ? selectedNews :
+                             section === 'tip' ? selectedTip : selectedTrend;
+            if (!selected || !selected.url) return;
+
+            // Find and highlight the matching result card
+            document.querySelectorAll('.research-result-item').forEach(item => {
+                if (item.dataset.url === selected.url) {
+                    item.classList.add('selected');
+                    item.style.borderColor = '#018181';
+                    item.style.background = '#e6f4f4';
+                    const indicator = item.querySelector('.selection-indicator');
+                    if (indicator) {
+                        indicator.style.background = '#018181';
+                        indicator.style.borderColor = '#018181';
+                        indicator.querySelector('.check-icon').style.display = 'block';
+                    }
+                }
+            });
+        }
+
+        // Update the selection progress tracker and Next button
+        function updateSelectionProgress() {
+            const hasNews = selectedNews !== null;
+            const hasTip = selectedTip !== null;
+            const hasTrend = selectedTrend !== null;
+            const allSelected = hasNews && hasTip && hasTrend;
+
+            // Update progress tracker items
+            const newsItem = document.getElementById('progressNews');
+            const tipItem = document.getElementById('progressTip');
+            const trendItem = document.getElementById('progressTrend');
+
+            // Update completed states
+            if (newsItem) {
+                newsItem.classList.toggle('completed', hasNews);
+                newsItem.classList.toggle('active', currentResearchSection === 'news');
+                document.getElementById('checkNews').textContent = hasNews ? '✓' : '';
+            }
+            if (tipItem) {
+                tipItem.classList.toggle('completed', hasTip);
+                tipItem.classList.toggle('active', currentResearchSection === 'tip');
+                document.getElementById('checkTip').textContent = hasTip ? '✓' : '';
+            }
+            if (trendItem) {
+                trendItem.classList.toggle('completed', hasTrend);
+                trendItem.classList.toggle('active', currentResearchSection === 'trend');
+                document.getElementById('checkTrend').textContent = hasTrend ? '✓' : '';
+            }
+
+            // Update tab checkmarks
+            document.getElementById('newsTabCheck').style.display = hasNews ? 'inline' : 'none';
+            document.getElementById('tipTabCheck').style.display = hasTip ? 'inline' : 'none';
+            document.getElementById('trendTabCheck').style.display = hasTrend ? 'inline' : 'none';
+
+            // Update Next button - always shows "Generate Newsletter" but disabled until all 3 selected
+            const nextBtn = document.getElementById('researchNextBtn');
+            if (nextBtn) {
+                nextBtn.disabled = !allSelected;
+                nextBtn.textContent = 'Generate Newsletter →';
+                nextBtn.onclick = allSelected ? () => generateContent() : null;
+            }
+        }
+
+        // Alias for backwards compatibility
+        function updateResearchNextButton() {
+            updateSelectionProgress();
+        }
+
         // Select a research result directly from the dashboard
         function selectResearchResult(cardType, index, element, result) {
             // Clear all selections in all research cards
@@ -4403,8 +4717,8 @@
                 indicator.querySelector('.check-icon').style.display = 'block';
             }
 
-            // Store the selection for NEWS (first selection goes to news)
-            selectedNews = {
+            // Store the selection in the correct variable based on current tab
+            const selectedObj = {
                 title: result.headline || result.title,
                 description: result.industry_data || result.snippet || result.venue_implications,
                 source_url: result.url,
@@ -4414,14 +4728,23 @@
                 _cardType: cardType
             };
 
-            // Enable the Next button
-            const nextBtn = document.getElementById('researchNextBtn');
-            if (nextBtn) {
-                nextBtn.disabled = false;
-                nextBtn.textContent = 'Continue with Selected Article →';
+            // Store in the correct section and show checkmark on tab
+            if (currentResearchSection === 'news') {
+                selectedNews = selectedObj;
+                document.getElementById('newsTabCheck').style.display = 'inline';
+                console.log('[Research] Selected for NEWS:', selectedNews.title);
+            } else if (currentResearchSection === 'tip') {
+                selectedTip = selectedObj;
+                document.getElementById('tipTabCheck').style.display = 'inline';
+                console.log('[Research] Selected for TIP:', selectedTip.title);
+            } else if (currentResearchSection === 'trend') {
+                selectedTrend = selectedObj;
+                document.getElementById('trendTabCheck').style.display = 'inline';
+                console.log('[Research] Selected for TREND:', selectedTrend.title);
             }
 
-            console.log('[Research] Selected for NEWS:', selectedNews.title);
+            // Update the Next button
+            updateResearchNextButton();
         }
 
         function displayExplorerResults(results, container, queriesUsed = null) {
@@ -4456,6 +4779,7 @@
                 item.className = 'research-result-item';
                 item.dataset.cardType = 'explorer';
                 item.dataset.index = index;
+                item.dataset.url = result.url || '';
                 item.style.cssText = 'position: relative; cursor: pointer;';
                 item.innerHTML = `
                     <!-- Selection checkbox indicator -->
@@ -4500,6 +4824,7 @@
                 item.className = 'research-result-item';
                 item.dataset.cardType = cardType;
                 item.dataset.index = index;
+                item.dataset.url = result.url || '';
                 item.innerHTML = `
                     <div class="research-result-title">${result.title || 'Untitled'}</div>
                     <div class="research-result-snippet">${(result.snippet || result.venue_implications || '').substring(0, 150)}...</div>
@@ -4623,35 +4948,30 @@
         }
 
         function updateProgress(step) {
-            const totalSteps = 20;
+            const totalSteps = 15;
             const progress = ((step - 1) / (totalSteps - 1)) * 100;
             document.getElementById('progressBar').style.width = progress + '%';
 
             // Update step counter text
             document.getElementById('progressStep').textContent = `Step ${step} of ${totalSteps}`;
 
-            // Step labels for clarity
+            // Step labels for clarity (15 steps total)
             const stepLabels = {
                 1: 'Select Month',
                 2: 'Research Dashboard',
-                3: 'Select News Topic',
-                4: 'Loading Tips',
-                5: 'Select Tip',
-                6: 'Loading Trends',
-                7: 'Select Trend',
-                8: 'Select AI Model',
-                9: 'Generating Content',
-                10: 'Review Content',
-                11: 'Brand Guidelines Check',
-                12: 'Guidelines Results',
-                13: 'Edit Image Prompts',
-                14: 'Generating Images',
-                15: 'Review Images',
-                16: 'Meme Generation',
-                17: 'Subject Line',
-                18: 'Get HTML Code',
-                19: 'Test Email',
-                20: 'Push to Ontraport'
+                3: 'Researching',
+                4: 'Writing',
+                5: 'Review Content',
+                6: 'Brand Check',
+                7: 'Check Results',
+                8: 'Edit Prompts',
+                9: 'Generating Images',
+                10: 'Review Images',
+                11: 'Meme',
+                12: 'Subject Line',
+                13: 'Preview',
+                14: 'Test Email',
+                15: 'Ontraport'
             };
 
             document.getElementById('progressLabel').textContent = stepLabels[step] || '';

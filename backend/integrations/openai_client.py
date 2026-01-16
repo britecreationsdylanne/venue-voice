@@ -61,8 +61,13 @@ class OpenAIClient:
             "model": model,
             "messages": messages,
             "temperature": temperature,
-            "max_tokens": max_tokens,
         }
+
+        # GPT-5.x and newer models use max_completion_tokens instead of max_tokens
+        if model and (model.startswith("gpt-5") or model.startswith("o1") or model.startswith("o3")):
+            kwargs["max_completion_tokens"] = max_tokens
+        else:
+            kwargs["max_tokens"] = max_tokens
 
         # Add tools if provided (for web search)
         if tools:

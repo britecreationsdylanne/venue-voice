@@ -197,3 +197,105 @@ NEWSLETTER_GUIDELINES = {
         "sections": "Use italics for section labels"
     }
 }
+
+
+def get_style_guide_for_prompt(section_type=None):
+    """
+    Generate a prompt-friendly style guide string from the brand guidelines config.
+
+    Args:
+        section_type: Optional - 'news', 'tip', or 'trend' to include section-specific structure
+
+    Returns:
+        Formatted string ready to include in AI prompts
+    """
+    guide = "## EDITORIAL STYLE GUIDE\n\n"
+
+    # Numbers
+    guide += "### NUMBERS\n"
+    for rule in BRAND_GUIDELINES["numbers"]["rules"]:
+        guide += f"- {rule}\n"
+    guide += "Examples: " + ", ".join(BRAND_GUIDELINES["numbers"]["correct_examples"]) + "\n\n"
+
+    # Punctuation
+    guide += "### PUNCTUATION\n"
+    for rule in BRAND_GUIDELINES["punctuation"]["rules"]:
+        guide += f"- {rule}\n"
+    guide += "Examples: " + ", ".join(f'"{ex}"' for ex in BRAND_GUIDELINES["punctuation"]["correct_examples"][:4]) + "\n\n"
+
+    # Abbreviations
+    guide += "### ABBREVIATIONS\n"
+    for rule in BRAND_GUIDELINES["abbreviations"]["rules"]:
+        guide += f"- {rule}\n"
+    guide += "\n"
+
+    # Title Case
+    guide += "### TITLE CASE\n"
+    for rule in BRAND_GUIDELINES["title_case"]["rules"]:
+        guide += f"- {rule}\n"
+    guide += "\n"
+
+    # Inclusive Language (from wedding_insurance tone)
+    guide += "### INCLUSIVE LANGUAGE (REQUIRED)\n"
+    for rule in BRAND_GUIDELINES["tone"]["wedding_insurance"]["rules"]:
+        guide += f"- {rule}\n"
+    guide += "\n"
+
+    # Health/Promise Claims (from jewelry tone)
+    guide += "### CLAIMS & PROMISES\n"
+    for rule in BRAND_GUIDELINES["tone"]["jewelry"]["rules"]:
+        guide += f"- {rule}\n"
+    guide += "\n"
+
+    # BriteCo Brand Rules
+    guide += "### BRITECO BRAND TERMINOLOGY\n"
+    guide += "DO:\n"
+    for rule in BRAND_GUIDELINES["briteco_brand"]["do"]:
+        guide += f"  - {rule}\n"
+    guide += "DON'T:\n"
+    for rule in BRAND_GUIDELINES["briteco_brand"]["dont"]:
+        guide += f"  - {rule}\n"
+    guide += "\n"
+
+    # Glossary
+    guide += "### GLOSSARY (Correct Spellings)\n"
+    for correct, incorrect_list in BRAND_GUIDELINES["glossary"]["correct_terms"].items():
+        guide += f"- Use \"{correct}\" (not {', '.join(incorrect_list)})\n"
+    guide += "\n"
+
+    # Brand Voice
+    guide += "### TONE & VOICE\n"
+    guide += f"- Tone: {BRAND_VOICE['tone']}\n"
+    guide += f"- Style: {BRAND_VOICE['style']}\n"
+    guide += f"- Perspective: {BRAND_VOICE['perspective']}\n"
+    guide += "- AVOID: " + ", ".join(BRAND_VOICE['avoid']) + "\n"
+
+    # Section-specific structure if requested
+    if section_type and section_type in NEWSLETTER_GUIDELINES["sections"]:
+        section = NEWSLETTER_GUIDELINES["sections"][section_type]
+        guide += f"\n### {section_type.upper()} SECTION STRUCTURE\n"
+        for item in section["structure"]:
+            guide += f"- {item}\n"
+        guide += f"- Tone: {section['tone']}\n"
+        # Add formatting guidelines
+        guide += f"\n### FORMATTING\n"
+        guide += f"- Headlines: {NEWSLETTER_GUIDELINES['formatting']['headlines']}\n"
+        guide += f"- Body: {NEWSLETTER_GUIDELINES['formatting']['body']}\n"
+        guide += f"- Section labels: {NEWSLETTER_GUIDELINES['formatting']['sections']}\n"
+
+    return guide
+
+
+def get_section_structure(section_type):
+    """
+    Get the structure requirements for a specific newsletter section.
+
+    Args:
+        section_type: 'news', 'tip', or 'trend'
+
+    Returns:
+        Dict with structure and tone info
+    """
+    if section_type in NEWSLETTER_GUIDELINES["sections"]:
+        return NEWSLETTER_GUIDELINES["sections"][section_type]
+    return None

@@ -7,6 +7,7 @@ Run this to make the demo fully functional!
 import os
 import sys
 import json
+import re
 import requests
 from datetime import datetime
 from flask import Flask, request, jsonify, send_from_directory
@@ -24,7 +25,7 @@ from integrations.gemini_client import GeminiClient
 from integrations.claude_client import ClaudeClient
 from integrations.perplexity_client import PerplexityClient
 # NOTE: Brave Search deprecated - using OpenAI with site: operators instead
-from config.brand_guidelines import BRAND_VOICE, NEWSLETTER_GUIDELINES
+from config.brand_guidelines import BRAND_VOICE, NEWSLETTER_GUIDELINES, get_style_guide_for_prompt
 from config.model_config import get_model_config, get_model_for_task
 
 app = Flask(__name__, static_folder='.')
@@ -43,8 +44,6 @@ def safe_print(text):
 # Helper function to convert HTML to plain text
 def html_to_plain_text(html_content):
     """Convert HTML newsletter content to plain text for Ontraport"""
-    import re
-
     # Remove HTML tags
     text = re.sub(r'<[^>]+>', '', html_content)
 
@@ -531,31 +530,411 @@ def get_trends():
         print(f"[API ERROR] {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/api/generate-content', methods=['POST'])
-def generate_content():
-    """Generate newsletter content for selected topics"""
+@app.route('/api/research-articles', methods=['POST'])
+def research_articles():
+    """
+    GPT-5.2 researches selected articles and produces detailed summaries.
+    - NEWS: One-page briefing (~400-500 words)
+    - TIP: Half-page briefing (~200-250 words)
+    - TREND: Half-page briefing (~200-250 words)
+    """
     try:
         data = request.json
         news_topic = data.get('news_topic')
         tip_topic = data.get('tip_topic')
         trend_topic = data.get('trend_topic')
+
+        print(f"\n[API] Researching articles with GPT-5.2...")
+
+        research_results = {}
+
+        # Research NEWS article (One-Pager ~400-500 words)
+        if news_topic:
+            safe_print(f"  - Researching NEWS: {news_topic.get('title', 'Unknown')}")
+            news_research_prompt = f"""You are a senior industry analyst. Research this article and produce a one-page briefing (~400-500 words) for newsletter writers.
+
+Article: {news_topic.get('title', 'Unknown')}
+Source: {news_topic.get('url', 'N/A')}
+Initial Summary: {news_topic.get('description', '')}
+Additional Context: {news_topic.get('so_what', '')}
+
+Produce a structured briefing with these sections:
+
+1. EXECUTIVE SUMMARY
+Write 2-3 sentences capturing the core news and its significance.
+
+2. KEY FACTS & DATA
+Provide bullet points with specific statistics, dates, percentages, and quoted facts from the article.
+
+3. INDUSTRY CONTEXT
+Write 1 paragraph explaining why this matters in the broader wedding/venue industry landscape.
+
+4. VENUE IMPACT
+Write 1 paragraph on specific implications for venue owners - how does this affect their business?
+
+5. ACTIONABLE INSIGHTS
+Provide 2-3 bullet points on what venues should do or consider based on this news.
+
+6. SOURCE
+{news_topic.get('url', 'N/A')} ({news_topic.get('publisher', 'Unknown')})
+
+Target: 400-500 words total. Be factual, cite specifics from the summary, avoid speculation."""
+
+            news_research = openai_client.generate_content(
+                prompt=news_research_prompt,
+                model="gpt-5.2",
+                temperature=0.3,
+                max_tokens=1500
+            )
+            research_results['news'] = news_research['content']
+            print(f"    NEWS research: {len(news_research['content'].split())} words")
+
+        # Research TIP article (Half-Page ~200-250 words)
+        if tip_topic:
+            safe_print(f"  - Researching TIP: {tip_topic.get('title', 'Unknown')}")
+            tip_research_prompt = f"""You are a senior industry analyst. Produce a half-page briefing (~200-250 words) for newsletter writers.
+
+Article: {tip_topic.get('title', 'Unknown')}
+Source: {tip_topic.get('url', 'N/A')}
+Initial Summary: {tip_topic.get('description', '')}
+Additional Context: {tip_topic.get('so_what', '')}
+
+Produce a structured briefing with these sections:
+
+1. CORE ADVICE
+Write 1-2 sentences summarizing the main tip/advice.
+
+2. SUPPORTING EVIDENCE
+Provide bullet points explaining why this works - include any data or examples.
+
+3. IMPLEMENTATION STEPS
+Provide 2-3 actionable bullets on how venues can apply this tip immediately.
+
+4. SOURCE
+{tip_topic.get('url', 'N/A')} ({tip_topic.get('publisher', 'Unknown')})
+
+Target: 200-250 words total. Be practical and actionable."""
+
+            tip_research = openai_client.generate_content(
+                prompt=tip_research_prompt,
+                model="gpt-5.2",
+                temperature=0.3,
+                max_tokens=800
+            )
+            research_results['tip'] = tip_research['content']
+            print(f"    TIP research: {len(tip_research['content'].split())} words")
+
+        # Research TREND article (Half-Page ~200-250 words)
+        if trend_topic:
+            safe_print(f"  - Researching TREND: {trend_topic.get('title', 'Unknown')}")
+            trend_research_prompt = f"""You are a senior industry analyst. Produce a half-page briefing (~200-250 words) for newsletter writers.
+
+Article: {trend_topic.get('title', 'Unknown')}
+Source: {trend_topic.get('url', 'N/A')}
+Initial Summary: {trend_topic.get('description', '')}
+Additional Context: {trend_topic.get('so_what', '')}
+
+Produce a structured briefing with these sections:
+
+1. TREND OVERVIEW
+Write 1-2 sentences describing what this trend is and why it's emerging now.
+
+2. MARKET SIGNALS
+Provide bullet points with data/examples proving this is a real trend - statistics, industry examples, expert quotes.
+
+3. VENUE OPPORTUNITY
+Provide 2-3 actionable bullets on how venues can capitalize on this trend.
+
+4. SOURCE
+{trend_topic.get('url', 'N/A')} ({trend_topic.get('publisher', 'Unknown')})
+
+Target: 200-250 words total. Focus on opportunity and inspiration."""
+
+            trend_research = openai_client.generate_content(
+                prompt=trend_research_prompt,
+                model="gpt-5.2",
+                temperature=0.3,
+                max_tokens=800
+            )
+            research_results['trend'] = trend_research['content']
+            print(f"    TREND research: {len(trend_research['content'].split())} words")
+
+        print(f"[API] Research complete")
+
+        return jsonify({
+            'success': True,
+            'research': research_results,
+            'generated_at': datetime.now().isoformat()
+        })
+
+    except Exception as e:
+        print(f"[API ERROR] Research failed: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/generate-content', methods=['POST'])
+def generate_content():
+    """
+    Generate newsletter content using Claude Opus 4.5.
+    Accepts pre-researched summaries from /api/research-articles, or raw topics (legacy).
+    """
+    try:
+        data = request.json
         month = data.get('month', 'january')
-        ai_model = data.get('ai_model', 'chatgpt')  # Default to ChatGPT
+
+        # Check if we have research summaries (new flow) or raw topics (legacy flow)
+        research = data.get('research')
+
+        if research:
+            # NEW FLOW: Use research summaries with Opus 4.5
+            print(f"\n[API] Writing content for {month} using Claude Opus 4.5...")
+
+            if not claude_client:
+                raise ValueError("Claude client not available for writing")
+
+            sections = {}
+
+            # Write NEWS section from research
+            if research.get('news'):
+                safe_print(f"  - Writing NEWS section...")
+                # Get section-specific style guide (includes NEWS structure from config)
+                news_style_guide = get_style_guide_for_prompt('news')
+
+                news_prompt = f"""You are the copywriter for Venue Voice, a professional newsletter for wedding venue owners.
+
+## RESEARCH BRIEFING
+{research['news']}
+
+{news_style_guide}
+
+## OUTPUT REQUIREMENTS
+Section: NEWS (Full Article)
+Total word count: 250-300 words
+Structure: Three clearly labeled subsections
+
+**The Short Version:** (1-2 sentences, ~25 words)
+A punchy summary of the key news.
+
+**What's Happening:** (~150 words)
+The main story with context, statistics, and industry perspective. Include specific data points and examples.
+
+**Why It Matters for Venues:** (~80 words)
+Direct, actionable implications for venue owners. What should they do or consider?
+
+## EXAMPLE OUTPUT
+*The Short Version:* Sustainability has shifted from a nice-to-have perk to a must-have standard, with couples actively seeking eco-conscious venues for their celebrations.
+
+*What's Happening:* The wedding industry is experiencing a green revolution. According to a recent survey, 78% of engaged couples now consider a venue's environmental practices when making their booking decision — up from just 34% five years ago. This isn't limited to recycling bins and LED lighting. Couples want to see solar panels, composting programs, locally sourced catering options, and partnerships with sustainable vendors. Major venue networks report that properties with verified green certifications see 23% higher inquiry rates than comparable venues without credentials. The trend spans all price points, from rustic barn weddings to luxury estates.
+
+*Why It Matters for Venues:* Start documenting your existing eco-friendly practices — you likely have more than you realize. Consider pursuing certification through programs like Green Wedding Alliance or local sustainability councils. Even small changes, like switching to cloth napkins or partnering with a local florist, can become powerful marketing differentiators that attract environmentally conscious couples.
+
+Write the NEWS section now. Output the three subsections with italic labels (*The Short Version:*, *What's Happening:*, *Why It Matters for Venues:*). Use plain text with line breaks between sections."""
+
+                news_result = claude_client.generate_content(
+                    prompt=news_prompt,
+                    model="claude-opus-4-5-20251101",
+                    temperature=0.4,
+                    max_tokens=600
+                )
+
+                # Format as HTML with proper styling
+                news_text = news_result['content'].strip()
+
+                # Convert markdown-style formatting to HTML
+
+                # Replace *text:* with <em>text:</em> for section labels
+                news_text = re.sub(r'\*([^*]+):\*', r'<em>\1:</em>', news_text)
+
+                # Split into paragraphs and wrap each
+                paragraphs = [p.strip() for p in news_text.split('\n\n') if p.strip()]
+                formatted_paragraphs = []
+                for p in paragraphs:
+                    # Handle single newlines within paragraphs
+                    p = p.replace('\n', ' ')
+                    formatted_paragraphs.append(f'<p style="margin: 0 0 16px 0; font-family: \'Gilroy\', Trebuchet MS, sans-serif; font-size: 15px; color: #555555; line-height: 1.7;" class="dark-mode-secondary">{p}</p>')
+
+                sections['news'] = '\n'.join(formatted_paragraphs)
+
+            # Write TIP section from research (BRITECO INSIGHT)
+            if research.get('tip'):
+                safe_print(f"  - Writing TIP section...")
+
+                # Generate title and subtitle together
+                tip_title_prompt = f"""Based on this research briefing, create:
+1. A 4-6 word TITLE in Title Case (action-oriented)
+2. A 6-10 word SUBTITLE (italicized tagline that summarizes the benefit)
+
+{research['tip']}
+
+## EXAMPLE
+TITLE: Host High-Impact Showcases
+SUBTITLE: Turn open days into your #1 booking engine.
+
+Output format (exactly two lines):
+TITLE: [your title]
+SUBTITLE: [your subtitle]"""
+
+                tip_title_result = claude_client.generate_content(
+                    prompt=tip_title_prompt,
+                    model="claude-opus-4-5-20251101",
+                    temperature=0.4,
+                    max_tokens=60
+                )
+
+                # Parse title and subtitle
+                title_response = tip_title_result['content'].strip()
+                tip_title = ""
+                tip_subtitle = ""
+                for line in title_response.split('\n'):
+                    if line.startswith('TITLE:'):
+                        tip_title = line.replace('TITLE:', '').strip().replace('"', '').replace("'", "")
+                    elif line.startswith('SUBTITLE:'):
+                        tip_subtitle = line.replace('SUBTITLE:', '').strip().replace('"', '').replace("'", "")
+
+                if not tip_title:
+                    tip_title = "Expert Venue Advice"
+                if not tip_subtitle:
+                    tip_subtitle = "Actionable insights for your venue."
+
+                # Generate body content with section-specific style guide
+                tip_style_guide = get_style_guide_for_prompt('tip')
+
+                tip_prompt = f"""You are the copywriter for Venue Voice newsletter's BRITECO INSIGHT section.
+
+## RESEARCH BRIEFING
+{research['tip']}
+
+{tip_style_guide}
+
+## OUTPUT REQUIREMENTS
+Section: BRITECO INSIGHT (practical advice for venue owners)
+Word count: 80-100 words (ONE paragraph)
+Tone: Helpful, expert, actionable
+Purpose: Provide specific, implementable advice that venue owners can use immediately
+
+## EXAMPLE OUTPUT
+Stop treating open houses as passive property tours. The most successful venues create immersive mini-experiences: tasting stations with signature cocktails, ambient lighting that matches evening reception vibes, and guest books where visitors can note their favorite features. Consider partnering with a local florist to stage tablescapes or hiring a DJ for an hour to demonstrate sound quality. Capture email addresses at entry and follow up within 48 hours with a personalized video message referencing their visit.
+
+Write the TIP body paragraph now. Output ONLY the paragraph text, no title or formatting."""
+
+                tip_result = claude_client.generate_content(
+                    prompt=tip_prompt,
+                    model="claude-opus-4-5-20251101",
+                    temperature=0.4,
+                    max_tokens=200
+                )
+
+                tip_text = tip_result['content'].strip()
+
+                # Build HTML with subtitle in italics
+                sections['tip'] = f'''<p style="margin: 0 0 10px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 13px; font-style: italic; color: #008181; line-height: 1.4;">{tip_subtitle}</p>
+<p style="margin: 0 0 14px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 14px; color: #555555; line-height: 1.6;" class="dark-mode-secondary">{tip_text}</p>'''
+                sections['tip_title'] = tip_title
+
+            # Write TREND section from research (TREND ALERT)
+            if research.get('trend'):
+                safe_print(f"  - Writing TREND section...")
+
+                # Generate title and subtitle together
+                trend_title_prompt = f"""Based on this research briefing, create:
+1. A 4-6 word TITLE in Title Case (trend-focused, evocative)
+2. A 6-10 word SUBTITLE (italicized tagline capturing the essence)
+
+{research['trend']}
+
+## EXAMPLE
+TITLE: Cinematic 2026 Wedding Moments
+SUBTITLE: Moody color, immersive vibes, highly intentional everything.
+
+Output format (exactly two lines):
+TITLE: [your title]
+SUBTITLE: [your subtitle]"""
+
+                trend_title_result = claude_client.generate_content(
+                    prompt=trend_title_prompt,
+                    model="claude-opus-4-5-20251101",
+                    temperature=0.4,
+                    max_tokens=60
+                )
+
+                # Parse title and subtitle
+                title_response = trend_title_result['content'].strip()
+                trend_title = ""
+                trend_subtitle = ""
+                for line in title_response.split('\n'):
+                    if line.startswith('TITLE:'):
+                        trend_title = line.replace('TITLE:', '').strip().replace('"', '').replace("'", "")
+                    elif line.startswith('SUBTITLE:'):
+                        trend_subtitle = line.replace('SUBTITLE:', '').strip().replace('"', '').replace("'", "")
+
+                if not trend_title:
+                    trend_title = "Emerging Wedding Trends"
+                if not trend_subtitle:
+                    trend_subtitle = "What couples are asking for now."
+
+                # Generate body content with section-specific style guide
+                trend_style_guide = get_style_guide_for_prompt('trend')
+
+                trend_prompt = f"""You are the copywriter for Venue Voice newsletter's TREND ALERT section.
+
+## RESEARCH BRIEFING
+{research['trend']}
+
+{trend_style_guide}
+
+## OUTPUT REQUIREMENTS
+Section: TREND ALERT (emerging wedding/event trends)
+Word count: 60-80 words (ONE paragraph)
+Tone: Trend-forward, inspiring, slightly editorial
+Purpose: Help venue owners understand what's coming and how to prepare
+
+## EXAMPLE OUTPUT
+The age of the Pinterest-perfect wedding is fading. In its place, couples are demanding cinematic experiences — think moody lighting, dramatic entrances, and reception moments designed for film rather than still photography. Venues that offer fog machines, intelligent lighting systems, and dedicated "first look" spaces are winning bookings. Consider partnering with videographers who can showcase your space's most dramatic angles in promotional content.
+
+Write the TREND body paragraph now. Output ONLY the paragraph text, no title or formatting."""
+
+                trend_result = claude_client.generate_content(
+                    prompt=trend_prompt,
+                    model="claude-opus-4-5-20251101",
+                    temperature=0.4,
+                    max_tokens=180
+                )
+
+                trend_text = trend_result['content'].strip()
+
+                # Build HTML with subtitle in italics - white text for dark teal background
+                sections['trend'] = f'''<p style="margin: 0 0 10px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 13px; font-style: italic; color: #272d3f; line-height: 1.4;">{trend_subtitle}</p>
+<p style="margin: 0 0 14px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 14px; color: #ffffff; line-height: 1.6;">{trend_text}</p>'''
+                sections['trend_title'] = trend_title
+
+            print(f"[API] Content written successfully with Opus 4.5")
+
+            return jsonify({
+                'success': True,
+                'content': sections,
+                'generated_at': datetime.now().isoformat()
+            })
+
+        # LEGACY FLOW: Direct topic-to-content (for backwards compatibility)
+        news_topic = data.get('news_topic')
+        tip_topic = data.get('tip_topic')
+        trend_topic = data.get('trend_topic')
+        ai_model = data.get('ai_model', 'chatgpt')
 
         # Select the AI client based on user choice
         if ai_model == 'claude' and claude_client:
             ai_client = claude_client
             model_name = "Claude (Sonnet 4.5)"
         elif ai_model == 'gemini':
-            # For Gemini, we'll use a text model instead of image model
-            # Use Gemini 1.5 Pro for text generation
-            ai_client = openai_client  # Fallback to OpenAI for now since Gemini client is for images
+            ai_client = openai_client
             model_name = "ChatGPT (GPT-4o) - Gemini text support coming soon"
         else:
             ai_client = openai_client
             model_name = "ChatGPT (GPT-4o)"
 
-        print(f"\n[API] Generating content for {month} using {model_name}...")
+        print(f"\n[API] Generating content for {month} using {model_name} (legacy flow)...")
 
         # Helper function to parse JSON from AI response (handles markdown wrapping)
         def parse_json_response(content):
@@ -604,7 +983,6 @@ def generate_content():
 
             # Force truncate to 35 words if needed
             if '<p>' in news_content:
-                import re
                 match = re.search(r'<p>(.*?)</p>', news_content, re.DOTALL)
                 if match:
                     text = match.group(1).strip()
@@ -655,7 +1033,6 @@ def generate_content():
 
             # Force truncate to 12 words if needed
             if '<p>' in tip_content:
-                import re
                 match = re.search(r'<p>(.*?)</p>', tip_content, re.DOTALL)
                 if match:
                     text = match.group(1).strip()
@@ -707,7 +1084,6 @@ def generate_content():
 
             # Force truncate to 12 words if needed
             if '<p>' in trend_content:
-                import re
                 match = re.search(r'<p>(.*?)</p>', trend_content, re.DOTALL)
                 if match:
                     text = match.group(1).strip()
@@ -1059,11 +1435,11 @@ def generate_images():
             else:
                 aspect_ratio = "1:1"  # Square for smaller tip/trend images
 
-            # Generate with Gemini (Nano Banana)
-            print(f"  [{section_name.upper()}] Calling Nano Banana...")
+            # Generate with Gemini 3 Pro Image Preview
+            print(f"  [{section_name.upper()}] Calling Gemini 3 Pro Image...")
             image_result = gemini_client.generate_image(
                 prompt=prompt,
-                model="gemini-2.5-flash-image",
+                model="gemini-3-pro-image-preview",
                 aspect_ratio=aspect_ratio,
                 image_size="1K"
             )
@@ -1399,10 +1775,10 @@ Return ONLY the image prompt, nothing else."""
             text_overlay_top = "WEDDING SEASON"
             text_overlay_bottom = "IT'S HAPPENING"
 
-        # Generate with Nano Banana
+        # Generate with Gemini 3 Pro Image Preview
         meme_result = gemini_client.generate_image(
             prompt=prompt,
-            model="gemini-2.5-flash-image",  # Force correct model
+            model="gemini-3-pro-image-preview",
             aspect_ratio="1:1",
             image_size="1K"
         )
@@ -2192,7 +2568,6 @@ Return ONLY the JSON array, no other text."""
         content = response.choices[0].message.content.strip()
 
         # Parse JSON response
-        import re
         if content.startswith("```"):
             content = re.sub(r"^```[a-zA-Z]*\n", "", content)
             content = re.sub(r"\n```$", "", content).strip()
@@ -2345,7 +2720,6 @@ Return ONLY the JSON array, no other text."""
         content = response.choices[0].message.content.strip()
 
         # Parse JSON response
-        import re
         if content.startswith("```"):
             content = re.sub(r"^```[a-zA-Z]*\n", "", content)
             content = re.sub(r"\n```$", "", content).strip()
@@ -2495,7 +2869,6 @@ Return ONLY the JSON array, no other text."""
         content = response.choices[0].message.content.strip()
 
         # Parse the JSON response
-        import re
         if content.startswith("```"):
             content = re.sub(r"^```[a-zA-Z]*\n", "", content)
             content = re.sub(r"\n```$", "", content).strip()
