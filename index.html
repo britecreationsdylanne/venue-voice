@@ -247,6 +247,206 @@
             border-radius: 8px;
             margin: 20px 0;
         }
+
+        /* 4-Card Research Dashboard Styles */
+        .research-dashboard {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .research-dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .research-card {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .research-card.disabled {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .research-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .research-card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #272d3f;
+        }
+
+        .research-card-badge {
+            background: #FE8916;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .research-card-badge.coming-soon {
+            background: #9ca3af;
+        }
+
+        .research-card-filters {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .research-card-filters select,
+        .research-card-filters input {
+            padding: 10px;
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 14px;
+            width: 100%;
+        }
+
+        .research-card-filters select:focus,
+        .research-card-filters input:focus {
+            border-color: #018181;
+            outline: none;
+        }
+
+        .research-card-results {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .research-result-item {
+            background: #f9fafb;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .research-result-item:hover {
+            border-color: #018181;
+            background: #f0f9f9;
+        }
+
+        .research-result-item.selected {
+            border-color: #018181;
+            background: #e0f2f2;
+        }
+
+        .research-result-title {
+            font-weight: 600;
+            color: #272d3f;
+            font-size: 14px;
+            margin-bottom: 6px;
+        }
+
+        .research-result-snippet {
+            color: #666;
+            font-size: 13px;
+            line-height: 1.4;
+            margin-bottom: 6px;
+        }
+
+        .research-result-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: #999;
+        }
+
+        .research-result-link {
+            color: #018181;
+            text-decoration: none;
+        }
+
+        .research-result-link:hover {
+            text-decoration: underline;
+        }
+
+        .research-card-search-btn {
+            background: #018181;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 15px;
+        }
+
+        .research-card-search-btn:hover {
+            background: #016666;
+        }
+
+        .research-card-search-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .research-card-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .section-selection-header {
+            background: #272d3f;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .section-selection-header h3 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .section-selection-header p {
+            margin: 5px 0 0 0;
+            opacity: 0.8;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -294,11 +494,161 @@
             </div>
 
             <div class="buttons">
-                <button class="btn" id="monthNextBtn" disabled onclick="searchTopics()">Search for Topics →</button>
+                <button class="btn" id="monthNextBtn" disabled onclick="showResearchDashboard()">Research Topics →</button>
             </div>
         </div>
 
-        <!-- Step 2: Loading -->
+        <!-- Step 2: Research Dashboard (NEW 4-Card Layout) -->
+        <div class="step" id="step2-research">
+            <h2>🔍 Research Dashboard</h2>
+            <p>Search for topics using multiple sources. Select one result from any card for each newsletter section.</p>
+
+            <div class="research-dashboard">
+                <!-- Card 1: Perplexity Research -->
+                <div class="research-card" id="perplexityCard">
+                    <div class="research-card-header">
+                        <span class="research-card-title">🔮 Perplexity Research</span>
+                        <span class="research-card-badge">AI + Citations</span>
+                    </div>
+                    <div class="research-card-filters">
+                        <input type="text" id="perplexityQuery" placeholder="Topic or question..." value="wedding venue trends 2026">
+                        <select id="perplexityTimeWindow">
+                            <option value="7d">Last 7 days</option>
+                            <option value="30d" selected>Last 30 days</option>
+                            <option value="90d">Last 90 days</option>
+                        </select>
+                    </div>
+                    <button class="research-card-search-btn" onclick="searchPerplexity()">Search with Perplexity</button>
+                    <div class="research-card-results" id="perplexityResults">
+                        <p style="text-align: center; color: #999; padding: 20px;">Enter a topic and search</p>
+                    </div>
+                </div>
+
+                <!-- Card 2: Insight Builder -->
+                <div class="research-card" id="insightCard">
+                    <div class="research-card-header">
+                        <span class="research-card-title">📊 Insight Builder</span>
+                        <span class="research-card-badge">Signals</span>
+                    </div>
+                    <div class="research-card-filters">
+                        <select id="insightSignal">
+                            <option value="food_costs">Food/Ingredient Costs</option>
+                            <option value="labor">Labor & Staffing</option>
+                            <option value="travel">Travel & Hospitality</option>
+                            <option value="weather">Weather & Seasonal Risks</option>
+                            <option value="economic">Economic Indicators</option>
+                        </select>
+                        <select id="insightTimeWindow">
+                            <option value="7d">Last 7 days</option>
+                            <option value="30d" selected>Last 30 days</option>
+                            <option value="90d">Last 90 days</option>
+                        </select>
+                    </div>
+                    <button class="research-card-search-btn" onclick="searchInsights()">Search Signals</button>
+                    <div class="research-card-results" id="insightResults">
+                        <p style="text-align: center; color: #999; padding: 20px;">Select a signal and search</p>
+                    </div>
+                </div>
+
+                <!-- Card 3: OpenAI Search -->
+                <div class="research-card" id="openaiCard">
+                    <div class="research-card-header">
+                        <span class="research-card-title">🤖 OpenAI Search</span>
+                        <span class="research-card-badge">Web</span>
+                    </div>
+                    <div class="research-card-filters">
+                        <input type="text" id="openaiQuery" placeholder="Search query..." value="wedding venue industry news">
+                        <select id="openaiTimeWindow">
+                            <option value="7d">Last 7 days</option>
+                            <option value="30d" selected>Last 30 days</option>
+                            <option value="90d">Last 90 days</option>
+                        </select>
+                    </div>
+                    <button class="research-card-search-btn" onclick="searchOpenAI()">Search Web</button>
+                    <div class="research-card-results" id="openaiResults">
+                        <p style="text-align: center; color: #999; padding: 20px;">Enter a query and search</p>
+                    </div>
+                </div>
+
+                <!-- Card 4: Source Explorer -->
+                <div class="research-card" id="explorerCard">
+                    <div class="research-card-header">
+                        <span class="research-card-title">📰 Source Explorer</span>
+                        <span class="research-card-badge">Industry</span>
+                    </div>
+                    <div class="research-card-filters">
+                        <div class="checkbox-group">
+                            <label><input type="checkbox" value="wedding" checked class="explorerPack"> Wedding</label>
+                            <label><input type="checkbox" value="hospitality" class="explorerPack"> Hospitality</label>
+                            <label><input type="checkbox" value="business" class="explorerPack"> Business</label>
+                        </div>
+                        <input type="text" id="explorerQuery" placeholder="Keywords..." value="wedding venue trends">
+                    </div>
+                    <button class="research-card-search-btn" onclick="searchSources()">Search Sources</button>
+                    <div class="research-card-results" id="explorerResults">
+                        <p style="text-align: center; color: #999; padding: 20px;">Select source packs and search</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="buttons">
+                <button class="btn-secondary btn" onclick="showStep(1)">← Back</button>
+                <button class="btn" id="researchNextBtn" onclick="goToSectionSelection('news')">Select for NEWS Section →</button>
+            </div>
+        </div>
+
+        <!-- Step 2.5: Section Selection for NEWS -->
+        <div class="step" id="step-select-news">
+            <div class="section-selection-header">
+                <h3>📰 Select for NEWS Section</h3>
+                <p>Choose one result from your research to use for the News section</p>
+            </div>
+
+            <div id="allResultsForNews" class="topic-list">
+                <!-- All results from all cards will be shown here -->
+            </div>
+
+            <div class="buttons">
+                <button class="btn-secondary btn" onclick="showStep('2-research')">← Back to Research</button>
+                <button class="btn" id="newsSelectNextBtn" disabled onclick="goToSectionSelection('tip')">Select for TIP Section →</button>
+            </div>
+        </div>
+
+        <!-- Step 2.6: Section Selection for TIP -->
+        <div class="step" id="step-select-tip">
+            <div class="section-selection-header">
+                <h3>💡 Select for TIP Section</h3>
+                <p>Choose one result from your research to use for the Tip section</p>
+            </div>
+
+            <div id="allResultsForTip" class="topic-list">
+                <!-- All results from all cards will be shown here -->
+            </div>
+
+            <div class="buttons">
+                <button class="btn-secondary btn" onclick="goToSectionSelection('news')">← Back</button>
+                <button class="btn" id="tipSelectNextBtn" disabled onclick="goToSectionSelection('trend')">Select for TREND Section →</button>
+            </div>
+        </div>
+
+        <!-- Step 2.7: Section Selection for TREND -->
+        <div class="step" id="step-select-trend">
+            <div class="section-selection-header">
+                <h3>📈 Select for TREND Section</h3>
+                <p>Choose one result from your research to use for the Trend section</p>
+            </div>
+
+            <div id="allResultsForTrend" class="topic-list">
+                <!-- All results from all cards will be shown here -->
+            </div>
+
+            <div class="buttons">
+                <button class="btn-secondary btn" onclick="goToSectionSelection('tip')">← Back</button>
+                <button class="btn" id="trendSelectNextBtn" disabled onclick="showStep(8)">Select AI Model →</button>
+            </div>
+        </div>
+
+        <!-- OLD Step 2: Loading (kept for backwards compatibility) -->
         <div class="step" id="step2">
             <div class="loading">
                 <div class="spinner"></div>
@@ -995,6 +1345,15 @@
         let shownNewsArticles = [];
         let shownTipArticles = [];
         let shownTrendArticles = [];
+
+        // NEW: 4-Card Research Dashboard State
+        let researchResults = {
+            insight: [],
+            openai: [],
+            explorer: [],
+            perplexity: []
+        };
+        let allResearchResults = [];  // Combined results from all cards
 
         // Meme text overlay state (draggable text boxes)
         let memeTextOverlays = [];
@@ -3780,6 +4139,240 @@
                 alert('Error generating options: ' + error.message);
             }
         }
+
+        // =============================================================================
+        // NEW 4-CARD RESEARCH DASHBOARD FUNCTIONS
+        // =============================================================================
+
+        function showResearchDashboard() {
+            document.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
+            document.getElementById('step2-research').classList.add('active');
+            updateProgress(2);
+        }
+
+        async function searchPerplexity() {
+            const query = document.getElementById('perplexityQuery').value;
+            const timeWindow = document.getElementById('perplexityTimeWindow').value;
+            const resultsDiv = document.getElementById('perplexityResults');
+
+            resultsDiv.innerHTML = '<div class="research-card-loading"><div class="spinner"></div><p>Searching with Perplexity AI...</p></div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v2/search-perplexity`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query, time_window: timeWindow, exclude_urls: [] })
+                });
+                const data = await response.json();
+
+                if (data.success && data.results.length > 0) {
+                    researchResults.perplexity = data.results;
+                    displayCardResults('perplexity', data.results, resultsDiv);
+                    updateAllResults();
+                } else {
+                    const errorMsg = data.error || 'No results found. Try a different query.';
+                    resultsDiv.innerHTML = `<p style="text-align: center; color: #999; padding: 20px;">${errorMsg}</p>`;
+                }
+            } catch (error) {
+                console.error('Perplexity search error:', error);
+                resultsDiv.innerHTML = `<p style="color: #c00; padding: 20px;">Error: ${error.message}</p>`;
+            }
+        }
+
+        async function searchInsights() {
+            const signal = document.getElementById('insightSignal').value;
+            const timeWindow = document.getElementById('insightTimeWindow').value;
+            const resultsDiv = document.getElementById('insightResults');
+
+            resultsDiv.innerHTML = '<div class="research-card-loading"><div class="spinner"></div><p>Searching for insights...</p></div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v2/search-insights`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ signal, time_window: timeWindow, exclude_urls: [] })
+                });
+                const data = await response.json();
+
+                if (data.success && data.results.length > 0) {
+                    researchResults.insight = data.results;
+                    displayCardResults('insight', data.results, resultsDiv);
+                    updateAllResults();
+                } else {
+                    resultsDiv.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No insights found. Try a different signal.</p>';
+                }
+            } catch (error) {
+                console.error('Insight search error:', error);
+                resultsDiv.innerHTML = `<p style="color: #c00; padding: 20px;">Error: ${error.message}</p>`;
+            }
+        }
+
+        async function searchOpenAI() {
+            const query = document.getElementById('openaiQuery').value;
+            const timeWindow = document.getElementById('openaiTimeWindow').value;
+            const resultsDiv = document.getElementById('openaiResults');
+
+            resultsDiv.innerHTML = '<div class="research-card-loading"><div class="spinner"></div><p>Searching web...</p></div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v2/search-openai`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query, time_window: timeWindow, exclude_urls: [] })
+                });
+                const data = await response.json();
+
+                if (data.success && data.results.length > 0) {
+                    researchResults.openai = data.results;
+                    displayCardResults('openai', data.results, resultsDiv);
+                    updateAllResults();
+                } else {
+                    resultsDiv.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No results found. Try a different query.</p>';
+                }
+            } catch (error) {
+                console.error('OpenAI search error:', error);
+                resultsDiv.innerHTML = `<p style="color: #c00; padding: 20px;">Error: ${error.message}</p>`;
+            }
+        }
+
+        async function searchSources() {
+            const query = document.getElementById('explorerQuery').value;
+            const packCheckboxes = document.querySelectorAll('.explorerPack:checked');
+            const sourcePacks = Array.from(packCheckboxes).map(cb => cb.value);
+            const resultsDiv = document.getElementById('explorerResults');
+
+            if (sourcePacks.length === 0) {
+                resultsDiv.innerHTML = '<p style="color: #c00; padding: 20px;">Please select at least one source pack.</p>';
+                return;
+            }
+
+            resultsDiv.innerHTML = '<div class="research-card-loading"><div class="spinner"></div><p>Searching sources...</p></div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v2/search-sources`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query, source_packs: sourcePacks, exclude_urls: [] })
+                });
+                const data = await response.json();
+
+                if (data.success && data.results.length > 0) {
+                    researchResults.explorer = data.results;
+                    displayCardResults('explorer', data.results, resultsDiv);
+                    updateAllResults();
+                } else {
+                    resultsDiv.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No results found. Try different sources or keywords.</p>';
+                }
+            } catch (error) {
+                console.error('Source explorer error:', error);
+                resultsDiv.innerHTML = `<p style="color: #c00; padding: 20px;">Error: ${error.message}</p>`;
+            }
+        }
+
+        function displayCardResults(cardType, results, container) {
+            container.innerHTML = '';
+            results.forEach((result, index) => {
+                const item = document.createElement('div');
+                item.className = 'research-result-item';
+                item.dataset.cardType = cardType;
+                item.dataset.index = index;
+                item.innerHTML = `
+                    <div class="research-result-title">${result.title || 'Untitled'}</div>
+                    <div class="research-result-snippet">${(result.snippet || result.venue_implications || '').substring(0, 150)}...</div>
+                    <div class="research-result-meta">
+                        <span>${result.publisher || 'Unknown source'}</span>
+                        ${result.url ? `<a href="${result.url}" target="_blank" class="research-result-link" onclick="event.stopPropagation()">View →</a>` : ''}
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function updateAllResults() {
+            // Combine all results from all cards
+            allResearchResults = [
+                ...researchResults.insight.map((r, i) => ({ ...r, _cardType: 'insight', _index: i })),
+                ...researchResults.openai.map((r, i) => ({ ...r, _cardType: 'openai', _index: i })),
+                ...researchResults.explorer.map((r, i) => ({ ...r, _cardType: 'explorer', _index: i })),
+                ...researchResults.perplexity.map((r, i) => ({ ...r, _cardType: 'perplexity', _index: i }))
+            ];
+        }
+
+        function goToSectionSelection(section) {
+            document.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
+            document.getElementById(`step-select-${section}`).classList.add('active');
+            updateProgress(section === 'news' ? 3 : section === 'tip' ? 4 : 5);
+
+            // Populate results for this section
+            const containerId = `allResultsFor${section.charAt(0).toUpperCase() + section.slice(1)}`;
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+
+            if (allResearchResults.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #999; padding: 40px;">No research results yet. Go back and search in at least one card.</p>';
+                return;
+            }
+
+            allResearchResults.forEach((result, globalIndex) => {
+                const card = document.createElement('div');
+                card.className = 'topic-card';
+                card.dataset.globalIndex = globalIndex;
+                card.innerHTML = `
+                    <div class="title">${getCardIcon(result._cardType)} ${result.title || 'Untitled'}</div>
+                    <div class="description">${result.snippet || result.venue_implications || ''}</div>
+                    ${result.url ? `<a href="${result.url}" target="_blank" class="source" onclick="event.stopPropagation()">View source →</a>` : ''}
+                    <div style="margin-top: 8px; font-size: 12px; color: #999;">
+                        Source: ${getCardLabel(result._cardType)} | ${result.publisher || 'Unknown'}
+                    </div>
+                `;
+                card.onclick = () => selectForSection(section, globalIndex, card);
+                container.appendChild(card);
+            });
+        }
+
+        function getCardIcon(cardType) {
+            const icons = { insight: '📊', openai: '🤖', explorer: '📰', perplexity: '🔮' };
+            return icons[cardType] || '📄';
+        }
+
+        function getCardLabel(cardType) {
+            const labels = { insight: 'Insight Builder', openai: 'OpenAI Search', explorer: 'Source Explorer', perplexity: 'Perplexity' };
+            return labels[cardType] || cardType;
+        }
+
+        function selectForSection(section, globalIndex, element) {
+            const result = allResearchResults[globalIndex];
+
+            // Update global selection (maps to existing selectedNews/selectedTip/selectedTrend)
+            const selectedObj = {
+                title: result.title,
+                description: result.snippet || result.venue_implications,
+                source_url: result.url,
+                url: result.url,
+                publisher: result.publisher,
+                _cardType: result._cardType
+            };
+
+            if (section === 'news') {
+                selectedNews = selectedObj;
+                document.querySelectorAll('#allResultsForNews .topic-card').forEach(c => c.classList.remove('selected'));
+                document.getElementById('newsSelectNextBtn').disabled = false;
+            } else if (section === 'tip') {
+                selectedTip = selectedObj;
+                document.querySelectorAll('#allResultsForTip .topic-card').forEach(c => c.classList.remove('selected'));
+                document.getElementById('tipSelectNextBtn').disabled = false;
+            } else if (section === 'trend') {
+                selectedTrend = selectedObj;
+                document.querySelectorAll('#allResultsForTrend .topic-card').forEach(c => c.classList.remove('selected'));
+                document.getElementById('trendSelectNextBtn').disabled = false;
+            }
+
+            element.classList.add('selected');
+        }
+
+        // =============================================================================
+        // END 4-CARD RESEARCH DASHBOARD FUNCTIONS
+        // =============================================================================
 
         function showStep(stepNum) {
             document.querySelectorAll('.step').forEach(step => step.classList.remove('active'));

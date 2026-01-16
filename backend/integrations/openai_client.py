@@ -368,8 +368,8 @@ No extra keys. No commentary outside JSON."""
                             if sidx in used_source_indices:
                                 continue
                             best_source, best_score = best_source_for_title(title, [s])
-                            # Require at least 30% similarity
-                            if best_score >= 0.3:
+                            # Require at least 40% similarity (increased from 30% for stricter matching)
+                            if best_score >= 0.4:
                                 url = str(s.get("url", "")).strip()
                                 # Also update publisher from source if not provided
                                 if not publisher and s.get("publisher"):
@@ -377,19 +377,10 @@ No extra keys. No commentary outside JSON."""
                                 used_source_indices.add(sidx)
                                 break
 
-                    if not url and idx < len(web_sources):
-                        # Fallback: use sources directly by index
-                        if idx not in used_source_indices:
-                            url = str(web_sources[idx].get("url", "")).strip()
-                            if not publisher:
-                                try:
-                                    publisher = urlparse(url).netloc
-                                except:
-                                    publisher = ""
-                            used_source_indices.add(idx)
-
+                    # NOTE: Removed index-based fallback that caused off-by-one URL/summary mismatch
+                    # If fuzzy matching didn't find a URL, skip this result rather than mismatching
                     if not url:
-                        # Skip this item if we can't recover URL
+                        print(f"[OpenAI Responses API] Skipping result with no URL match: {title[:50]}...")
                         continue
 
                 if not url or not title:

@@ -22,7 +22,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'backend'))
 from integrations.openai_client import OpenAIClient
 from integrations.gemini_client import GeminiClient
 from integrations.claude_client import ClaudeClient
-from integrations.brave_search import BraveSearchClient
+from integrations.perplexity_client import PerplexityClient
+# NOTE: Brave Search deprecated - using OpenAI with site: operators instead
 from config.brand_guidelines import BRAND_VOICE, NEWSLETTER_GUIDELINES
 
 app = Flask(__name__, static_folder='.')
@@ -72,13 +73,15 @@ except Exception as e:
     claude_client = None
     print(f"[WARNING] Claude not available: {e}")
 
-# Try to initialize Brave Search (optional)
+# NOTE: Brave Search deprecated - using OpenAI with site: operators for Source Explorer
+brave_client = None
+
+# Initialize Perplexity client
 try:
-    brave_client = BraveSearchClient()
-    print("[OK] Brave Search initialized")
+    perplexity_client = PerplexityClient()
 except Exception as e:
-    brave_client = None
-    print(f"[WARNING] Brave Search not available: {e}")
+    perplexity_client = None
+    print(f"[WARNING] Perplexity not available: {e}")
 
 # Seasonal data for trends
 SEASONAL_TRENDS = {
@@ -1954,6 +1957,278 @@ def save_newsletter_archive():
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# =============================================================================
+# NEW 4-CARD SEARCH SYSTEM
+# =============================================================================
+
+def transform_to_shared_schema(results, source_card):
+    """Transform search results to shared schema used by all 4 cards"""
+    transformed = []
+    for r in results:
+        transformed.append({
+            'title': r.get('title', ''),
+            'url': r.get('url', r.get('source_url', '')),
+            'publisher': r.get('publisher', ''),
+            'published_at': r.get('published_date', r.get('age', '')),
+            'snippet': r.get('description', ''),
+            'venue_implications': r.get('venue_implications', ''),
+            'category': r.get('category', 'general'),
+            'source_card': source_card
+        })
+    return transformed
+
+
+@app.route('/api/v2/search-openai', methods=['POST'])
+def search_openai_v2():
+    """
+    OpenAI Search Card - refactored with shared schema and filters
+    """
+    try:
+        data = request.json
+        query = data.get('query', 'wedding venue industry news')
+        time_window = data.get('time_window', '30d')  # 7d, 30d, 90d
+        geography = data.get('geography', '')  # optional
+        exclude_urls = data.get('exclude_urls', [])
+
+        print(f"\n[API v2] OpenAI Search: query='{query}', time_window={time_window}")
+
+        # Build search query with filters
+        search_query = f"{query} wedding venue"
+        if geography:
+            search_query += f" {geography}"
+        if time_window == '7d':
+            search_query += " last week recent"
+        elif time_window == '30d':
+            search_query += " this month 2026"
+        elif time_window == '90d':
+            search_query += " 2025 2026"
+
+        # Use existing OpenAI search
+        search_results = openai_client.search_wedding_news(
+            month='january',  # Not used for custom query
+            exclude_urls=exclude_urls
+        )
+
+        # Transform to shared schema
+        results = transform_to_shared_schema(search_results[:4], 'openai')
+
+        # Add venue implications via AI post-processing
+        for result in results:
+            if not result['venue_implications']:
+                result['venue_implications'] = f"This article discusses trends relevant to wedding venue operators."
+
+        return jsonify({
+            'success': True,
+            'results': results,
+            'source': 'openai',
+            'generated_at': datetime.now().isoformat()
+        })
+
+    except Exception as e:
+        print(f"[API v2 ERROR] OpenAI Search: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e), 'results': []}), 500
+
+
+@app.route('/api/v2/search-sources', methods=['POST'])
+def search_sources_v2():
+    """
+    Source Explorer Card - searches specific industry sites using site: operator
+    """
+    try:
+        data = request.json
+        query = data.get('query', 'wedding venue trends')
+        source_packs = data.get('source_packs', ['wedding'])  # wedding, hospitality, business
+        time_window = data.get('time_window', '30d')
+        exclude_urls = data.get('exclude_urls', [])
+
+        print(f"\n[API v2] Source Explorer: query='{query}', packs={source_packs}")
+
+        # Define source pack sites
+        SITE_PACKS = {
+            'wedding': ['theknot.com', 'weddingwire.com', 'brides.com', 'marthastewartweddings.com'],
+            'hospitality': ['bizbash.com', 'specialevents.com', 'hotelnewsnow.com'],
+            'business': ['bizjournals.com', 'restaurant.org', 'nrn.com']
+        }
+
+        # Build site: query
+        sites = []
+        for pack in source_packs:
+            sites.extend(SITE_PACKS.get(pack, []))
+
+        if sites:
+            site_query = ' OR '.join([f'site:{s}' for s in sites[:4]])  # Limit to 4 sites
+            full_query = f"({site_query}) {query}"
+        else:
+            full_query = query
+
+        print(f"[API v2] Source Explorer full query: {full_query}")
+
+        # Use OpenAI search with site-specific query
+        # Note: We'll use the OpenAI Responses API which handles site: operators
+        search_results = openai_client.search_web_responses_api(
+            f"""Search for: {full_query}
+
+Find recent articles about wedding venues from these specific industry sources.
+Return results with title, url, publisher, published_date, and summary.""",
+            max_results=4,
+            exclude_urls=exclude_urls
+        )
+
+        # Transform to shared schema
+        results = transform_to_shared_schema(search_results[:4], 'explorer')
+
+        # Add venue implications
+        for result in results:
+            if not result['venue_implications']:
+                result['venue_implications'] = f"Industry insight from {result.get('publisher', 'trade publication')}."
+
+        return jsonify({
+            'success': True,
+            'results': results,
+            'source_packs': source_packs,
+            'source': 'explorer',
+            'generated_at': datetime.now().isoformat()
+        })
+
+    except Exception as e:
+        print(f"[API v2 ERROR] Source Explorer: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e), 'results': []}), 500
+
+
+@app.route('/api/v2/search-insights', methods=['POST'])
+def search_insights_v2():
+    """
+    Insight Builder Card - searches for signals affecting weddings and extracts insights
+    """
+    try:
+        data = request.json
+        signal = data.get('signal', 'food_costs')  # food_costs, labor, travel, weather, economic
+        geography = data.get('geography', 'US')
+        time_window = data.get('time_window', '30d')
+        exclude_urls = data.get('exclude_urls', [])
+
+        print(f"\n[API v2] Insight Builder: signal={signal}, geography={geography}")
+
+        # Define signal search queries
+        SIGNAL_QUERIES = {
+            'food_costs': 'egg prices dairy produce food costs catering restaurant impact 2026',
+            'labor': 'hospitality wages staffing labor shortage restaurant event venue hiring 2026',
+            'travel': 'airline prices flight costs hotel rates destination wedding travel 2026',
+            'weather': 'weather forecast storm hurricane seasonal outlook events weddings 2026',
+            'economic': 'consumer spending inflation wedding industry economic forecast 2026'
+        }
+
+        query = SIGNAL_QUERIES.get(signal, SIGNAL_QUERIES['food_costs'])
+        if geography and geography != 'US':
+            query += f" {geography}"
+
+        print(f"[API v2] Insight Builder query: {query}")
+
+        # Search for articles about this signal
+        search_results = openai_client.search_web_responses_api(
+            f"""You are researching signals that affect wedding venues.
+
+Search for: {query}
+
+Find articles with data points, statistics, and trends about {signal.replace('_', ' ')}.
+For each article, identify:
+1. What changed (specific numbers, percentages, trends)
+2. The source/citation
+3. How this impacts wedding venue businesses
+
+Return results with title, url, publisher, published_date, and summary that includes the key data points.""",
+            max_results=4,
+            exclude_urls=exclude_urls
+        )
+
+        # Transform to shared schema with enhanced implications
+        results = transform_to_shared_schema(search_results[:4], 'insight')
+
+        # Add signal-specific venue implications
+        SIGNAL_IMPLICATIONS = {
+            'food_costs': 'Consider adjusting catering package pricing or renegotiating vendor contracts.',
+            'labor': 'Review staffing costs and consider scheduling optimization or wage adjustments.',
+            'travel': 'May affect destination wedding inquiries and out-of-town guest attendance.',
+            'weather': 'Plan contingencies for outdoor events and communicate with couples early.',
+            'economic': 'Monitor booking patterns and consider flexible payment options.'
+        }
+
+        for result in results:
+            base_implication = SIGNAL_IMPLICATIONS.get(signal, 'Monitor this trend for potential business impact.')
+            result['venue_implications'] = base_implication
+            result['category'] = signal
+
+        return jsonify({
+            'success': True,
+            'results': results,
+            'signal': signal,
+            'source': 'insight',
+            'generated_at': datetime.now().isoformat()
+        })
+
+    except Exception as e:
+        print(f"[API v2 ERROR] Insight Builder: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e), 'results': []}), 500
+
+
+@app.route('/api/v2/search-perplexity', methods=['POST'])
+def search_perplexity_v2():
+    """
+    Perplexity Research Card - uses Perplexity sonar model for research with citations
+    """
+    try:
+        data = request.json
+        query = data.get('query', 'wedding venue industry news trends')
+        time_window = data.get('time_window', '30d')  # 7d, 30d, 90d
+        geography = data.get('geography', '')  # optional
+        exclude_urls = data.get('exclude_urls', [])
+
+        print(f"\n[API v2] Perplexity Research: query='{query}', time_window={time_window}")
+
+        # Check if Perplexity is available
+        if not perplexity_client or not perplexity_client.is_available():
+            return jsonify({
+                'success': False,
+                'error': 'Perplexity API not configured. Add PERPLEXITY_API_KEY to .env',
+                'results': []
+            }), 503
+
+        # Search using Perplexity
+        search_results = perplexity_client.search_wedding_research(
+            topic=query,
+            geography=geography,
+            time_window=time_window
+        )
+
+        # Filter out excluded URLs
+        if exclude_urls:
+            search_results = [r for r in search_results if r.get('url') not in exclude_urls]
+
+        # Results already match shared schema from perplexity_client
+        results = search_results[:4]
+
+        return jsonify({
+            'success': True,
+            'results': results,
+            'query': query,
+            'source': 'perplexity',
+            'generated_at': datetime.now().isoformat()
+        })
+
+    except Exception as e:
+        print(f"[API v2 ERROR] Perplexity Research: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e), 'results': []}), 500
+
 
 if __name__ == '__main__':
     print("=" * 80)
