@@ -1427,13 +1427,13 @@ def generate_images():
             safe_print(f"  [{section_name.upper()}] Prompt: {prompt}")
 
             # Determine aspect ratio based on section
-            # News: 480px wide (full width) - use 16:9 landscape
-            # Tip: 160px (smaller, portrait) - use 9:16 or 1:1
-            # Trend: 160px (smaller, portrait) - use 9:16 or 1:1
+            # News: 480x260px (full width landscape)
+            # Tip: 432x130px (wide banner)
+            # Trend: 432x130px (wide banner)
             if section_name == 'news':
                 aspect_ratio = "16:9"  # Landscape for full-width news image
             else:
-                aspect_ratio = "1:1"  # Square for smaller tip/trend images
+                aspect_ratio = "16:9"  # Wide landscape for banner-style tip/trend images
 
             # Generate with Gemini 3 Pro Image Preview
             print(f"  [{section_name.upper()}] Calling Gemini 3 Pro Image...")
