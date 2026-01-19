@@ -828,10 +828,10 @@ Write the TIP body paragraph now. Output ONLY the paragraph text, no title or fo
 
                 tip_text = tip_result['content'].strip()
 
-                # Build HTML with subtitle in italics
-                sections['tip'] = f'''<p style="margin: 0 0 10px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 13px; font-style: italic; color: #008181; line-height: 1.4;">{tip_subtitle}</p>
-<p style="margin: 0 0 14px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 14px; color: #555555; line-height: 1.6;" class="dark-mode-secondary">{tip_text}</p>'''
+                # Build HTML - subtitle separate, content without asterisks
+                sections['tip'] = f'''<p style="margin: 0 0 14px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 14px; color: #555555; line-height: 1.6;" class="dark-mode-secondary">{tip_text}</p>'''
                 sections['tip_title'] = tip_title
+                sections['tip_subtitle'] = f'''<p style="margin: 0 0 12px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 13px; font-style: italic; color: #008181; line-height: 1.4;">{tip_subtitle}</p>'''
 
             # Write TREND section from research (TREND ALERT)
             if research.get('trend'):
@@ -904,10 +904,10 @@ Write the TREND body paragraph now. Output ONLY the paragraph text, no title or 
 
                 trend_text = trend_result['content'].strip()
 
-                # Build HTML with subtitle in italics - white text for dark teal background
-                sections['trend'] = f'''<p style="margin: 0 0 10px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 13px; font-style: italic; color: #272d3f; line-height: 1.4;">{trend_subtitle}</p>
-<p style="margin: 0 0 14px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 14px; color: #ffffff; line-height: 1.6;">{trend_text}</p>'''
+                # Build HTML - subtitle separate, content without asterisks
+                sections['trend'] = f'''<p style="margin: 0 0 14px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 14px; color: #ffffff; line-height: 1.6;">{trend_text}</p>'''
                 sections['trend_title'] = trend_title
+                sections['trend_subtitle'] = f'''<p style="margin: 0 0 12px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 13px; font-style: italic; color: #272d3f; line-height: 1.4;">{trend_subtitle}</p>'''
 
             print(f"[API] Content written successfully with Opus 4.5")
 
@@ -1464,9 +1464,9 @@ def generate_images():
                         target_width = 480
                         target_height = 260
                     else:
-                        # Tip/Trend: 210px wide, increased height to 250px to match boxes
-                        target_width = 210
-                        target_height = 250
+                        # Tip/Trend: 432px wide, 130px tall (landscape banner)
+                        target_width = 432
+                        target_height = 130
 
                     print(f"  [{section_name.upper()}] Resizing from {pil_image.size} to {target_width}x{target_height}...")
 
