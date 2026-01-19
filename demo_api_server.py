@@ -730,7 +730,7 @@ Direct, actionable implications for venue owners. What should they do or conside
 
 *Why It Matters for Venues:* Start documenting your existing eco-friendly practices — you likely have more than you realize. Consider pursuing certification through programs like Green Wedding Alliance or local sustainability councils. Even small changes, like switching to cloth napkins or partnering with a local florist, can become powerful marketing differentiators that attract environmentally conscious couples.
 
-Write the NEWS section now. Output the three subsections with italic labels (*The Short Version:*, *What's Happening:*, *Why It Matters for Venues:*). Use plain text with line breaks between sections."""
+Write the NEWS section now. Output the three subsections with bold labels (*The Short Version:*, *What's Happening:*, *Why It Matters for Venues:*). Use plain text with line breaks between sections."""
 
                 news_result = claude_client.generate_content(
                     prompt=news_prompt,
@@ -744,8 +744,8 @@ Write the NEWS section now. Output the three subsections with italic labels (*Th
 
                 # Convert markdown-style formatting to HTML
 
-                # Replace *text:* with <em>text:</em> for section labels
-                news_text = re.sub(r'\*([^*]+):\*', r'<em>\1:</em>', news_text)
+                # Replace *text:* with <strong>text:</strong> for section labels (bold)
+                news_text = re.sub(r'\*([^*]+):\*', r'<strong>\1:</strong>', news_text)
 
                 # Split into paragraphs and wrap each
                 paragraphs = [p.strip() for p in news_text.split('\n\n') if p.strip()]
