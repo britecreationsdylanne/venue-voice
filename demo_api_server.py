@@ -2210,24 +2210,18 @@ def add_meme_text_boxes():
             # Get styling options
             css_font_size = box.get('fontSize', 32)
 
-            # The preview image displays LARGER than the actual 480px image in the browser
-            # If preview shows at 700px but actual image is 480px, a 36px CSS font looks big
-            # We need to scale UP the font: font = css_font * (preview_width / img_width)
-            if preview_width > 0 and img_width > 0:
-                scale = preview_width / img_width
-                font_size = int(css_font_size * scale)
-                print(f"    Scaling: preview={preview_width}px, img={img_width}px, scale={scale:.2f}")
-            else:
-                font_size = css_font_size
+            # Preview is now fixed at 480px (same as actual image size)
+            # So we use the CSS font size directly - no scaling needed
+            font_size = css_font_size
 
             # Ensure reasonable bounds
-            font_size = max(20, min(font_size, 200))
+            font_size = max(16, min(font_size, 200))
 
             text_color = box.get('textColor', '#FFFFFF')
             font_family = box.get('fontFamily', 'Impact')
             has_shadow = box.get('textShadow', True)
 
-            print(f"    Text box {i+1}: CSS={css_font_size}px -> final={font_size}px, color={text_color}")
+            print(f"    Text box {i+1}: font_size={font_size}px, color={text_color}")
 
             # Try to load the font
             try:
