@@ -3403,9 +3403,14 @@
             // Get the preview image width BEFORE we replace the content
             const previewImg = document.getElementById('meme-preview-img');
             const previewWidth = previewImg ? previewImg.clientWidth : 480;
+            const naturalWidth = previewImg ? previewImg.naturalWidth : 480;
 
-            console.log('[SAVE] Preview image width:', previewWidth);
+            console.log('[SAVE] Preview clientWidth:', previewWidth);
+            console.log('[SAVE] Image naturalWidth:', naturalWidth);
             console.log('[SAVE] Text boxes to save:', JSON.stringify(textBoxesToSave, null, 2));
+
+            // If clientWidth is 0 or very small, use a reasonable default
+            const finalPreviewWidth = previewWidth > 100 ? previewWidth : 480;
 
             // Show loading state
             const memePreview = document.getElementById('memePreview');
@@ -3429,7 +3434,7 @@
                     body: JSON.stringify({
                         image_url: imageToUse,
                         text_boxes: textBoxesToSave,
-                        preview_width: previewWidth
+                        preview_width: finalPreviewWidth
                     })
                 });
 
