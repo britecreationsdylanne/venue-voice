@@ -1151,10 +1151,10 @@
                         <p style="color: #666; text-align: center; padding: 10px;">Click "Add Text Box" above to add text to your meme</p>
                     </div>
 
-                    <!-- Info about export -->
+                    <!-- Save button -->
                     <div style="margin-top: 15px; padding-top: 15px; border-top: 2px solid #86efac;">
-                        <p style="font-size: 12px; color: #166534; text-align: center; margin: 0 0 8px 0;"><strong>Export to download your meme with text burned in.</strong></p>
-                        <p style="font-size: 11px; color: #666; text-align: center; margin: 0;">Then host the exported image in Ontraport to use in your newsletter.</p>
+                        <button class="btn" onclick="saveTextToMemeImage()" style="background: #16a34a; border-color: #16a34a; width: 100%;">🔥 Save Text to Image</button>
+                        <p style="font-size: 11px; color: #666; margin-top: 8px; text-align: center;">This will burn text onto your meme. Then Export and host in Ontraport.</p>
                     </div>
                 </div>
 
@@ -3001,150 +3001,22 @@
         }
 
         // Export image as download
-        async function exportImage(imageType) {
+        function exportImage(imageType) {
             const imageData = generatedImages[imageType];
             if (!imageData || !imageData.url) {
                 alert('No image to export. Please generate an image first.');
                 return;
             }
 
-            // For meme images with text overlays, burn text onto image first
-            if (imageType === 'meme' && memeTextOverlays.length > 0) {
-                const textBoxesToExport = memeTextOverlays.filter(box => box.text && box.text.trim());
-
-                console.log('[EXPORT] Text boxes to export:', textBoxesToExport.length);
-                console.log('[EXPORT] Text boxes data:', JSON.stringify(textBoxesToExport, null, 2));
-
-                if (textBoxesToExport.length > 0) {
-                    try {
-                        // Use the original image (without any previously burned text)
-                        const imageToUse = imageData.originalUrl || imageData.url;
-                        console.log('[EXPORT] Image URL type:', imageToUse.substring(0, 50));
-
-                        // Load the image
-                        const img = new Image();
-                        // Only set crossOrigin for non-data URLs
-                        if (!imageToUse.startsWith('data:')) {
-                            img.crossOrigin = 'anonymous';
-                        }
-
-                        await new Promise((resolve, reject) => {
-                            img.onload = () => {
-                                console.log('[EXPORT] Image loaded:', img.width, 'x', img.height);
-                                resolve();
-                            };
-                            img.onerror = (e) => {
-                                console.error('[EXPORT] Image load error:', e);
-                                reject(new Error('Failed to load image'));
-                            };
-                            img.src = imageToUse;
-                        });
-
-                        // Create canvas at 480x480 (matching preview)
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-                        const canvasSize = 480;
-                        canvas.width = canvasSize;
-                        canvas.height = canvasSize;
-
-                        // Draw image with proper aspect ratio (same as ImageOps.fit)
-                        const imgAspect = img.width / img.height;
-                        const canvasAspect = canvas.width / canvas.height;
-                        let drawWidth, drawHeight, offsetX, offsetY;
-
-                        if (imgAspect > canvasAspect) {
-                            drawHeight = canvas.height;
-                            drawWidth = img.width * (canvas.height / img.height);
-                            offsetX = (canvas.width - drawWidth) / 2;
-                            offsetY = 0;
-                        } else {
-                            drawWidth = canvas.width;
-                            drawHeight = img.height * (canvas.width / img.width);
-                            offsetX = 0;
-                            offsetY = (canvas.height - drawHeight) / 2;
-                        }
-
-                        ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
-
-                        // Draw each text box
-                        console.log('[EXPORT] Drawing', textBoxesToExport.length, 'text boxes');
-                        textBoxesToExport.forEach((box, idx) => {
-                            const text = box.text || '';
-                            const fontSize = box.fontSize || 32;
-                            const color = box.textColor || '#FFFFFF';
-                            const fontFamily = box.fontFamily || 'Impact';
-                            console.log(`[EXPORT] Box ${idx}: "${text}" at (${box.x}%, ${box.y}%) size ${fontSize}px color ${color}`);
-
-                            // Position: percentage to pixels
-                            const x = (box.x / 100) * canvasSize;
-                            const y = (box.y / 100) * canvasSize;
-                            const boxWidth = (box.width / 100) * canvasSize;
-
-                            // Set font
-                            ctx.font = `bold ${fontSize}px ${fontFamily}, Impact, sans-serif`;
-                            ctx.textAlign = 'center';
-                            ctx.textBaseline = 'top';
-
-                            const centerX = x + (boxWidth / 2);
-
-                            // Text shadow/outline
-                            if (box.textShadow !== false) {
-                                ctx.strokeStyle = '#000000';
-                                ctx.lineWidth = fontSize / 8;
-                                ctx.lineJoin = 'round';
-                            }
-
-                            // Word wrap
-                            const words = text.split(' ');
-                            const lines = [];
-                            let currentLine = '';
-
-                            words.forEach(word => {
-                                const testLine = currentLine ? currentLine + ' ' + word : word;
-                                const metrics = ctx.measureText(testLine);
-                                if (metrics.width > boxWidth - 10 && currentLine) {
-                                    lines.push(currentLine);
-                                    currentLine = word;
-                                } else {
-                                    currentLine = testLine;
-                                }
-                            });
-                            if (currentLine) lines.push(currentLine);
-
-                            // Draw lines
-                            const lineHeight = fontSize * 1.2;
-                            lines.forEach((line, index) => {
-                                const lineY = y + (index * lineHeight);
-                                if (box.textShadow !== false) {
-                                    ctx.strokeText(line, centerX, lineY);
-                                }
-                                ctx.fillStyle = color;
-                                ctx.fillText(line, centerX, lineY);
-                            });
-                        });
-
-                        // Export and download
-                        console.log('[EXPORT] Generating data URL from canvas');
-                        const dataUrl = canvas.toDataURL('image/png');
-                        console.log('[EXPORT] Data URL length:', dataUrl.length);
-
-                        const link = document.createElement('a');
-                        link.href = dataUrl;
-                        link.download = `meme-${Date.now()}.png`;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        console.log('[EXPORT] Download triggered with text burned in');
-                        return;
-
-                    } catch (error) {
-                        console.error('[EXPORT] Error burning text for export:', error);
-                        alert('Error preparing image: ' + error.message + '. Downloading without text.');
-                    }
+            // For meme: remind user to save text first if they haven't
+            if (imageType === 'meme' && memeTextOverlays.length > 0 && !imageData.textBurnedIn) {
+                const hasText = memeTextOverlays.some(box => box.text && box.text.trim());
+                if (hasText) {
+                    alert('Remember to click "Save Text to Image" first to burn your text onto the meme!');
                 }
             }
 
-            // Standard export (no text burning needed)
+            // Download the image
             const link = document.createElement('a');
             link.href = imageData.url;
             link.download = `${imageType}-image-${Date.now()}.png`;
@@ -3544,20 +3416,9 @@
                 return;
             }
 
-            // Get the preview container dimensions
-            const previewContainer = document.getElementById('meme-preview-container');
+            // Get the preview image width
             const previewImg = document.getElementById('meme-preview-img');
-
-            if (!previewContainer || !previewImg) {
-                alert('Preview not available. Please try again.');
-                return;
-            }
-
-            const containerWidth = previewContainer.clientWidth || 480;
-            const containerHeight = previewContainer.clientHeight || 480;
-
-            console.log('[CANVAS SAVE] Container size:', containerWidth, 'x', containerHeight);
-            console.log('[CANVAS SAVE] Text boxes:', textBoxesToSave.length);
+            const previewWidth = previewImg ? previewImg.clientWidth : 480;
 
             // Show loading state
             const memePreview = document.getElementById('memePreview');
@@ -3570,119 +3431,34 @@
             `;
 
             try {
-                // Load the ORIGINAL image (not the text-burned version)
+                // Always use the ORIGINAL image to prevent text stacking
                 const imageToUse = generatedImages.meme.originalUrl || generatedImages.meme.url;
 
-                // Create an image element to load the source
-                const img = new Image();
-                img.crossOrigin = 'anonymous'; // Enable CORS for data URL export
-
-                await new Promise((resolve, reject) => {
-                    img.onload = resolve;
-                    img.onerror = () => reject(new Error('Failed to load image'));
-                    img.src = imageToUse;
+                const response = await fetch(`${API_BASE}/api/add-meme-text-boxes`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        image_url: imageToUse,
+                        text_boxes: textBoxesToSave,
+                        preview_width: previewWidth
+                    })
                 });
 
-                // Create canvas at the preview size (480px)
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
+                const data = await response.json();
 
-                // Use 480x480 to match preview
-                const canvasSize = 480;
-                canvas.width = canvasSize;
-                canvas.height = canvasSize;
+                if (data.success && data.url) {
+                    // Update the meme with the new image that has text burned in
+                    generatedImages.meme.url = data.url;
+                    generatedImages.meme.textBurnedIn = true;
 
-                // Draw the image to fill the canvas (same as ImageOps.fit)
-                // Calculate scaling to cover the canvas while maintaining aspect ratio
-                const imgAspect = img.width / img.height;
-                const canvasAspect = canvas.width / canvas.height;
+                    // Refresh the display
+                    displayImages();
+                    renderMemeTextBoxControls();
 
-                let drawWidth, drawHeight, offsetX, offsetY;
-
-                if (imgAspect > canvasAspect) {
-                    // Image is wider - fit height, crop width
-                    drawHeight = canvas.height;
-                    drawWidth = img.width * (canvas.height / img.height);
-                    offsetX = (canvas.width - drawWidth) / 2;
-                    offsetY = 0;
+                    alert('Text saved! Now click Export to download, then host in Ontraport.');
                 } else {
-                    // Image is taller - fit width, crop height
-                    drawWidth = canvas.width;
-                    drawHeight = img.height * (canvas.width / img.width);
-                    offsetX = 0;
-                    offsetY = (canvas.height - drawHeight) / 2;
+                    throw new Error(data.error || 'Failed to save text to meme');
                 }
-
-                ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
-
-                // Now draw each text box with EXACT same styling as CSS preview
-                textBoxesToSave.forEach(box => {
-                    const text = box.text || '';
-                    const fontSize = box.fontSize || 32;
-                    const color = box.color || '#FFFFFF';
-
-                    // Position: CSS uses percentage, convert to pixels
-                    const x = (box.x / 100) * canvasSize;
-                    const y = (box.y / 100) * canvasSize;
-                    const boxWidth = (box.width / 100) * canvasSize;
-
-                    // Set font (Impact for meme style, matching CSS)
-                    ctx.font = `bold ${fontSize}px Impact, Arial Black, sans-serif`;
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'top';
-
-                    // Calculate center of text box
-                    const centerX = x + (boxWidth / 2);
-
-                    // Draw text with outline (stroke) for visibility - matches CSS text-shadow
-                    ctx.strokeStyle = '#000000';
-                    ctx.lineWidth = fontSize / 8; // Proportional outline
-                    ctx.lineJoin = 'round';
-
-                    // Word wrap text to fit box width
-                    const words = text.split(' ');
-                    const lines = [];
-                    let currentLine = '';
-
-                    words.forEach(word => {
-                        const testLine = currentLine ? currentLine + ' ' + word : word;
-                        const metrics = ctx.measureText(testLine);
-                        if (metrics.width > boxWidth - 10 && currentLine) {
-                            lines.push(currentLine);
-                            currentLine = word;
-                        } else {
-                            currentLine = testLine;
-                        }
-                    });
-                    if (currentLine) lines.push(currentLine);
-
-                    // Draw each line
-                    const lineHeight = fontSize * 1.2;
-                    lines.forEach((line, index) => {
-                        const lineY = y + (index * lineHeight);
-
-                        // Draw outline (stroke)
-                        ctx.strokeText(line, centerX, lineY);
-
-                        // Draw fill
-                        ctx.fillStyle = color;
-                        ctx.fillText(line, centerX, lineY);
-                    });
-                });
-
-                // Export canvas as PNG data URL
-                const dataUrl = canvas.toDataURL('image/png');
-
-                // Update the meme with the new image
-                generatedImages.meme.url = dataUrl;
-                generatedImages.meme.textBurnedIn = true;
-
-                // Refresh the display
-                displayImages();
-                renderMemeTextBoxControls();
-
-                console.log('[CANVAS SAVE] Successfully burned text onto image');
-                alert('Text saved to final image! Preview still shows editable version.');
 
             } catch (error) {
                 console.error('Error saving text to meme:', error);
