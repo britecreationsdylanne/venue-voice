@@ -2690,6 +2690,7 @@
                 if (data.success && data.url) {
                     generatedImages.meme = {
                         url: data.url,
+                        originalUrl: data.url,  // Keep original for re-burning text
                         prompt: scenePrompt,
                         text_top: topText.toUpperCase(),
                         text_bottom: bottomText.toUpperCase(),
@@ -2954,9 +2955,13 @@
         function displayImages() {
             // Display meme with draggable text boxes
             if (generatedImages.meme) {
+                // IMPORTANT: Always show the ORIGINAL image in preview (without burned text)
+                // This allows text overlay editing. The burned version is used for final export.
+                const previewImageUrl = generatedImages.meme.originalUrl || generatedImages.meme.url;
+
                 document.getElementById('memePreview').innerHTML = `
                     <div id="meme-preview-container" style="position: relative; display: inline-block; max-width: 100%;">
-                        <img id="meme-preview-img" src="${generatedImages.meme.url}" alt="Monthly Meme" style="max-width: 100%; border-radius: 8px; display: block;" />
+                        <img id="meme-preview-img" src="${previewImageUrl}" alt="Monthly Meme" style="max-width: 100%; border-radius: 8px; display: block;" />
                         <div id="meme-text-boxes-container" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none;">
                             <!-- Text boxes will be rendered here -->
                         </div>
@@ -3347,6 +3352,7 @@
                 if (data.success && data.url) {
                     generatedImages.meme = {
                         url: data.url,
+                        originalUrl: data.url,  // Keep original for re-burning text
                         prompt: 'Uploaded custom meme',
                         text_top: '',
                         text_bottom: '',
@@ -3354,8 +3360,13 @@
                         textColor: '#FFFFFF'
                     };
 
+                    // Clear any existing text overlays for fresh start
+                    memeTextOverlays = [];
+                    selectedMemeTextBox = -1;
+
                     // Use displayImages() to show with text overlay capability
                     displayImages();
+                    renderMemeTextBoxControls();
 
                     alert('Meme uploaded successfully! You can add text using the controls below.');
                 } else {
@@ -3407,11 +3418,16 @@
             `;
 
             try {
+                // IMPORTANT: Always use the ORIGINAL image, not the current (possibly text-burned) one
+                // This prevents text from stacking on top of previous saves
+                const imageToUse = generatedImages.meme.originalUrl || generatedImages.meme.url;
+                console.log('[SAVE] Using original image URL (not text-burned version)');
+
                 const response = await fetch(`${API_BASE}/api/add-meme-text-boxes`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        image_url: generatedImages.meme.url,
+                        image_url: imageToUse,
                         text_boxes: textBoxesToSave,
                         preview_width: previewWidth
                     })
@@ -3421,18 +3437,18 @@
 
                 if (data.success && data.url) {
                     // Update the meme with the new image that has text burned in
+                    // Keep originalUrl unchanged so we always burn onto clean image
                     generatedImages.meme.url = data.url;
                     generatedImages.meme.textBurnedIn = true;
 
                     // Keep text overlays so user can continue editing and re-save
-                    // Don't clear: memeTextOverlays = [];
-                    // Don't clear: selectedMemeTextBox = -1;
+                    // The preview shows original + overlays, final export uses burned version
 
-                    // Refresh the display
+                    // Refresh the display (will show original + overlays for editing)
                     displayImages();
                     renderMemeTextBoxControls();
 
-                    alert('Text saved! You can continue editing and save again if needed.');
+                    alert('Text saved to final image! Preview still shows editable version.');
                 } else {
                     throw new Error(data.error || 'Failed to save text to meme');
                 }
