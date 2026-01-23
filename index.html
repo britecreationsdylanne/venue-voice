@@ -1132,6 +1132,25 @@
                 <button class="btn-secondary btn" onclick="exportImage('meme')" style="margin-right: 10px;">📥 Export</button>
                 <button class="btn-secondary btn" onclick="resizeImage('meme')">📐 Resize</button>
 
+                <!-- Text Overlay Section -->
+                <div id="memeTextOverlaySection" style="margin: 20px 0; padding: 20px; background: #f0fdf4; border-radius: 8px; border: 2px solid #86efac;">
+                    <h4 style="margin: 0 0 15px 0; font-size: 16px; color: #166534;">📝 Add Text to Meme</h4>
+                    <p style="font-size: 13px; color: #166534; margin-bottom: 15px;">The recommended text from Claude is shown below. Edit if needed, then click "Burn Text onto Image" to add it permanently.</p>
+
+                    <div style="margin-bottom: 12px;">
+                        <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Top Text:</label>
+                        <input type="text" id="memeTextTop" style="width: 100%; padding: 10px; border: 2px solid #86efac; border-radius: 4px; font-size: 14px; text-transform: uppercase; font-family: Impact, sans-serif;" placeholder="TOP TEXT">
+                    </div>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Bottom Text:</label>
+                        <input type="text" id="memeTextBottom" style="width: 100%; padding: 10px; border: 2px solid #86efac; border-radius: 4px; font-size: 14px; text-transform: uppercase; font-family: Impact, sans-serif;" placeholder="BOTTOM TEXT">
+                    </div>
+
+                    <button class="btn" onclick="burnTextOntoMeme()" style="background: #16a34a; border-color: #16a34a; width: 100%;">🔥 Burn Text onto Image</button>
+                    <p style="font-size: 11px; color: #666; margin-top: 8px; text-align: center;">This will permanently add the text to your meme image</p>
+                </div>
+
                 <div style="margin: 20px 0; padding: 15px; background: #f9fafb; border-radius: 8px; border: 2px dashed #e5e7eb;">
                     <h4 style="margin: 0 0 10px 0; font-size: 14px;">Or Upload Your Own:</h4>
                     <input type="file" id="memeUpload" accept="image/*" style="display: none;" onchange="handleMemeUpload(event)">
@@ -2676,6 +2695,10 @@
                     // Update meme prompt field on Step 16
                     document.getElementById('memePrompt').value = scenePrompt;
 
+                    // Populate the text overlay fields with recommended text
+                    document.getElementById('memeTextTop').value = topText.toUpperCase();
+                    document.getElementById('memeTextBottom').value = bottomText.toUpperCase();
+
                     // Display the generated meme
                     displayImages();
                 } else {
@@ -3280,29 +3303,124 @@
             renderAllMemeTextBoxes();
         }
 
-        // Handle meme upload
-        function handleMemeUpload(event) {
+        // Handle meme upload - sends to backend for proper resizing
+        async function handleMemeUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const imageUrl = e.target.result;
-                generatedImages.meme = {
-                    url: imageUrl,
-                    prompt: 'Uploaded custom meme',
-                    text_top: '',
-                    text_bottom: '',
-                    textSize: 32,
-                    textColor: '#FFFFFF'
-                };
+            // Show loading state
+            const memePreview = document.getElementById('memePreview');
+            memePreview.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <div class="spinner" style="margin: 0 auto 10px;"></div>
+                    <div>Uploading and resizing meme...</div>
+                </div>
+            `;
 
-                // Use displayImages() to show with text overlay capability
-                displayImages();
+            try {
+                // Create FormData for file upload
+                const formData = new FormData();
+                formData.append('file', file);
 
-                alert('✓ Meme uploaded successfully! You can add text overlays below.');
-            };
-            reader.readAsDataURL(file);
+                const response = await fetch(`${API_BASE}/api/upload-meme`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.url) {
+                    generatedImages.meme = {
+                        url: data.url,
+                        prompt: 'Uploaded custom meme',
+                        text_top: '',
+                        text_bottom: '',
+                        textSize: 32,
+                        textColor: '#FFFFFF'
+                    };
+
+                    // Use displayImages() to show with text overlay capability
+                    displayImages();
+
+                    alert('Meme uploaded successfully! You can add text using the controls below.');
+                } else {
+                    throw new Error(data.error || 'Upload failed');
+                }
+
+            } catch (error) {
+                console.error('Error uploading meme:', error);
+                memePreview.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #dc2626;">
+                        <div style="font-size: 48px; margin-bottom: 10px;">❌</div>
+                        <div>Upload failed: ${error.message}</div>
+                        <button class="btn-secondary btn" onclick="document.getElementById('memeUpload').click()" style="margin-top: 20px;">Try Again</button>
+                    </div>
+                `;
+            }
+        }
+
+        // Burn text onto meme image using backend API
+        async function burnTextOntoMeme() {
+            const textTop = document.getElementById('memeTextTop').value.trim();
+            const textBottom = document.getElementById('memeTextBottom').value.trim();
+
+            if (!textTop && !textBottom) {
+                alert('Please enter at least some text (top or bottom) to add to the meme.');
+                return;
+            }
+
+            if (!generatedImages.meme || !generatedImages.meme.url) {
+                alert('Please generate or upload a meme image first.');
+                return;
+            }
+
+            // Show loading state
+            const memePreview = document.getElementById('memePreview');
+            const originalContent = memePreview.innerHTML;
+            memePreview.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <div class="spinner" style="margin: 0 auto 10px;"></div>
+                    <div>Adding text to meme...</div>
+                </div>
+            `;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/add-meme-text`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        image_url: generatedImages.meme.url,
+                        text_top: textTop,
+                        text_bottom: textBottom
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.url) {
+                    // Update the meme with the new image that has text burned in
+                    generatedImages.meme.url = data.url;
+                    generatedImages.meme.text_top = textTop;
+                    generatedImages.meme.text_bottom = textBottom;
+                    generatedImages.meme.textBurnedIn = true;
+
+                    // Clear the text fields since text is now on the image
+                    document.getElementById('memeTextTop').value = '';
+                    document.getElementById('memeTextBottom').value = '';
+
+                    // Refresh the display
+                    displayImages();
+
+                    alert('Text has been added to your meme image!');
+                } else {
+                    throw new Error(data.error || 'Failed to add text to meme');
+                }
+
+            } catch (error) {
+                console.error('Error adding text to meme:', error);
+                memePreview.innerHTML = originalContent;
+                alert('Error adding text to meme: ' + error.message);
+            }
         }
 
         async function searchWebMeme() {

@@ -1526,93 +1526,95 @@ def generate_images():
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/api/search-memes', methods=['POST'])
-def search_memes():
-    """Search web for wedding memes using Google Custom Search"""
-    try:
-        data = request.json
-        month = data.get('month', '')
-
-        print(f"\n[API] Searching for wedding memes for {month}...")
-
-        # Month-specific search queries
-        month_queries = {
-            'january': 'wedding planning new year funny meme',
-            'february': 'wedding valentines day funny meme',
-            'march': 'spring wedding season funny meme',
-            'april': 'wedding rain funny meme',
-            'may': 'wedding season chaos funny meme',
-            'june': 'peak wedding season stress funny meme',
-            'july': 'summer outdoor wedding funny meme',
-            'august': 'late summer wedding funny meme',
-            'september': 'fall wedding funny meme',
-            'october': 'halloween wedding funny meme',
-            'november': 'thanksgiving wedding funny meme',
-            'december': 'holiday wedding funny meme'
-        }
-
-        search_query = month_queries.get(month.lower(), 'wedding venue funny meme')
-
-        # Use Brave Search API for image search
-        try:
-            import requests as req
-            brave_api_key = os.getenv('BRAVE_SEARCH_API_KEY', '')
-
-            if brave_api_key:
-                # Brave Image Search API
-                brave_url = 'https://api.search.brave.com/res/v1/images/search'
-                headers = {
-                    'Accept': 'application/json',
-                    'Accept-Encoding': 'gzip',
-                    'X-Subscription-Token': brave_api_key
-                }
-                params = {
-                    'q': search_query,
-                    'count': 10,
-                    'safesearch': 'moderate'
-                }
-
-                response = req.get(brave_url, headers=headers, params=params, timeout=10)
-
-                if response.status_code == 200:
-                    results = response.json()
-                    images = []
-
-                    for result in results.get('results', [])[:8]:  # Limit to 8 results
-                        images.append({
-                            'url': result.get('properties', {}).get('url', result.get('url', '')),
-                            'thumbnail': result.get('thumbnail', {}).get('src', result.get('url', '')),
-                            'title': result.get('title', 'Wedding Meme')
-                        })
-
-                    print(f"[API] Found {len(images)} memes from Brave Search")
-
-                    return jsonify({
-                        'success': True,
-                        'images': images,
-                        'search_query': search_query
-                    })
-                else:
-                    print(f"[API WARNING] Brave Search failed: {response.status_code}")
-            else:
-                print(f"[API WARNING] Brave API key not configured")
-        except Exception as search_error:
-            print(f"[API WARNING] Image search failed: {search_error}")
-
-        # Fallback: Suggest user upload their own or use generated meme
-        print(f"[API] Returning fallback message")
-
-        return jsonify({
-            'success': False,
-            'error': 'Image search unavailable. Please upload your own meme or use the generated one.',
-            'images': []
-        })
-
-    except Exception as e:
-        print(f"[API ERROR] {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({'success': False, 'error': str(e)}), 500
+# DISABLED: Search memes endpoint - not currently in use
+# Kept for potential future use
+# @app.route('/api/search-memes', methods=['POST'])
+# def search_memes():
+#     """Search web for wedding memes using Google Custom Search"""
+#     try:
+#         data = request.json
+#         month = data.get('month', '')
+#
+#         print(f"\n[API] Searching for wedding memes for {month}...")
+#
+#         # Month-specific search queries
+#         month_queries = {
+#             'january': 'wedding planning new year funny meme',
+#             'february': 'wedding valentines day funny meme',
+#             'march': 'spring wedding season funny meme',
+#             'april': 'wedding rain funny meme',
+#             'may': 'wedding season chaos funny meme',
+#             'june': 'peak wedding season stress funny meme',
+#             'july': 'summer outdoor wedding funny meme',
+#             'august': 'late summer wedding funny meme',
+#             'september': 'fall wedding funny meme',
+#             'october': 'halloween wedding funny meme',
+#             'november': 'thanksgiving wedding funny meme',
+#             'december': 'holiday wedding funny meme'
+#         }
+#
+#         search_query = month_queries.get(month.lower(), 'wedding venue funny meme')
+#
+#         # Use Brave Search API for image search
+#         try:
+#             import requests as req
+#             brave_api_key = os.getenv('BRAVE_SEARCH_API_KEY', '')
+#
+#             if brave_api_key:
+#                 # Brave Image Search API
+#                 brave_url = 'https://api.search.brave.com/res/v1/images/search'
+#                 headers = {
+#                     'Accept': 'application/json',
+#                     'Accept-Encoding': 'gzip',
+#                     'X-Subscription-Token': brave_api_key
+#                 }
+#                 params = {
+#                     'q': search_query,
+#                     'count': 10,
+#                     'safesearch': 'moderate'
+#                 }
+#
+#                 response = req.get(brave_url, headers=headers, params=params, timeout=10)
+#
+#                 if response.status_code == 200:
+#                     results = response.json()
+#                     images = []
+#
+#                     for result in results.get('results', [])[:8]:  # Limit to 8 results
+#                         images.append({
+#                             'url': result.get('properties', {}).get('url', result.get('url', '')),
+#                             'thumbnail': result.get('thumbnail', {}).get('src', result.get('url', '')),
+#                             'title': result.get('title', 'Wedding Meme')
+#                         })
+#
+#                     print(f"[API] Found {len(images)} memes from Brave Search")
+#
+#                     return jsonify({
+#                         'success': True,
+#                         'images': images,
+#                         'search_query': search_query
+#                     })
+#                 else:
+#                     print(f"[API WARNING] Brave Search failed: {response.status_code}")
+#             else:
+#                 print(f"[API WARNING] Brave API key not configured")
+#         except Exception as search_error:
+#             print(f"[API WARNING] Image search failed: {search_error}")
+#
+#         # Fallback: Suggest user upload their own or use generated meme
+#         print(f"[API] Returning fallback message")
+#
+#         return jsonify({
+#             'success': False,
+#             'error': 'Image search unavailable. Please upload your own meme or use the generated one.',
+#             'images': []
+#         })
+#
+#     except Exception as e:
+#         print(f"[API ERROR] {str(e)}")
+#         import traceback
+#         traceback.print_exc()
+#         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/generate-meme-prompt', methods=['POST'])
 def generate_meme_prompt():
@@ -1803,8 +1805,9 @@ Return ONLY the image prompt, nothing else."""
 
                 print(f"    [MEME] Resizing from {pil_image.size} to {target_width}x{target_height}...")
 
-                # Resize with high-quality resampling
-                resized_image = pil_image.resize((target_width, target_height), Image.Resampling.LANCZOS)
+                # Use ImageOps.fit to crop/resize while maintaining aspect ratio (no squishing)
+                from PIL import ImageOps
+                resized_image = ImageOps.fit(pil_image, (target_width, target_height), method=Image.Resampling.LANCZOS, centering=(0.5, 0.5))
 
                 # REMOVED: Text overlay is now handled by frontend HTML/CSS
                 # Keeping this comment for reference - text_overlay_top and text_overlay_bottom
@@ -1928,7 +1931,7 @@ Return ONLY the image prompt, nothing else."""
 
 @app.route('/api/upload-meme', methods=['POST'])
 def upload_meme():
-    """Handle meme image upload"""
+    """Handle meme image upload with proper resizing to 480x480"""
     try:
         if 'file' not in request.files:
             return jsonify({'success': False, 'error': 'No file uploaded'}), 400
@@ -1938,23 +1941,201 @@ def upload_meme():
         if file.filename == '':
             return jsonify({'success': False, 'error': 'No file selected'}), 400
 
-        # Read the file and convert to base64
-        import base64
-        file_data = file.read()
-        image_data = base64.b64encode(file_data).decode('utf-8')
+        print(f"[API] Processing uploaded meme: {file.filename}")
 
-        # Determine file type
-        file_type = file.content_type or 'image/png'
+        import base64
+        from PIL import Image, ImageOps
+        from io import BytesIO
+
+        # Read the file into PIL Image
+        file_data = file.read()
+        pil_image = Image.open(BytesIO(file_data))
+
+        # Convert to RGB if necessary (for PNG with transparency or other modes)
+        if pil_image.mode in ('RGBA', 'P', 'LA', 'L'):
+            # Create white background for transparent images
+            background = Image.new('RGB', pil_image.size, (255, 255, 255))
+            if pil_image.mode == 'RGBA' or pil_image.mode == 'LA':
+                background.paste(pil_image, mask=pil_image.split()[-1])
+            else:
+                background.paste(pil_image)
+            pil_image = background
+
+        # Resize to 480x480 using fit (crop to center, no squishing)
+        target_size = (480, 480)
+        print(f"    [UPLOAD] Resizing from {pil_image.size} to {target_size}...")
+        resized_image = ImageOps.fit(pil_image, target_size, method=Image.Resampling.LANCZOS, centering=(0.5, 0.5))
+
+        # Convert to base64
+        buffer = BytesIO()
+        resized_image.save(buffer, format='PNG', optimize=True)
+        image_bytes = buffer.getvalue()
+        image_data = base64.b64encode(image_bytes).decode('utf-8')
 
         # Create data URL
-        image_url = f"data:{file_type};base64,{image_data}"
+        image_url = f"data:image/png;base64,{image_data}"
 
-        print(f"[API] Meme uploaded successfully: {file.filename}")
+        print(f"[API] Meme uploaded and resized successfully: {file.filename}")
 
         return jsonify({
             'success': True,
             'url': image_url,
             'filename': file.filename
+        })
+
+    except Exception as e:
+        print(f"[API ERROR] {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/add-meme-text', methods=['POST'])
+def add_meme_text():
+    """Add text overlay to meme image - burns text directly onto the image"""
+    try:
+        data = request.json
+        image_url = data.get('image_url', '')  # Base64 data URL
+        text_top = data.get('text_top', '').upper()
+        text_bottom = data.get('text_bottom', '').upper()
+
+        print(f"\n[API] Adding text overlay to meme...")
+        print(f"    Top text: '{text_top}'")
+        print(f"    Bottom text: '{text_bottom}'")
+
+        if not image_url:
+            return jsonify({'success': False, 'error': 'No image provided'}), 400
+
+        if not text_top and not text_bottom:
+            return jsonify({'success': False, 'error': 'No text provided'}), 400
+
+        import base64
+        from PIL import Image, ImageDraw, ImageFont
+        from io import BytesIO
+
+        # Extract base64 data from data URL
+        if ',' in image_url:
+            image_data = image_url.split(',')[1]
+        else:
+            image_data = image_url
+
+        # Decode and open image
+        image_bytes = base64.b64decode(image_data)
+        pil_image = Image.open(BytesIO(image_bytes))
+
+        # Convert to RGB if necessary (for PNG with transparency)
+        if pil_image.mode in ('RGBA', 'P'):
+            pil_image = pil_image.convert('RGB')
+
+        draw = ImageDraw.Draw(pil_image)
+        img_width, img_height = pil_image.size
+        max_text_width = img_width - 40  # 20px padding each side
+
+        def draw_meme_text(text, position='top'):
+            """Draw text with automatic sizing and wrapping"""
+            if not text:
+                return
+
+            # Try different font sizes, starting large
+            for font_size in range(48, 18, -2):
+                try:
+                    # Try Impact font first (classic meme font)
+                    font = ImageFont.truetype("impact.ttf", font_size)
+                except:
+                    try:
+                        # Fallback to Arial Bold
+                        font = ImageFont.truetype("arialbd.ttf", font_size)
+                    except:
+                        try:
+                            # Try common Linux fonts
+                            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", font_size)
+                        except:
+                            # Last resort: default font
+                            font = ImageFont.load_default()
+                            break
+
+                # Get text bounding box
+                bbox = draw.textbbox((0, 0), text, font=font)
+                text_width = bbox[2] - bbox[0]
+                text_height = bbox[3] - bbox[1]
+
+                # Check if text fits on one line
+                if text_width <= max_text_width:
+                    # Center horizontally
+                    x = (img_width - text_width) / 2
+                    # Position vertically
+                    if position == 'top':
+                        y = 15
+                    else:
+                        y = img_height - text_height - 20
+
+                    # Draw text with black outline (stroke) for visibility
+                    draw.text((x, y), text, font=font, fill='white',
+                             stroke_width=3, stroke_fill='black')
+                    print(f"    [MEME] Drew {position} text at ({x}, {y}) with font size {font_size}")
+                    return
+
+                # Try wrapping into 2 lines
+                words = text.split()
+                if len(words) >= 2:
+                    mid = len(words) // 2
+                    for offset in [0, -1, 1, -2, 2]:
+                        split_point = mid + offset
+                        if split_point <= 0 or split_point >= len(words):
+                            continue
+
+                        line1 = ' '.join(words[:split_point])
+                        line2 = ' '.join(words[split_point:])
+
+                        bbox1 = draw.textbbox((0, 0), line1, font=font)
+                        bbox2 = draw.textbbox((0, 0), line2, font=font)
+
+                        width1 = bbox1[2] - bbox1[0]
+                        width2 = bbox2[2] - bbox2[0]
+
+                        if width1 <= max_text_width and width2 <= max_text_width:
+                            line_height = bbox1[3] - bbox1[1]
+
+                            x1 = (img_width - width1) / 2
+                            x2 = (img_width - width2) / 2
+
+                            if position == 'top':
+                                y1 = 12
+                                y2 = 12 + line_height + 5
+                            else:
+                                y2 = img_height - line_height - 15
+                                y1 = y2 - line_height - 5
+
+                            draw.text((x1, y1), line1, font=font, fill='white',
+                                     stroke_width=3, stroke_fill='black')
+                            draw.text((x2, y2), line2, font=font, fill='white',
+                                     stroke_width=3, stroke_fill='black')
+                            print(f"    [MEME] Drew {position} text (2 lines) with font size {font_size}")
+                            return
+
+            # Fallback: just draw with smallest font if nothing else worked
+            print(f"    [MEME] Warning: Text may be too long, using smallest font: '{text}'")
+
+        # Draw the text overlays
+        if text_top:
+            draw_meme_text(text_top, 'top')
+        if text_bottom:
+            draw_meme_text(text_bottom, 'bottom')
+
+        # Convert back to base64
+        buffer = BytesIO()
+        pil_image.save(buffer, format='PNG', optimize=True)
+        result_bytes = buffer.getvalue()
+        result_base64 = base64.b64encode(result_bytes).decode('utf-8')
+
+        result_url = f"data:image/png;base64,{result_base64}"
+
+        print(f"[API] Text overlay added successfully")
+
+        return jsonify({
+            'success': True,
+            'url': result_url,
+            'text_top': text_top,
+            'text_bottom': text_bottom
         })
 
     except Exception as e:
