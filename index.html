@@ -1132,23 +1132,31 @@
                 <button class="btn-secondary btn" onclick="exportImage('meme')" style="margin-right: 10px;">📥 Export</button>
                 <button class="btn-secondary btn" onclick="resizeImage('meme')">📐 Resize</button>
 
-                <!-- Text Overlay Section -->
+                <!-- Text Overlay Controls Section -->
                 <div id="memeTextOverlaySection" style="margin: 20px 0; padding: 20px; background: #f0fdf4; border-radius: 8px; border: 2px solid #86efac;">
-                    <h4 style="margin: 0 0 15px 0; font-size: 16px; color: #166534;">📝 Add Text to Meme</h4>
-                    <p style="font-size: 13px; color: #166534; margin-bottom: 15px;">The recommended text from Claude is shown below. Edit if needed, then click "Burn Text onto Image" to add it permanently.</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4 style="margin: 0; font-size: 16px; color: #166534;">📝 Text Overlay</h4>
+                        <button onclick="addMemeTextBox()" class="btn btn-secondary" style="padding: 8px 16px; background: #018181; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                            + Add Text Box
+                        </button>
+                    </div>
+                    <p style="font-size: 13px; color: #166534; margin-bottom: 15px;">Click "Add Text Box" to add draggable text. Drag to position, drag corners to resize.</p>
 
-                    <div style="margin-bottom: 12px;">
-                        <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Top Text:</label>
-                        <input type="text" id="memeTextTop" style="width: 100%; padding: 10px; border: 2px solid #86efac; border-radius: 4px; font-size: 14px; text-transform: uppercase; font-family: Impact, sans-serif;" placeholder="TOP TEXT">
+                    <!-- Text box tabs -->
+                    <div id="meme-text-box-tabs" style="display: flex; gap: 0.5rem; margin-bottom: 15px; flex-wrap: wrap;">
+                        <!-- Text box tabs will be rendered here -->
                     </div>
 
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Bottom Text:</label>
-                        <input type="text" id="memeTextBottom" style="width: 100%; padding: 10px; border: 2px solid #86efac; border-radius: 4px; font-size: 14px; text-transform: uppercase; font-family: Impact, sans-serif;" placeholder="BOTTOM TEXT">
+                    <!-- Controls for selected text box -->
+                    <div id="meme-text-box-controls">
+                        <p style="color: #666; text-align: center; padding: 10px;">Click "Add Text Box" above to add text to your meme</p>
                     </div>
 
-                    <button class="btn" onclick="burnTextOntoMeme()" style="background: #16a34a; border-color: #16a34a; width: 100%;">🔥 Burn Text onto Image</button>
-                    <p style="font-size: 11px; color: #666; margin-top: 8px; text-align: center;">This will permanently add the text to your meme image</p>
+                    <!-- Save button -->
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 2px solid #86efac;">
+                        <button class="btn" onclick="saveTextToMemeImage()" style="background: #16a34a; border-color: #16a34a; width: 100%;">🔥 Save Text to Image</button>
+                        <p style="font-size: 11px; color: #666; margin-top: 8px; text-align: center;">This will permanently burn all text boxes onto your meme image</p>
+                    </div>
                 </div>
 
                 <div style="margin: 20px 0; padding: 15px; background: #f9fafb; border-radius: 8px; border: 2px dashed #e5e7eb;">
@@ -2695,9 +2703,37 @@
                     // Update meme prompt field on Step 16
                     document.getElementById('memePrompt').value = scenePrompt;
 
-                    // Populate the text overlay fields with recommended text
-                    document.getElementById('memeTextTop').value = topText.toUpperCase();
-                    document.getElementById('memeTextBottom').value = bottomText.toUpperCase();
+                    // Clear existing text boxes and create new ones with Claude's recommended text
+                    memeTextOverlays = [];
+
+                    // Add top text box if provided
+                    if (topText && topText.trim()) {
+                        memeTextOverlays.push({
+                            text: topText.toUpperCase(),
+                            x: 50,
+                            y: 12,
+                            fontSize: 36,
+                            textColor: '#FFFFFF',
+                            fontFamily: 'Impact',
+                            textShadow: true
+                        });
+                    }
+
+                    // Add bottom text box if provided
+                    if (bottomText && bottomText.trim()) {
+                        memeTextOverlays.push({
+                            text: bottomText.toUpperCase(),
+                            x: 50,
+                            y: 88,
+                            fontSize: 36,
+                            textColor: '#FFFFFF',
+                            fontFamily: 'Impact',
+                            textShadow: true
+                        });
+                    }
+
+                    // Select first text box if any exist
+                    selectedMemeTextBox = memeTextOverlays.length > 0 ? 0 : -1;
 
                     // Display the generated meme
                     displayImages();
@@ -2925,35 +2961,8 @@
                             <!-- Text boxes will be rendered here -->
                         </div>
                     </div>
-                    <p style="background: #f0fdf4; padding: 0.75rem; border-radius: 8px; margin-top: 0.75rem; color: #047857; font-size: 0.9rem; text-align: center;">
-                        <strong>Drag to move</strong> | <strong>Drag corners to resize</strong> | <strong>Click to select</strong>
-                    </p>
                 `;
                 document.getElementById('memePrompt').value = generatedImages.meme.prompt || '';
-
-                // Add text overlay controls if they don't exist
-                if (!document.getElementById('memeTextControls')) {
-                    const promptContainer = document.getElementById('memePrompt').parentElement;
-                    const textControlsHTML = `
-                        <div id="memeTextControls" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e5e7eb;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                                <h4 style="margin: 0; color: #374151;">Text Overlay Settings</h4>
-                                <button onclick="addMemeTextBox()" class="btn btn-secondary" style="padding: 8px 16px; background: #018181; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                                    + Add Text Box
-                                </button>
-                            </div>
-
-                            <div id="meme-text-box-tabs" style="display: flex; gap: 0.5rem; margin-bottom: 15px; flex-wrap: wrap;">
-                                <!-- Text box tabs will be rendered here -->
-                            </div>
-
-                            <div id="meme-text-box-controls">
-                                <p style="color: #999; text-align: center; padding: 20px;">Click "Add Text Box" to add text to your meme</p>
-                            </div>
-                        </div>
-                    `;
-                    promptContainer.insertAdjacentHTML('beforeend', textControlsHTML);
-                }
 
                 // Render text boxes after a brief delay to ensure DOM is ready
                 setTimeout(() => {
@@ -3359,13 +3368,13 @@
             }
         }
 
-        // Burn text onto meme image using backend API
-        async function burnTextOntoMeme() {
-            const textTop = document.getElementById('memeTextTop').value.trim();
-            const textBottom = document.getElementById('memeTextBottom').value.trim();
+        // Save all text boxes onto the meme image using backend API
+        async function saveTextToMemeImage() {
+            // Filter out empty text boxes
+            const textBoxesToSave = memeTextOverlays.filter(box => box.text && box.text.trim());
 
-            if (!textTop && !textBottom) {
-                alert('Please enter at least some text (top or bottom) to add to the meme.');
+            if (textBoxesToSave.length === 0) {
+                alert('Please add at least one text box with text before saving.');
                 return;
             }
 
@@ -3380,18 +3389,17 @@
             memePreview.innerHTML = `
                 <div style="text-align: center; padding: 40px;">
                     <div class="spinner" style="margin: 0 auto 10px;"></div>
-                    <div>Adding text to meme...</div>
+                    <div>Saving text to meme...</div>
                 </div>
             `;
 
             try {
-                const response = await fetch(`${API_BASE}/api/add-meme-text`, {
+                const response = await fetch(`${API_BASE}/api/add-meme-text-boxes`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         image_url: generatedImages.meme.url,
-                        text_top: textTop,
-                        text_bottom: textBottom
+                        text_boxes: textBoxesToSave
                     })
                 });
 
@@ -3400,27 +3408,32 @@
                 if (data.success && data.url) {
                     // Update the meme with the new image that has text burned in
                     generatedImages.meme.url = data.url;
-                    generatedImages.meme.text_top = textTop;
-                    generatedImages.meme.text_bottom = textBottom;
                     generatedImages.meme.textBurnedIn = true;
 
-                    // Clear the text fields since text is now on the image
-                    document.getElementById('memeTextTop').value = '';
-                    document.getElementById('memeTextBottom').value = '';
+                    // Clear text overlays since they're now burned into the image
+                    memeTextOverlays = [];
+                    selectedMemeTextBox = -1;
 
                     // Refresh the display
                     displayImages();
+                    renderMemeTextBoxControls();
 
-                    alert('Text has been added to your meme image!');
+                    alert('Text has been saved to your meme image!');
                 } else {
-                    throw new Error(data.error || 'Failed to add text to meme');
+                    throw new Error(data.error || 'Failed to save text to meme');
                 }
 
             } catch (error) {
-                console.error('Error adding text to meme:', error);
+                console.error('Error saving text to meme:', error);
                 memePreview.innerHTML = originalContent;
-                alert('Error adding text to meme: ' + error.message);
+                renderAllMemeTextBoxes();
+                alert('Error saving text to meme: ' + error.message);
             }
+        }
+
+        // Legacy function - kept for backwards compatibility
+        async function burnTextOntoMeme() {
+            await saveTextToMemeImage();
         }
 
         async function searchWebMeme() {

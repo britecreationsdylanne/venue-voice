@@ -2144,6 +2144,125 @@ def add_meme_text():
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/api/add-meme-text-boxes', methods=['POST'])
+def add_meme_text_boxes():
+    """Add multiple text boxes to meme image with custom positions, colors, and sizes"""
+    try:
+        data = request.json
+        image_url = data.get('image_url', '')  # Base64 data URL
+        text_boxes = data.get('text_boxes', [])  # Array of text box objects
+
+        print(f"\n[API] Adding {len(text_boxes)} text boxes to meme...")
+
+        if not image_url:
+            return jsonify({'success': False, 'error': 'No image provided'}), 400
+
+        if not text_boxes:
+            return jsonify({'success': False, 'error': 'No text boxes provided'}), 400
+
+        import base64
+        from PIL import Image, ImageDraw, ImageFont
+        from io import BytesIO
+
+        # Extract base64 data from data URL
+        if ',' in image_url:
+            image_data = image_url.split(',')[1]
+        else:
+            image_data = image_url
+
+        # Decode and open image
+        image_bytes = base64.b64decode(image_data)
+        pil_image = Image.open(BytesIO(image_bytes))
+
+        # Convert to RGB if necessary (for PNG with transparency)
+        if pil_image.mode in ('RGBA', 'P'):
+            background = Image.new('RGB', pil_image.size, (255, 255, 255))
+            if pil_image.mode == 'RGBA':
+                background.paste(pil_image, mask=pil_image.split()[-1])
+            else:
+                background.paste(pil_image)
+            pil_image = background
+
+        draw = ImageDraw.Draw(pil_image)
+        img_width, img_height = pil_image.size
+
+        # Process each text box
+        for i, box in enumerate(text_boxes):
+            text = box.get('text', '').upper()
+            if not text:
+                continue
+
+            # Get position as percentage (0-100)
+            x_percent = box.get('x', 50)
+            y_percent = box.get('y', 50)
+
+            # Convert percentage to pixels
+            x_pos = int((x_percent / 100) * img_width)
+            y_pos = int((y_percent / 100) * img_height)
+
+            # Get styling options
+            font_size = box.get('fontSize', 32)
+            text_color = box.get('textColor', '#FFFFFF')
+            font_family = box.get('fontFamily', 'Impact')
+            has_shadow = box.get('textShadow', True)
+
+            # Try to load the font
+            try:
+                if font_family.lower() == 'impact':
+                    font = ImageFont.truetype("impact.ttf", font_size)
+                elif font_family.lower() == 'arial black':
+                    font = ImageFont.truetype("arialbd.ttf", font_size)
+                elif font_family.lower() == 'comic sans ms':
+                    font = ImageFont.truetype("comic.ttf", font_size)
+                else:
+                    font = ImageFont.truetype("arial.ttf", font_size)
+            except:
+                try:
+                    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", font_size)
+                except:
+                    font = ImageFont.load_default()
+
+            # Get text bounding box for centering
+            bbox = draw.textbbox((0, 0), text, font=font)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+
+            # Center text on the position
+            final_x = x_pos - (text_width / 2)
+            final_y = y_pos - (text_height / 2)
+
+            # Draw text with or without shadow/stroke
+            if has_shadow:
+                # Draw with black stroke for visibility
+                draw.text((final_x, final_y), text, font=font, fill=text_color,
+                         stroke_width=3, stroke_fill='black')
+            else:
+                draw.text((final_x, final_y), text, font=font, fill=text_color)
+
+            print(f"    [MEME] Drew text box {i+1}: '{text}' at ({x_pos}, {y_pos})")
+
+        # Convert back to base64
+        buffer = BytesIO()
+        pil_image.save(buffer, format='PNG', optimize=True)
+        result_bytes = buffer.getvalue()
+        result_base64 = base64.b64encode(result_bytes).decode('utf-8')
+
+        result_url = f"data:image/png;base64,{result_base64}"
+
+        print(f"[API] Successfully added {len(text_boxes)} text boxes to meme")
+
+        return jsonify({
+            'success': True,
+            'url': result_url,
+            'text_boxes_count': len(text_boxes)
+        })
+
+    except Exception as e:
+        print(f"[API ERROR] {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @app.route('/api/check-brand-guidelines', methods=['POST'])
 def check_brand_guidelines():
     """Check content against brand guidelines"""
