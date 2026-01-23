@@ -3073,6 +3073,7 @@
                 text: 'NEW TEXT',
                 x: 50,
                 y: 20 + (memeTextOverlays.length * 25) % 60, // Stagger vertically
+                width: 100, // Full width by default
                 fontSize: 32,
                 textColor: '#FFFFFF',
                 fontFamily: 'Impact',
@@ -3221,19 +3222,21 @@
                 const textBoxEl = document.createElement('div');
                 textBoxEl.className = 'meme-draggable-text-box';
                 textBoxEl.dataset.boxIndex = boxIdx;
+                const boxWidth = box.width || 100;
                 textBoxEl.style.cssText = `
                     position: absolute;
                     top: ${box.y}%;
-                    left: ${box.x}%;
-                    transform: translate(-50%, -50%);
+                    left: 50%;
+                    width: ${boxWidth}%;
+                    transform: translateX(-50%);
                     cursor: move;
                     pointer-events: auto;
                     ${isSelected ? 'outline: 3px dashed #018181; outline-offset: 4px;' : ''}
                 `;
 
                 textBoxEl.innerHTML = `
-                    <div style="display: inline-block; padding: 5px 15px; text-align: center; position: relative;">
-                        <p style="color: ${box.textColor}; font-family: '${box.fontFamily}', Impact, sans-serif; font-size: ${box.fontSize}px; font-weight: bold; margin: 0; line-height: 1.2; text-transform: uppercase; ${shadowStyle} white-space: pre-line;">${box.text}</p>
+                    <div style="width: 100%; padding: 5px 15px; text-align: center; position: relative;">
+                        <p style="color: ${box.textColor}; font-family: '${box.fontFamily}', Impact, sans-serif; font-size: ${box.fontSize}px; font-weight: bold; margin: 0; line-height: 1.2; text-transform: uppercase; ${shadowStyle} word-wrap: break-word;">${box.text}</p>
                         ${isSelected ? `
                             <div class="meme-resize-handle meme-resize-br" style="position: absolute; bottom: -8px; right: -8px; width: 16px; height: 16px; background: #018181; border-radius: 50%; cursor: se-resize; border: 2px solid white;"></div>
                             <div class="meme-resize-handle meme-resize-bl" style="position: absolute; bottom: -8px; left: -8px; width: 16px; height: 16px; background: #018181; border-radius: 50%; cursor: sw-resize; border: 2px solid white;"></div>
@@ -3292,20 +3295,16 @@
             const handleMouseMove = (e) => {
                 if (isDragging) {
                     const rect = container.getBoundingClientRect();
-                    const deltaX = e.clientX - startX;
                     const deltaY = e.clientY - startY;
 
-                    let newX = startLeft + (deltaX / rect.width) * 100;
+                    // Text is centered horizontally, only drag vertically
                     let newY = startTop + (deltaY / rect.height) * 100;
 
                     // Allow text to go anywhere on the image (0-100%)
-                    newX = Math.max(0, Math.min(100, newX));
                     newY = Math.max(0, Math.min(100, newY));
 
-                    memeTextOverlays[boxIndex].x = newX;
                     memeTextOverlays[boxIndex].y = newY;
 
-                    element.style.left = newX + '%';
                     element.style.top = newY + '%';
                 } else if (isResizing) {
                     const deltaY = e.clientY - startY;
