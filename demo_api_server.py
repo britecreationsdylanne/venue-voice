@@ -2151,8 +2151,10 @@ def add_meme_text_boxes():
         data = request.json
         image_url = data.get('image_url', '')  # Base64 data URL
         text_boxes = data.get('text_boxes', [])  # Array of text box objects
+        preview_width = data.get('preview_width', 480)  # Width of preview container in browser
 
         print(f"\n[API] Adding {len(text_boxes)} text boxes to meme...")
+        print(f"    Preview width from browser: {preview_width}px")
 
         if not image_url:
             return jsonify({'success': False, 'error': 'No image provided'}), 400
@@ -2186,6 +2188,11 @@ def add_meme_text_boxes():
         draw = ImageDraw.Draw(pil_image)
         img_width, img_height = pil_image.size
 
+        # Calculate scale factor: how much bigger is the actual image vs the preview
+        # This helps match the font size from CSS preview to PIL rendering
+        scale_factor = img_width / preview_width if preview_width > 0 else 1.0
+        print(f"    Image size: {img_width}x{img_height}, scale factor: {scale_factor:.2f}")
+
         # Process each text box
         for i, box in enumerate(text_boxes):
             text = box.get('text', '').upper()
@@ -2200,11 +2207,18 @@ def add_meme_text_boxes():
             x_pos = int((x_percent / 100) * img_width)
             y_pos = int((y_percent / 100) * img_height)
 
-            # Get styling options
-            font_size = box.get('fontSize', 32)
+            # Get styling options - scale font size to match preview appearance
+            css_font_size = box.get('fontSize', 32)
+            # Scale the font size based on the difference between preview and actual image
+            font_size = int(css_font_size * scale_factor)
+            # Ensure minimum readable size
+            font_size = max(font_size, 16)
+
             text_color = box.get('textColor', '#FFFFFF')
             font_family = box.get('fontFamily', 'Impact')
             has_shadow = box.get('textShadow', True)
+
+            print(f"    Text box {i+1}: CSS font={css_font_size}px, scaled font={font_size}px")
 
             # Try to load the font
             try:
@@ -2231,15 +2245,18 @@ def add_meme_text_boxes():
             final_x = x_pos - (text_width / 2)
             final_y = y_pos - (text_height / 2)
 
+            # Scale stroke width too
+            stroke_width = max(2, int(3 * scale_factor))
+
             # Draw text with or without shadow/stroke
             if has_shadow:
                 # Draw with black stroke for visibility
                 draw.text((final_x, final_y), text, font=font, fill=text_color,
-                         stroke_width=3, stroke_fill='black')
+                         stroke_width=stroke_width, stroke_fill='black')
             else:
                 draw.text((final_x, final_y), text, font=font, fill=text_color)
 
-            print(f"    [MEME] Drew text box {i+1}: '{text}' at ({x_pos}, {y_pos})")
+            print(f"    [MEME] Drew text box {i+1}: '{text}' at ({x_pos}, {y_pos}) with font size {font_size}")
 
         # Convert back to base64
         buffer = BytesIO()

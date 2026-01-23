@@ -3383,6 +3383,14 @@
                 return;
             }
 
+            // Get the preview container width to help scale fonts correctly
+            const previewContainer = document.getElementById('meme-preview-container');
+            const previewImg = document.getElementById('meme-preview-img');
+            const previewWidth = previewImg ? previewImg.clientWidth : (previewContainer ? previewContainer.clientWidth : 480);
+
+            console.log('[SAVE] Preview width:', previewWidth);
+            console.log('[SAVE] Text boxes to save:', textBoxesToSave);
+
             // Show loading state
             const memePreview = document.getElementById('memePreview');
             const originalContent = memePreview.innerHTML;
@@ -3399,7 +3407,8 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         image_url: generatedImages.meme.url,
-                        text_boxes: textBoxesToSave
+                        text_boxes: textBoxesToSave,
+                        preview_width: previewWidth
                     })
                 });
 
