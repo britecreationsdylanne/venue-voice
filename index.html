@@ -1151,10 +1151,9 @@
                         <p style="color: #666; text-align: center; padding: 10px;">Click "Add Text Box" above to add text to your meme</p>
                     </div>
 
-                    <!-- Save button -->
+                    <!-- Info about export -->
                     <div style="margin-top: 15px; padding-top: 15px; border-top: 2px solid #86efac;">
-                        <button class="btn" onclick="saveTextToMemeImage()" style="background: #16a34a; border-color: #16a34a; width: 100%;">🔥 Save Text to Image</button>
-                        <p style="font-size: 11px; color: #666; margin-top: 8px; text-align: center;">This will permanently burn all text boxes onto your meme image</p>
+                        <p style="font-size: 12px; color: #166534; text-align: center; margin: 0;">Text will be burned onto the image when you click Export</p>
                     </div>
                 </div>
 
@@ -3001,14 +3000,131 @@
         }
 
         // Export image as download
-        function exportImage(imageType) {
+        async function exportImage(imageType) {
             const imageData = generatedImages[imageType];
             if (!imageData || !imageData.url) {
                 alert('No image to export. Please generate an image first.');
                 return;
             }
 
-            // Create a temporary link and trigger download
+            // For meme images with text overlays, burn text onto image first
+            if (imageType === 'meme' && memeTextOverlays.length > 0) {
+                const textBoxesToExport = memeTextOverlays.filter(box => box.text && box.text.trim());
+
+                if (textBoxesToExport.length > 0) {
+                    try {
+                        // Use the original image (without any previously burned text)
+                        const imageToUse = imageData.originalUrl || imageData.url;
+
+                        // Load the image
+                        const img = new Image();
+                        img.crossOrigin = 'anonymous';
+
+                        await new Promise((resolve, reject) => {
+                            img.onload = resolve;
+                            img.onerror = () => reject(new Error('Failed to load image'));
+                            img.src = imageToUse;
+                        });
+
+                        // Create canvas at 480x480 (matching preview)
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        const canvasSize = 480;
+                        canvas.width = canvasSize;
+                        canvas.height = canvasSize;
+
+                        // Draw image with proper aspect ratio (same as ImageOps.fit)
+                        const imgAspect = img.width / img.height;
+                        const canvasAspect = canvas.width / canvas.height;
+                        let drawWidth, drawHeight, offsetX, offsetY;
+
+                        if (imgAspect > canvasAspect) {
+                            drawHeight = canvas.height;
+                            drawWidth = img.width * (canvas.height / img.height);
+                            offsetX = (canvas.width - drawWidth) / 2;
+                            offsetY = 0;
+                        } else {
+                            drawWidth = canvas.width;
+                            drawHeight = img.height * (canvas.width / img.width);
+                            offsetX = 0;
+                            offsetY = (canvas.height - drawHeight) / 2;
+                        }
+
+                        ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+
+                        // Draw each text box
+                        textBoxesToExport.forEach(box => {
+                            const text = box.text || '';
+                            const fontSize = box.fontSize || 32;
+                            const color = box.textColor || '#FFFFFF';
+                            const fontFamily = box.fontFamily || 'Impact';
+
+                            // Position: percentage to pixels
+                            const x = (box.x / 100) * canvasSize;
+                            const y = (box.y / 100) * canvasSize;
+                            const boxWidth = (box.width / 100) * canvasSize;
+
+                            // Set font
+                            ctx.font = `bold ${fontSize}px ${fontFamily}, Impact, sans-serif`;
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'top';
+
+                            const centerX = x + (boxWidth / 2);
+
+                            // Text shadow/outline
+                            if (box.textShadow !== false) {
+                                ctx.strokeStyle = '#000000';
+                                ctx.lineWidth = fontSize / 8;
+                                ctx.lineJoin = 'round';
+                            }
+
+                            // Word wrap
+                            const words = text.split(' ');
+                            const lines = [];
+                            let currentLine = '';
+
+                            words.forEach(word => {
+                                const testLine = currentLine ? currentLine + ' ' + word : word;
+                                const metrics = ctx.measureText(testLine);
+                                if (metrics.width > boxWidth - 10 && currentLine) {
+                                    lines.push(currentLine);
+                                    currentLine = word;
+                                } else {
+                                    currentLine = testLine;
+                                }
+                            });
+                            if (currentLine) lines.push(currentLine);
+
+                            // Draw lines
+                            const lineHeight = fontSize * 1.2;
+                            lines.forEach((line, index) => {
+                                const lineY = y + (index * lineHeight);
+                                if (box.textShadow !== false) {
+                                    ctx.strokeText(line, centerX, lineY);
+                                }
+                                ctx.fillStyle = color;
+                                ctx.fillText(line, centerX, lineY);
+                            });
+                        });
+
+                        // Export and download
+                        const dataUrl = canvas.toDataURL('image/png');
+                        const link = document.createElement('a');
+                        link.href = dataUrl;
+                        link.download = `meme-${Date.now()}.png`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        return;
+
+                    } catch (error) {
+                        console.error('Error burning text for export:', error);
+                        alert('Error preparing image. Downloading without text.');
+                    }
+                }
+            }
+
+            // Standard export (no text burning needed)
             const link = document.createElement('a');
             link.href = imageData.url;
             link.download = `${imageType}-image-${Date.now()}.png`;
@@ -3134,6 +3250,13 @@
                        style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; margin-bottom: 15px; font-size: 14px; font-family: inherit; text-transform: uppercase;"
                        oninput="updateSelectedMemeTextBox()">${box.text}</textarea>
 
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #374151; font-size: 0.9rem;">Font Size: <span id="font-size-value">${box.fontSize || 32}</span>px</label>
+                    <input type="range" id="meme-overlay-fontsize" min="16" max="72" value="${box.fontSize || 32}"
+                           oninput="document.getElementById('font-size-value').textContent = this.value; updateSelectedMemeTextBox()"
+                           style="width: 100%; cursor: pointer;">
+                </div>
+
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
                     <div>
                         <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #374151; font-size: 0.9rem;">Font</label>
@@ -3179,6 +3302,7 @@
 
             const box = memeTextOverlays[selectedMemeTextBox];
             box.text = document.getElementById('meme-overlay-text')?.value.toUpperCase() || '';
+            box.fontSize = parseInt(document.getElementById('meme-overlay-fontsize')?.value) || 32;
             box.fontFamily = document.getElementById('meme-overlay-font')?.value || 'Impact';
             box.textColor = document.getElementById('meme-overlay-color')?.value || '#FFFFFF';
             box.textShadow = document.getElementById('meme-overlay-shadow')?.checked ?? true;
