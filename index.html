@@ -3143,9 +3143,15 @@
                     </div>
                     <div>
                         <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #374151; font-size: 0.9rem;">Text Color</label>
-                        <input type="color" id="meme-overlay-color" value="${box.textColor}"
-                               onchange="updateSelectedMemeTextBox()"
-                               style="width: 100%; height: 38px; padding: 4px; border: 2px solid #e5e7eb; border-radius: 6px; cursor: pointer;">
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <input type="color" id="meme-overlay-color" value="${box.textColor}"
+                                   oninput="updateSelectedMemeTextBox()"
+                                   style="flex: 1; height: 38px; padding: 4px; border: 2px solid #e5e7eb; border-radius: 6px; cursor: pointer;">
+                            <button onclick="document.getElementById('meme-overlay-color').blur()"
+                                    style="padding: 8px 12px; background: #018181; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem;">
+                                Done
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -3383,13 +3389,12 @@
                 return;
             }
 
-            // Get the preview container width to help scale fonts correctly
-            const previewContainer = document.getElementById('meme-preview-container');
+            // Get the preview image width BEFORE we replace the content
             const previewImg = document.getElementById('meme-preview-img');
-            const previewWidth = previewImg ? previewImg.clientWidth : (previewContainer ? previewContainer.clientWidth : 480);
+            const previewWidth = previewImg ? previewImg.clientWidth : 480;
 
-            console.log('[SAVE] Preview width:', previewWidth);
-            console.log('[SAVE] Text boxes to save:', textBoxesToSave);
+            console.log('[SAVE] Preview image width:', previewWidth);
+            console.log('[SAVE] Text boxes to save:', JSON.stringify(textBoxesToSave, null, 2));
 
             // Show loading state
             const memePreview = document.getElementById('memePreview');
@@ -3419,15 +3424,15 @@
                     generatedImages.meme.url = data.url;
                     generatedImages.meme.textBurnedIn = true;
 
-                    // Clear text overlays since they're now burned into the image
-                    memeTextOverlays = [];
-                    selectedMemeTextBox = -1;
+                    // Keep text overlays so user can continue editing and re-save
+                    // Don't clear: memeTextOverlays = [];
+                    // Don't clear: selectedMemeTextBox = -1;
 
                     // Refresh the display
                     displayImages();
                     renderMemeTextBoxControls();
 
-                    alert('Text has been saved to your meme image!');
+                    alert('Text saved! You can continue editing and save again if needed.');
                 } else {
                     throw new Error(data.error || 'Failed to save text to meme');
                 }
