@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Venue Newsletter Generator - AI Powered</title>
+    <!-- html2canvas for pixel-perfect meme text capture -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -3296,8 +3298,9 @@
                     let newX = startLeft + (deltaX / rect.width) * 100;
                     let newY = startTop + (deltaY / rect.height) * 100;
 
-                    newX = Math.max(5, Math.min(95, newX));
-                    newY = Math.max(5, Math.min(95, newY));
+                    // Allow text to go anywhere on the image (0-100%)
+                    newX = Math.max(0, Math.min(100, newX));
+                    newY = Math.max(0, Math.min(100, newY));
 
                     memeTextOverlays[boxIndex].x = newX;
                     memeTextOverlays[boxIndex].y = newY;
@@ -3400,8 +3403,7 @@
             }
         }
 
-        // Save all text boxes onto the meme image using Canvas (client-side)
-        // This ensures EXACT match between preview and final output
+        // Save meme with text using html2canvas - captures exactly what's shown
         async function saveTextToMemeImage() {
             // Filter out empty text boxes
             const textBoxesToSave = memeTextOverlays.filter(box => box.text && box.text.trim());
@@ -3416,55 +3418,55 @@
                 return;
             }
 
-            // Get the preview image width
-            const previewImg = document.getElementById('meme-preview-img');
-            const previewWidth = previewImg ? previewImg.clientWidth : 480;
+            const previewContainer = document.getElementById('meme-preview-container');
+            if (!previewContainer) {
+                alert('Preview not available. Please try again.');
+                return;
+            }
 
             // Show loading state
-            const memePreview = document.getElementById('memePreview');
-            const originalContent = memePreview.innerHTML;
-            memePreview.innerHTML = `
-                <div style="text-align: center; padding: 40px;">
-                    <div class="spinner" style="margin: 0 auto 10px;"></div>
-                    <div>Saving text to meme...</div>
-                </div>
-            `;
+            const saveBtn = document.querySelector('[onclick="saveTextToMemeImage()"]');
+            const originalBtnText = saveBtn ? saveBtn.innerHTML : '';
+            if (saveBtn) {
+                saveBtn.innerHTML = '⏳ Saving...';
+                saveBtn.disabled = true;
+            }
 
             try {
-                // Always use the ORIGINAL image to prevent text stacking
-                const imageToUse = generatedImages.meme.originalUrl || generatedImages.meme.url;
-
-                const response = await fetch(`${API_BASE}/api/add-meme-text-boxes`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        image_url: imageToUse,
-                        text_boxes: textBoxesToSave,
-                        preview_width: previewWidth
-                    })
+                // Use html2canvas to capture the preview exactly as shown
+                const canvas = await html2canvas(previewContainer, {
+                    backgroundColor: null,
+                    scale: 2, // Higher quality
+                    useCORS: true,
+                    allowTaint: true,
+                    logging: false
                 });
 
-                const data = await response.json();
+                // Convert canvas to data URL
+                const dataUrl = canvas.toDataURL('image/png');
 
-                if (data.success && data.url) {
-                    // Update the meme with the new image that has text burned in
-                    generatedImages.meme.url = data.url;
-                    generatedImages.meme.textBurnedIn = true;
+                // Update the meme with the captured image
+                generatedImages.meme.url = dataUrl;
+                generatedImages.meme.textBurnedIn = true;
 
-                    // Refresh the display
-                    displayImages();
-                    renderMemeTextBoxControls();
+                // Clear text overlays since they're now burned in
+                // But keep them in the array so user can see what was added
 
-                    alert('Text saved! Now click Export to download, then host in Ontraport.');
-                } else {
-                    throw new Error(data.error || 'Failed to save text to meme');
-                }
+                // Refresh display
+                displayImages();
+                renderMemeTextBoxControls();
+
+                alert('Text saved! Now click Export to download, then host in Ontraport.');
 
             } catch (error) {
                 console.error('Error saving text to meme:', error);
-                memePreview.innerHTML = originalContent;
-                renderAllMemeTextBoxes();
                 alert('Error saving text to meme: ' + error.message);
+            } finally {
+                // Restore button
+                if (saveBtn) {
+                    saveBtn.innerHTML = originalBtnText;
+                    saveBtn.disabled = false;
+                }
             }
         }
 
