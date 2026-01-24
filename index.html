@@ -1157,22 +1157,12 @@
                     </div>
                 </div>
 
-                <!-- Regenerate and Export buttons (moved below text overlay section) -->
-                <div style="margin-bottom: 15px;">
-                    <button class="btn-secondary btn" onclick="regenerateImage('meme')" style="margin-right: 10px;">🔄 Regenerate</button>
-                    <button class="btn-secondary btn" onclick="exportImage('meme')">📥 Export</button>
-                </div>
-
-                <div style="margin: 20px 0; padding: 15px; background: #f9fafb; border-radius: 8px; border: 2px dashed #e5e7eb;">
-                    <h4 style="margin: 0 0 10px 0; font-size: 14px;">Or Upload Your Own:</h4>
-                    <input type="file" id="memeUpload" accept="image/*" style="display: none;" onchange="handleMemeUpload(event)">
-                    <button class="btn-secondary btn" onclick="document.getElementById('memeUpload').click()">📁 Upload Image</button>
-                </div>
             </div>
 
             <div class="buttons">
                 <button class="btn-secondary btn" onclick="goBackToMemeConceptWithState()">← Back to Concept</button>
                 <button class="btn-secondary btn" onclick="proceedToMemeGeneration(true)" style="background: #f59e0b; color: white; border-color: #f59e0b;">🔄 Regenerate Meme</button>
+                <button class="btn-secondary btn" onclick="exportImage('meme')">📥 Export</button>
                 <button class="btn" onclick="showStep(12)">Continue to Subject Line →</button>
             </div>
         </div>
@@ -3112,6 +3102,12 @@
             renderMemeTextBoxControls();
         }
 
+        function unselectMemeTextBox() {
+            selectedMemeTextBox = -1;
+            renderAllMemeTextBoxes();
+            renderMemeTextBoxControls();
+        }
+
         function renderMemeTextBoxControls() {
             const controlsContainer = document.getElementById('meme-text-box-controls');
             const tabsContainer = document.getElementById('meme-text-box-tabs');
@@ -3189,10 +3185,16 @@
                     </label>
                 </div>
 
-                <button onclick="deleteMemeTextBox(${selectedMemeTextBox})" class="btn btn-secondary"
-                        style="width: 100%; padding: 10px; color: #dc2626; border: 2px solid #dc2626; background: white; border-radius: 6px; cursor: pointer;">
-                    Delete This Text Box
-                </button>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button onclick="deleteMemeTextBox(${selectedMemeTextBox})" class="btn btn-secondary"
+                            style="flex: 1; padding: 10px; color: #dc2626; border: 2px solid #dc2626; background: white; border-radius: 6px; cursor: pointer;">
+                        🗑️ Delete
+                    </button>
+                    <button onclick="unselectMemeTextBox()" class="btn btn-secondary"
+                            style="flex: 1; padding: 10px; color: #166534; border: 2px solid #166534; background: white; border-radius: 6px; cursor: pointer;">
+                        ✓ Done Editing
+                    </button>
+                </div>
             `;
         }
 
@@ -3233,13 +3235,12 @@
                     transform: translate(-50%, -50%);
                     cursor: move;
                     pointer-events: auto;
-                    max-width: 95%;
                     ${isSelected ? 'outline: 3px dashed #018181; outline-offset: 4px;' : ''}
                 `;
 
                 textBoxEl.innerHTML = `
-                    <div style="padding: 5px 15px; text-align: center; position: relative; white-space: nowrap;">
-                        <p style="color: ${box.textColor}; font-family: '${box.fontFamily}', Impact, sans-serif; font-size: ${box.fontSize}px; font-weight: bold; margin: 0; line-height: 1.2; text-transform: uppercase; ${shadowStyle}">${box.text}</p>
+                    <div style="padding: 5px 15px; text-align: center; position: relative;">
+                        <p style="color: ${box.textColor}; font-family: '${box.fontFamily}', Impact, sans-serif; font-size: ${box.fontSize}px; font-weight: bold; margin: 0; line-height: 1.2; text-transform: uppercase; white-space: nowrap; ${shadowStyle}">${box.text}</p>
                         ${isSelected ? `
                             <div class="meme-resize-handle meme-resize-br" style="position: absolute; bottom: -8px; right: -8px; width: 16px; height: 16px; background: #018181; border-radius: 50%; cursor: se-resize; border: 2px solid white;"></div>
                             <div class="meme-resize-handle meme-resize-bl" style="position: absolute; bottom: -8px; left: -8px; width: 16px; height: 16px; background: #018181; border-radius: 50%; cursor: sw-resize; border: 2px solid white;"></div>
