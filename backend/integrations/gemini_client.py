@@ -77,7 +77,7 @@ class GeminiClient:
 
             # Handle different response formats based on google-genai version
             parts = []
-            if hasattr(response, 'parts'):
+            if hasattr(response, 'parts') and response.parts:
                 parts = response.parts
             elif hasattr(response, 'candidates') and response.candidates:
                 # Newer API format

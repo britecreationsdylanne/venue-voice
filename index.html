@@ -1130,9 +1130,6 @@
                     <textarea id="memePrompt" rows="2" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 4px; font-size: 14px;" placeholder="Describe the meme you want..."></textarea>
                 </div>
 
-                <button class="btn-secondary btn" onclick="regenerateImage('meme')" style="margin-right: 10px;">🔄 Regenerate</button>
-                <button class="btn-secondary btn" onclick="exportImage('meme')">📥 Export</button>
-
                 <!-- Text Overlay Controls Section -->
                 <div id="memeTextOverlaySection" style="margin: 20px 0; padding: 20px; background: #f0fdf4; border-radius: 8px; border: 2px solid #86efac;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -1158,6 +1155,12 @@
                         <button class="btn" onclick="saveTextToMemeImage()" style="background: #16a34a; border-color: #16a34a; width: 100%;">🔥 Save Text to Image</button>
                         <p style="font-size: 11px; color: #666; margin-top: 8px; text-align: center;">This will burn text onto your meme. Then Export and host in Ontraport.</p>
                     </div>
+                </div>
+
+                <!-- Regenerate and Export buttons (moved below text overlay section) -->
+                <div style="margin-bottom: 15px;">
+                    <button class="btn-secondary btn" onclick="regenerateImage('meme')" style="margin-right: 10px;">🔄 Regenerate</button>
+                    <button class="btn-secondary btn" onclick="exportImage('meme')">📥 Export</button>
                 </div>
 
                 <div style="margin: 20px 0; padding: 15px; background: #f9fafb; border-radius: 8px; border: 2px dashed #e5e7eb;">
