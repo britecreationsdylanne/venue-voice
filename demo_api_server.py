@@ -2497,9 +2497,9 @@ def push_to_ontraport():
         print(f"  - Subject: {subject}")
         print(f"  - Month: {month}")
 
-        # Get Ontraport credentials from environment
-        ontraport_app_id = os.getenv('ONTRAPORT_APP_ID', '')
-        ontraport_api_key = os.getenv('ONTRAPORT_API_KEY', '')
+        # Get Ontraport credentials from environment (strip to remove any trailing newlines from secrets)
+        ontraport_app_id = os.getenv('ONTRAPORT_APP_ID', '').strip()
+        ontraport_api_key = os.getenv('ONTRAPORT_API_KEY', '').strip()
 
         if ontraport_app_id and ontraport_api_key:
             try:

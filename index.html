@@ -3458,13 +3458,13 @@
                 generatedImages.meme.textBurnedIn = true;
 
                 // Clear text overlays since they're now burned in
-                // But keep them in the array so user can see what was added
+                memeTextOverlays = [];
+                selectedMemeTextBox = -1;
 
                 // Refresh display
                 displayImages();
-                renderMemeTextBoxControls();
 
-                alert('Text saved! Now click Export to download, then host in Ontraport.');
+                alert('✓ Text saved to image! The text is now permanently part of the image.');
 
             } catch (error) {
                 console.error('Error saving text to meme:', error);
