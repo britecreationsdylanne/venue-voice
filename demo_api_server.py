@@ -198,6 +198,18 @@ def serve_template():
     """Serve the Briteco newsletter HTML template"""
     return send_from_directory('.', 'briteco_template.html')
 
+@app.route('/api/firebase-config')
+def get_firebase_config():
+    """Return Firebase configuration for client-side auth"""
+    return jsonify({
+        'apiKey': os.environ.get('FIREBASE_API_KEY', ''),
+        'authDomain': os.environ.get('FIREBASE_AUTH_DOMAIN', 'brite-stack.firebaseapp.com'),
+        'projectId': os.environ.get('FIREBASE_PROJECT_ID', 'brite-stack'),
+        'storageBucket': os.environ.get('FIREBASE_STORAGE_BUCKET', 'brite-stack.firebasestorage.app'),
+        'messagingSenderId': os.environ.get('FIREBASE_MESSAGING_SENDER_ID', ''),
+        'appId': os.environ.get('FIREBASE_APP_ID', '')
+    })
+
 @app.route('/api/search-news', methods=['POST'])
 def search_news():
     """Search for recent wedding industry news using OpenAI Responses API"""
