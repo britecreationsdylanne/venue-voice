@@ -2699,28 +2699,39 @@ def push_to_ontraport():
 
 @app.route('/api/get-newsletter-archive', methods=['GET'])
 def get_newsletter_archive():
-    """Get last 6 months of published newsletters"""
+    """Get published newsletters from GCS (delegates to list-published logic)"""
+    if not gcs_client:
+        return jsonify({'success': True, 'newsletters': []})
     try:
-        archive_file = os.path.join('data', 'archives', 'venue-voice-archives.json')
-
-        if not os.path.exists(archive_file):
-            return jsonify({'success': True, 'newsletters': []})
-
-        with open(archive_file, 'r', encoding='utf-8') as f:
-            all_newsletters = json.load(f)
-
-        # Return last 6 months
-        recent_newsletters = all_newsletters[:6]
-
-        print(f"[API] Retrieved {len(recent_newsletters)} archived newsletters")
-
-        return jsonify({
-            'success': True,
-            'newsletters': recent_newsletters
-        })
-
+        bucket = gcs_client.bucket(GCS_BUCKET_NAME)
+        blobs = list(bucket.list_blobs(prefix='published/'))
+        newsletters = []
+        for blob in blobs:
+            try:
+                data = json.loads(blob.download_as_text())
+                gc = data.get('generatedContent', {})
+                sections = {
+                    'news': gc.get('news', {}).get('title', 'News Article') if isinstance(gc.get('news'), dict) else 'News Article',
+                    'tip': gc.get('tipTitle', 'Pro Tip'),
+                    'trend': gc.get('trendTitle', 'Trend Alert'),
+                }
+                newsletters.append({
+                    'filename': blob.name,
+                    'month': data.get('month', ''),
+                    'year': data.get('year', ''),
+                    'lastSavedBy': data.get('lastSavedBy', ''),
+                    'lastSavedAt': data.get('lastSavedAt', ''),
+                    'sections': sections,
+                })
+            except Exception as inner_e:
+                safe_print(f"[ARCHIVE] Skipping {blob.name}: {str(inner_e)}")
+                continue
+        newsletters.sort(key=lambda x: x.get('lastSavedAt', ''), reverse=True)
+        newsletters = newsletters[:12]
+        safe_print(f"[ARCHIVE] Returning {len(newsletters)} published newsletters")
+        return jsonify({'success': True, 'newsletters': newsletters})
     except Exception as e:
-        print(f"[API ERROR] {str(e)}")
+        safe_print(f"[ARCHIVE ERROR] {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/save-newsletter-archive', methods=['POST'])
@@ -3487,6 +3498,90 @@ def load_draft():
         return jsonify({'success': True, 'draft': data})
     except Exception as e:
         safe_print(f"[DRAFT LOAD ERROR] {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/publish-draft', methods=['POST'])
+def publish_draft():
+    """Move a draft from drafts/ to published/ in GCS"""
+    if not gcs_client:
+        return jsonify({'success': False, 'error': 'GCS not configured'}), 500
+    try:
+        filename = request.json.get('file')
+        if not filename:
+            return jsonify({'success': False, 'error': 'No file specified'}), 400
+        bucket = gcs_client.bucket(GCS_BUCKET_NAME)
+        source_blob = bucket.blob(filename)
+        if not source_blob.exists():
+            return jsonify({'success': False, 'error': 'Draft not found'}), 404
+        # Copy to published/ prefix
+        dest_name = filename.replace('drafts/', 'published/', 1)
+        bucket.copy_blob(source_blob, bucket, dest_name)
+        # Delete original
+        source_blob.delete()
+        safe_print(f"[DRAFT PUBLISH] Moved {filename} -> {dest_name}")
+        return jsonify({'success': True})
+    except Exception as e:
+        safe_print(f"[DRAFT PUBLISH ERROR] {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/list-published', methods=['GET'])
+def list_published():
+    """List all published newsletters from GCS"""
+    if not gcs_client:
+        return jsonify({'success': True, 'newsletters': []})
+    try:
+        bucket = gcs_client.bucket(GCS_BUCKET_NAME)
+        blobs = list(bucket.list_blobs(prefix='published/'))
+        newsletters = []
+        for blob in blobs:
+            try:
+                data = json.loads(blob.download_as_text())
+                gc = data.get('generatedContent', {})
+                sections = {
+                    'news': gc.get('news', {}).get('title', 'News Article') if isinstance(gc.get('news'), dict) else 'News Article',
+                    'tip': gc.get('tipTitle', 'Pro Tip'),
+                    'trend': gc.get('trendTitle', 'Trend Alert'),
+                }
+                newsletters.append({
+                    'filename': blob.name,
+                    'month': data.get('month', ''),
+                    'year': data.get('year', ''),
+                    'lastSavedBy': data.get('lastSavedBy', ''),
+                    'lastSavedAt': data.get('lastSavedAt', ''),
+                    'sections': sections,
+                })
+            except Exception as inner_e:
+                safe_print(f"[LIST PUBLISHED] Skipping {blob.name}: {str(inner_e)}")
+                continue
+        # Sort by lastSavedAt descending, limit 12
+        newsletters.sort(key=lambda x: x.get('lastSavedAt', ''), reverse=True)
+        newsletters = newsletters[:12]
+        safe_print(f"[LIST PUBLISHED] Returning {len(newsletters)} published newsletters")
+        return jsonify({'success': True, 'newsletters': newsletters})
+    except Exception as e:
+        safe_print(f"[LIST PUBLISHED ERROR] {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/load-published', methods=['GET'])
+def load_published():
+    """Load a full published draft from GCS"""
+    if not gcs_client:
+        return jsonify({'success': False, 'error': 'GCS not configured'}), 500
+    try:
+        filename = request.args.get('file')
+        if not filename:
+            return jsonify({'success': False, 'error': 'No file specified'}), 400
+        bucket = gcs_client.bucket(GCS_BUCKET_NAME)
+        blob = bucket.blob(filename)
+        if not blob.exists():
+            return jsonify({'success': False, 'error': 'Published draft not found'}), 404
+        data = json.loads(blob.download_as_text())
+        return jsonify({'success': True, 'draft': data})
+    except Exception as e:
+        safe_print(f"[LOAD PUBLISHED ERROR] {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 

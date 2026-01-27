@@ -4170,7 +4170,7 @@
                 console.log('[ONTRAPORT] Response:', data);
 
                 if (data.success) {
-                    deleteDraft();
+                    publishDraft();
                     // Show prominent success message
                     alert('✅ SUCCESS!\n\n' +
                           'Your newsletter has been pushed to Ontraport!\n\n' +
@@ -5247,7 +5247,7 @@
         // Newsletter Archive Functions
         async function loadNewsletterArchive() {
             try {
-                const response = await fetch(`${API_BASE}/api/get-newsletter-archive`);
+                const response = await fetch(`${API_BASE}/api/list-published`);
                 const data = await response.json();
 
                 if (data.success && data.newsletters && data.newsletters.length > 0) {
@@ -5287,22 +5287,22 @@
                         <div style="margin: 16px 0;">
                             <div style="margin-bottom: 14px; padding-left: 12px; border-left: 3px solid #31D7CA;">
                                 <div style="font-size: 11px; text-transform: uppercase; color: #31D7CA; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 4px;">NEWS</div>
-                                <div style="font-size: 14px; color: #272D3F; font-weight: 600; line-height: 1.4;">${newsletter.sections.news?.title || 'News Article'}</div>
+                                <div style="font-size: 14px; color: #272D3F; font-weight: 600; line-height: 1.4;">${newsletter.sections.news || 'News Article'}</div>
                             </div>
 
                             <div style="margin-bottom: 14px; padding-left: 12px; border-left: 3px solid #31D7CA;">
                                 <div style="font-size: 11px; text-transform: uppercase; color: #31D7CA; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 4px;">TIP</div>
-                                <div style="font-size: 14px; color: #272D3F; font-weight: 600; line-height: 1.4;">${newsletter.sections.tip?.title || 'Pro Tip'}</div>
+                                <div style="font-size: 14px; color: #272D3F; font-weight: 600; line-height: 1.4;">${newsletter.sections.tip || 'Pro Tip'}</div>
                             </div>
 
                             <div style="margin-bottom: 14px; padding-left: 12px; border-left: 3px solid #31D7CA;">
                                 <div style="font-size: 11px; text-transform: uppercase; color: #31D7CA; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 4px;">TREND</div>
-                                <div style="font-size: 14px; color: #272D3F; font-weight: 600; line-height: 1.4;">${newsletter.sections.trend?.title || 'Trend Alert'}</div>
+                                <div style="font-size: 14px; color: #272D3F; font-weight: 600; line-height: 1.4;">${newsletter.sections.trend || 'Trend Alert'}</div>
                             </div>
                         </div>
 
                         <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #eee;">
-                            <button onclick="viewNewsletter('${newsletter.id}')" style="width: 100%; padding: 12px 16px; background: #31D7CA; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s;">View Newsletter</button>
+                            <button onclick="viewNewsletter('${newsletter.filename}')" style="width: 100%; padding: 12px 16px; background: #31D7CA; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s;">View Newsletter</button>
                         </div>
                     </div>
                 `;
@@ -5311,18 +5311,39 @@
             });
         }
 
-        function viewNewsletter(newsletterId) {
-            // Fetch and display the newsletter HTML
-            fetch(`${API_BASE}/api/get-newsletter-archive`)
-                .then(res => res.json())
-                .then(data => {
-                    const newsletter = data.newsletters.find(n => n.id === newsletterId);
-                    if (newsletter && newsletter.html_content) {
-                        document.getElementById('newsletterModalContent').innerHTML = newsletter.html_content;
-                        document.getElementById('newsletterModal').style.display = 'block';
-                    }
-                })
-                .catch(error => console.error('Error viewing newsletter:', error));
+        async function viewNewsletter(filename) {
+            try {
+                const resp = await fetch(`${API_BASE}/api/load-published?file=${encodeURIComponent(filename)}`);
+                const data = await resp.json();
+                if (!data.success || !data.draft) { alert('Could not load newsletter'); return; }
+                const d = data.draft;
+                // Temporarily store current state
+                const origMonth = selectedMonth, origNews = generatedNewsContent, origTip = generatedTipContent, origTrend = generatedTrendContent;
+                const origTipSub = generatedTipSubtitle, origTrendSub = generatedTrendSubtitle, origTipTitle = generatedTipTitle, origTrendTitle = generatedTrendTitle;
+                const origImages = generatedImages;
+                // Set state from published draft
+                selectedMonth = d.month || '';
+                const gc = d.generatedContent || {};
+                generatedNewsContent = gc.news || null;
+                generatedTipContent = gc.tip || null;
+                generatedTrendContent = gc.trend || null;
+                generatedTipSubtitle = gc.tipSubtitle || null;
+                generatedTrendSubtitle = gc.trendSubtitle || null;
+                generatedTipTitle = gc.tipTitle || null;
+                generatedTrendTitle = gc.trendTitle || null;
+                generatedImages = d.generatedImages || { meme: null, news: null, tip: null, trend: null };
+                // Generate preview
+                const html = generateNewsletterHTML();
+                document.getElementById('newsletterModalContent').innerHTML = html;
+                document.getElementById('newsletterModal').style.display = 'block';
+                // Restore original state
+                selectedMonth = origMonth; generatedNewsContent = origNews; generatedTipContent = origTip; generatedTrendContent = origTrend;
+                generatedTipSubtitle = origTipSub; generatedTrendSubtitle = origTrendSub; generatedTipTitle = origTipTitle; generatedTrendTitle = origTrendTitle;
+                generatedImages = origImages;
+            } catch (e) {
+                console.error('Error viewing newsletter:', e);
+                alert('Failed to load newsletter preview');
+            }
         }
 
         function closeNewsletterModal() {
@@ -5435,6 +5456,25 @@
             }
         }
 
+        async function publishDraft() {
+            if (!selectedMonth) return;
+            try {
+                const userEmail = (window.AUTH_USER && window.AUTH_USER.email) || 'unknown';
+                const savedBy = userEmail.split('@')[0].replace(/\./g, '-');
+                const filename = `drafts/${selectedMonth.toLowerCase()}-${new Date().getFullYear()}-${savedBy}.json`;
+                await fetch(`${API_BASE}/api/publish-draft`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ file: filename })
+                });
+                console.log('[Draft] Published');
+                loadDrafts();
+                loadNewsletterArchive();
+            } catch (e) {
+                console.error('[Draft] Publish failed:', e);
+            }
+        }
+
         async function deleteDraft() {
             if (!selectedMonth) return;
             try {
@@ -5527,6 +5567,7 @@
                 closeNewsletterModal();
             }
         });
+        window.scrollTo(0, 0);
     </script>
 
     <!-- Briteco Newsletter Template -->
