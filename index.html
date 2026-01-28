@@ -753,6 +753,70 @@
             background: #fee2e2;
             color: #dc2626;
         }
+
+        /* Previous Newsletters Section */
+        .previous-newsletters-section {
+            background: #466F88;
+            padding: 80px 20px;
+            margin-top: 60px;
+        }
+
+        .previous-newsletters-section h2 {
+            font-size: 36px;
+            color: white;
+            margin-bottom: 12px;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .previous-newsletters-section .subtitle {
+            color: rgba(255,255,255,0.8);
+            font-size: 16px;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .newsletter-placeholder {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .newsletter-placeholder .icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+
+        .newsletter-placeholder .title {
+            color: #666;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .newsletter-placeholder .message {
+            color: #999;
+            font-size: 14px;
+        }
+
+        .archive-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            text-align: left;
+        }
+
+        .archive-card h4 {
+            color: #272d3f;
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .archive-card p {
+            color: #666;
+            font-size: 14px;
+            margin: 0;
+        }
     </style>
 
 </head>
@@ -1713,6 +1777,10 @@
         };
         let allResearchResults = [];  // Combined results from all cards
 
+        // Track search queries for selection tracking
+        let lastSearchQuery = '';
+        let lastSearchSource = '';
+
         // Tab-specific search results and state (each tab has its own searches)
         let tabSearchState = {
             news: {
@@ -1796,6 +1864,31 @@
             if (content.content) return content.content;
             if (content.short_version) return `${content.short_version} ${content.whats_happening || ''} ${content.why_matters || ''}`;
             return JSON.stringify(content).substring(0, 500);
+        }
+
+        // Track article selection for learning/analysis (fire-and-forget)
+        async function trackSelection(section, article, deselected = false) {
+            try {
+                fetch(`${API_BASE}/api/track-selection`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        section: section,
+                        url: article.url,
+                        title: article.title,
+                        headline: article.headline,
+                        publisher: article.publisher,
+                        snippet: article.snippet,
+                        impact: article.impact,
+                        searchQuery: lastSearchQuery || '',
+                        searchSource: lastSearchSource || '',
+                        timeFilter: document.querySelector('[id$="-time-select"]')?.value || '',
+                        user: (window.AUTH_USER && window.AUTH_USER.email) || 'unknown',
+                        month: selectedMonth,
+                        deselected: deselected
+                    })
+                });
+            } catch (e) { /* silent */ }
         }
 
         // Initialize months
@@ -4582,20 +4675,45 @@
             // Show loading state
             const originalButton = event.target;
             const originalText = originalButton.innerHTML;
-            originalButton.innerHTML = '⏳ Pushing to Ontraport...';
+            originalButton.innerHTML = '⏳ Uploading images...';
             originalButton.disabled = true;
 
             try {
+                // First, upload images to GCS
+                console.log('[ONTRAPORT] Uploading images to GCS...');
+                const gcsUrls = await uploadImagesToGCS();
+
+                originalButton.innerHTML = '⏳ Pushing to Ontraport...';
+
                 console.log('[ONTRAPORT] Generating newsletter HTML...');
                 let html = generateNewsletterHTML();
-                // Replace base64 data URIs with placeholder URLs for email clients
-                let imgIdx = 0;
-                const imgNames = ['news-image', 'tip-image', 'trend-image', 'meme-image'];
-                html = html.replace(/data:image\/[a-z]+;base64,[A-Za-z0-9+\/=]+/g, () => {
-                    const name = imgNames[imgIdx] || 'image-' + (imgIdx + 1);
-                    imgIdx++;
-                    return 'https://REPLACE-WITH-HOSTED-URL/' + name + '.png';
-                });
+
+                // Replace base64 data URIs with GCS URLs or placeholder URLs
+                if (gcsUrls && Object.keys(gcsUrls).length > 0) {
+                    // Replace each section's base64 image with its GCS URL
+                    const sectionOrder = ['news', 'tip', 'trend', 'meme'];
+                    let imgIdx = 0;
+                    html = html.replace(/data:image\/[a-z]+;base64,[A-Za-z0-9+\/=]+/g, () => {
+                        const section = sectionOrder[imgIdx];
+                        imgIdx++;
+                        if (section && gcsUrls[section]) {
+                            console.log(`[ONTRAPORT] Using GCS URL for ${section}: ${gcsUrls[section]}`);
+                            return gcsUrls[section];
+                        }
+                        return 'https://REPLACE-WITH-HOSTED-URL/image-' + imgIdx + '.png';
+                    });
+                    console.log('[ONTRAPORT] Replaced images with GCS URLs');
+                } else {
+                    // Fallback: replace with placeholder URLs
+                    let imgIdx = 0;
+                    const imgNames = ['news-image', 'tip-image', 'trend-image', 'meme-image'];
+                    html = html.replace(/data:image\/[a-z]+;base64,[A-Za-z0-9+\/=]+/g, () => {
+                        const name = imgNames[imgIdx] || 'image-' + (imgIdx + 1);
+                        imgIdx++;
+                        return 'https://REPLACE-WITH-HOSTED-URL/' + name + '.png';
+                    });
+                    console.log('[ONTRAPORT] Using placeholder URLs (GCS upload failed or no images)');
+                }
 
                 console.log('[ONTRAPORT] Sending to backend...');
                 const response = await fetch(`${API_BASE}/api/push-to-ontraport`, {
@@ -5006,6 +5124,10 @@
             const resultsDiv = document.getElementById('perplexityResults');
             const currentTab = currentResearchSection;
 
+            // Track search query for selection tracking
+            lastSearchQuery = query;
+            lastSearchSource = 'perplexity';
+
             resultsDiv.innerHTML = '<div class="research-card-loading"><div class="spinner"></div><p>Searching with Perplexity AI & analyzing with GPT-5.2...</p></div>';
 
             try {
@@ -5056,6 +5178,10 @@
             const resultsDiv = document.getElementById('insightResults');
             const currentTab = currentResearchSection;
 
+            // Track search query for selection tracking
+            lastSearchQuery = `insight-builder-${timeWindow}`;
+            lastSearchSource = 'insight';
+
             resultsDiv.innerHTML = '<div class="research-card-loading"><div class="spinner"></div><p>Analyzing all 8 market signals...</p></div>';
 
             try {
@@ -5101,6 +5227,10 @@
                 resultsDiv.innerHTML = '<p style="color: #c00; padding: 20px;">Please select at least one source pack.</p>';
                 return;
             }
+
+            // Track search query for selection tracking
+            lastSearchQuery = query;
+            lastSearchSource = 'explorer';
 
             resultsDiv.innerHTML = '<div class="research-card-loading"><div class="spinner"></div><p>Searching sources & analyzing story angles...</p></div>';
 
@@ -5458,6 +5588,16 @@
                 document.getElementById('trendTabCheck').style.display = 'inline';
                 console.log('[Research] Selected for TREND:', selectedTrend.title);
             }
+
+            // Track selection (fire-and-forget)
+            trackSelection(currentResearchSection, {
+                url: result.url,
+                title: result.title,
+                headline: result.headline,
+                publisher: result.publisher,
+                snippet: result.industry_data || result.snippet,
+                impact: result.impact
+            });
 
             // Update the Next button
             updateResearchNextButton();
@@ -6017,6 +6157,52 @@
             if (count === 0) alert('No generated images found to download.');
         }
 
+        // Upload images to GCS and return public URLs
+        async function uploadImagesToGCS() {
+            const sections = ['news', 'tip', 'trend', 'meme'];
+            const images = {};
+
+            for (const section of sections) {
+                const img = generatedImages[section];
+                if (!img) continue;
+                const dataUrl = (typeof img === 'string') ? img : (img.url || null);
+                if (dataUrl && dataUrl.startsWith('data:image')) {
+                    images[section] = dataUrl;
+                }
+            }
+
+            if (Object.keys(images).length === 0) {
+                console.log('[GCS] No images to upload');
+                return null;
+            }
+
+            try {
+                console.log('[GCS] Uploading images to GCS...');
+                const response = await fetch(`${API_BASE}/api/upload-images-to-gcs`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        images: images,
+                        month: selectedMonth || 'unknown',
+                        year: new Date().getFullYear()
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.urls) {
+                    console.log('[GCS] Upload successful:', data.urls);
+                    return data.urls;
+                } else {
+                    console.error('[GCS] Upload failed:', data.error);
+                    return null;
+                }
+            } catch (error) {
+                console.error('[GCS] Upload error:', error);
+                return null;
+            }
+        }
+
         // ============================================================================
         // SAVED ARTICLES FUNCTIONS
         // ============================================================================
@@ -6232,10 +6418,38 @@
             input.disabled = false;
         }
 
+        // Load newsletter archive
+        async function loadArchive() {
+            try {
+                const response = await fetch(`${API_BASE}/api/get-newsletter-archive`);
+                const data = await response.json();
+
+                if (data.success && data.newsletters && data.newsletters.length > 0) {
+                    document.getElementById('archiveContent').style.display = 'none';
+                    const grid = document.getElementById('archiveGrid');
+                    grid.style.display = 'grid';
+                    grid.innerHTML = '';
+
+                    data.newsletters.forEach(n => {
+                        const card = document.createElement('div');
+                        card.className = 'archive-card';
+                        card.innerHTML = `
+                            <h4>${n.month.charAt(0).toUpperCase() + n.month.slice(1)} ${n.year}</h4>
+                            <p>Published: ${n.date_published}</p>
+                        `;
+                        grid.appendChild(card);
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to load archive:', error);
+            }
+        }
+
         // Load drafts on page load
         document.addEventListener('DOMContentLoaded', function() {
             loadDrafts();
             loadSavedArticles();
+            loadArchive();
         });
 
         // Close modal on escape key
@@ -6410,6 +6624,25 @@
         });
     })();
     </script>
+
+    <!-- Previous Newsletters Section -->
+    <div class="previous-newsletters-section">
+        <div style="max-width: 1200px; margin: 0 auto;">
+            <div style="margin-bottom: 40px; text-align: center;">
+                <h2>Previous Newsletters</h2>
+                <p class="subtitle">View past newsletters sent to your subscribers</p>
+            </div>
+
+            <div id="archiveGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 28px;">
+            </div>
+
+            <div id="archiveContent" class="newsletter-placeholder">
+                <div class="icon">📭</div>
+                <h3 class="title">No Previous Newsletters</h3>
+                <p class="message">Newsletters you publish will appear here</p>
+            </div>
+        </div>
+    </div>
 
     <!-- Briteco Newsletter Template -->
     <script src="briteco_template.js"></script>
