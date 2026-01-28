@@ -1683,26 +1683,6 @@
         </div>
     </div>
 
-    <!-- Newsletter Archive Section -->
-    <div style="padding: 80px 20px; margin-top: 60px; background: #466F88;">
-        <div style="max-width: 1200px; margin: 0 auto;">
-            <div style="margin-bottom: 40px; text-align: center;">
-                <h2 style="font-size: 36px; color: white; margin-bottom: 12px; font-weight: 700;">Previous Newsletters</h2>
-                <p style="color: rgba(255,255,255,0.8); font-size: 16px;">View past newsletters sent to your subscribers</p>
-            </div>
-
-            <div id="newsletterArchiveGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 28px;">
-                <!-- Archive cards will be loaded here -->
-            </div>
-
-            <div id="newsletterArchiveEmpty" style="text-align: center; padding: 60px 20px; color: #999; display: none;">
-                <div style="font-size: 64px; margin-bottom: 16px; opacity: 0.3;">📭</div>
-                <h3 style="color: #666;">No Previous Newsletters</h3>
-                <p>Newsletters you publish will appear here</p>
-            </div>
-        </div>
-    </div>
-
     <!-- Newsletter View Modal -->
     <div id="newsletterModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 10000; overflow: auto;">
         <div style="max-width: 800px; margin: 40px auto; background: white; border-radius: 12px; position: relative;">
@@ -5712,75 +5692,7 @@
 
         // Initialize
         initMonths();
-        loadNewsletterArchive();
         loadDrafts();
-
-        // Newsletter Archive Functions
-        async function loadNewsletterArchive() {
-            try {
-                const response = await fetch(`${API_BASE}/api/list-published`);
-                const data = await response.json();
-
-                if (data.success && data.newsletters && data.newsletters.length > 0) {
-                    displayNewsletterArchive(data.newsletters);
-                } else {
-                    document.getElementById('newsletterArchiveEmpty').style.display = 'block';
-                }
-            } catch (error) {
-                console.error('Error loading newsletter archive:', error);
-                document.getElementById('newsletterArchiveEmpty').style.display = 'block';
-            }
-        }
-
-        function displayNewsletterArchive(newsletters) {
-            const grid = document.getElementById('newsletterArchiveGrid');
-            grid.innerHTML = '';
-
-            newsletters.forEach(newsletter => {
-                const card = document.createElement('div');
-                card.style.cssText = 'background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s; cursor: pointer;';
-                card.onmouseenter = () => {
-                    card.style.transform = 'translateY(-4px)';
-                    card.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)';
-                };
-                card.onmouseleave = () => {
-                    card.style.transform = 'translateY(0)';
-                    card.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
-                };
-
-                card.innerHTML = `
-                    <div style="width: 100%; height: 180px; background: #272D3F; display: flex; align-items: center; justify-content: center;">
-                        <div style="font-size: 48px; color: #31D7CA; opacity: 0.4;">📰</div>
-                    </div>
-                    <div style="padding: 20px;">
-                        <span style="display: inline-block; background: #272D3F; color: white; padding: 6px 14px; border-radius: 4px; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 16px;">${newsletter.month} ${newsletter.year}</span>
-
-                        <div style="margin: 16px 0;">
-                            <div style="margin-bottom: 14px; padding-left: 12px; border-left: 3px solid #31D7CA;">
-                                <div style="font-size: 11px; text-transform: uppercase; color: #31D7CA; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 4px;">NEWS</div>
-                                <div style="font-size: 14px; color: #272D3F; font-weight: 600; line-height: 1.4;">${newsletter.sections.news || 'News Article'}</div>
-                            </div>
-
-                            <div style="margin-bottom: 14px; padding-left: 12px; border-left: 3px solid #31D7CA;">
-                                <div style="font-size: 11px; text-transform: uppercase; color: #31D7CA; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 4px;">TIP</div>
-                                <div style="font-size: 14px; color: #272D3F; font-weight: 600; line-height: 1.4;">${newsletter.sections.tip || 'Pro Tip'}</div>
-                            </div>
-
-                            <div style="margin-bottom: 14px; padding-left: 12px; border-left: 3px solid #31D7CA;">
-                                <div style="font-size: 11px; text-transform: uppercase; color: #31D7CA; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 4px;">TREND</div>
-                                <div style="font-size: 14px; color: #272D3F; font-weight: 600; line-height: 1.4;">${newsletter.sections.trend || 'Trend Alert'}</div>
-                            </div>
-                        </div>
-
-                        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #eee;">
-                            <button onclick="viewNewsletter('${newsletter.filename}')" style="width: 100%; padding: 12px 16px; background: #31D7CA; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s;">View Newsletter</button>
-                        </div>
-                    </div>
-                `;
-
-                grid.appendChild(card);
-            });
-        }
 
         async function viewNewsletter(filename) {
             try {
@@ -5949,7 +5861,7 @@
                 });
                 console.log('[Draft] Published');
                 loadDrafts();
-                loadNewsletterArchive();
+                loadArchive();
             } catch (e) {
                 console.error('[Draft] Publish failed:', e);
             }
@@ -6315,30 +6227,59 @@
             input.disabled = false;
         }
 
-        // Load newsletter archive
+        // Load published newsletters
         async function loadArchive() {
             try {
-                const response = await fetch(`${API_BASE}/api/get-newsletter-archive`);
+                const response = await fetch(`${API_BASE}/api/list-published`);
                 const data = await response.json();
-
+                const grid = document.getElementById('archiveGrid');
+                const empty = document.getElementById('archiveContent');
                 if (data.success && data.newsletters && data.newsletters.length > 0) {
-                    document.getElementById('archiveContent').style.display = 'none';
-                    const grid = document.getElementById('archiveGrid');
+                    if (empty) empty.style.display = 'none';
                     grid.style.display = 'grid';
                     grid.innerHTML = '';
-
                     data.newsletters.forEach(n => {
+                        const monthCap = n.month ? n.month.charAt(0).toUpperCase() + n.month.slice(1) : '?';
+                        const savedBy = n.lastSavedBy || 'unknown';
+                        const savedAt = n.lastSavedAt ? new Date(n.lastSavedAt).toLocaleString('en-US', { timeZone: 'America/Chicago', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '';
                         const card = document.createElement('div');
-                        card.className = 'archive-card';
+                        card.style.cssText = 'background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s; cursor: pointer;';
+                        card.onmouseenter = () => { card.style.transform = 'translateY(-4px)'; card.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)'; };
+                        card.onmouseleave = () => { card.style.transform = ''; card.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)'; };
                         card.innerHTML = `
-                            <h4>${n.month.charAt(0).toUpperCase() + n.month.slice(1)} ${n.year}</h4>
-                            <p>Published: ${n.date_published}</p>
+                            <div style="width: 100%; height: 140px; background: #272D3F; display: flex; align-items: center; justify-content: center;">
+                                <div style="font-size: 48px; color: #31D7CA; opacity: 0.4;">📰</div>
+                            </div>
+                            <div style="padding: 20px;">
+                                <span style="display: inline-block; background: #272D3F; color: white; padding: 6px 14px; border-radius: 4px; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 12px;">${monthCap} ${n.year}</span>
+                                <div style="margin: 12px 0;">
+                                    <div style="margin-bottom: 10px; padding-left: 12px; border-left: 3px solid #31D7CA;">
+                                        <div style="font-size: 11px; text-transform: uppercase; color: #31D7CA; font-weight: 700; letter-spacing: 0.5px;">NEWS</div>
+                                        <div style="font-size: 13px; color: #272D3F; font-weight: 600;">${n.sections?.news?.title || 'News Article'}</div>
+                                    </div>
+                                    <div style="margin-bottom: 10px; padding-left: 12px; border-left: 3px solid #31D7CA;">
+                                        <div style="font-size: 11px; text-transform: uppercase; color: #31D7CA; font-weight: 700; letter-spacing: 0.5px;">TIP</div>
+                                        <div style="font-size: 13px; color: #272D3F; font-weight: 600;">${n.sections?.tip?.title || 'Pro Tip'}</div>
+                                    </div>
+                                    <div style="margin-bottom: 10px; padding-left: 12px; border-left: 3px solid #31D7CA;">
+                                        <div style="font-size: 11px; text-transform: uppercase; color: #31D7CA; font-weight: 700; letter-spacing: 0.5px;">TREND</div>
+                                        <div style="font-size: 13px; color: #272D3F; font-weight: 600;">${n.sections?.trend?.title || 'Trend Alert'}</div>
+                                    </div>
+                                </div>
+                                <p style="margin: 8px 0 0; font-size: 12px; color: #999;">${savedBy} · ${savedAt} CT</p>
+                                <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #eee;">
+                                    <button onclick="viewNewsletter('${n.filename}')" style="width: 100%; padding: 12px 16px; background: #31D7CA; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">View Newsletter</button>
+                                </div>
+                            </div>
                         `;
                         grid.appendChild(card);
                     });
+                } else {
+                    if (empty) empty.style.display = 'block';
+                    grid.style.display = 'none';
                 }
-            } catch (error) {
-                console.error('Failed to load archive:', error);
+            } catch (e) {
+                console.error('[Published] Load list failed:', e);
             }
         }
 
