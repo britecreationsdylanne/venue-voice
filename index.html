@@ -1058,6 +1058,56 @@
                 <!-- Results will be displayed here -->
             </div>
 
+            <!-- Export to Google Docs & Email Section -->
+            <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #e5e7eb;">
+                <h3 style="margin: 0 0 10px 0; color: #008181;">Export to Google Docs & Email</h3>
+                <p style="font-size: 14px; color: #666; margin-bottom: 20px;">Hit export and once complete, you can auto email the exported link to your team.</p>
+
+                <!-- Primary Export Button -->
+                <button class="btn" onclick="exportToGoogleDocs()" id="exportDocsBtn" style="background: #4285f4;">
+                    <span id="exportDocsBtnText">Export to Google Docs</span>
+                </button>
+
+                <!-- Export Result (shows after export) -->
+                <div id="exportDocsResult" style="display: none; margin-top: 20px; padding: 15px; border-radius: 6px;"></div>
+
+                <!-- Email Section (hidden until export succeeds) -->
+                <div id="emailAfterExportSection" style="display: none; margin-top: 20px; border-top: 2px solid #e5e7eb; padding-top: 20px;">
+                    <h4 style="margin: 0 0 15px 0; color: #374151;">Email the Google Doc Link</h4>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-weight: 600; margin-bottom: 10px; font-size: 14px;">Select recipients:</label>
+
+                        <!-- Team member checkboxes (NO John or Ben) -->
+                        <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; padding: 12px; background: #f9fafb; border-radius: 6px;">
+                            <label style="display: flex; align-items: center; cursor: pointer; font-size: 13px;">
+                                <input type="checkbox" class="docRecipientCheckbox" value="stef.lynn@brite.co" checked style="margin-right: 8px; width: 16px; height: 16px;">
+                                <span>Stef Lynn (stef.lynn@brite.co)</span>
+                            </label>
+                            <label style="display: flex; align-items: center; cursor: pointer; font-size: 13px;">
+                                <input type="checkbox" class="docRecipientCheckbox" value="selena.fragassi@brite.co" checked style="margin-right: 8px; width: 16px; height: 16px;">
+                                <span>Selena Fragassi (selena.fragassi@brite.co)</span>
+                            </label>
+                            <label style="display: flex; align-items: center; cursor: pointer; font-size: 13px;">
+                                <input type="checkbox" class="docRecipientCheckbox" value="dylanne.crugnale@brite.co" checked style="margin-right: 8px; width: 16px; height: 16px;">
+                                <span>Dylanne Crugnale (dylanne.crugnale@brite.co)</span>
+                            </label>
+                        </div>
+
+                        <!-- Additional emails input -->
+                        <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 14px;">Additional emails (comma-separated):</label>
+                        <input type="text" id="docAdditionalEmails" placeholder="email1@example.com, email2@example.com" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 4px; font-size: 14px; margin-bottom: 15px;">
+
+                        <!-- Send Email Button -->
+                        <button class="btn" onclick="sendExportEmail()" id="sendExportEmailBtn" style="background: #059669;">
+                            <span id="sendExportEmailBtnText">Send Email</span>
+                        </button>
+
+                        <div id="emailSendResult" style="display: none; margin-top: 15px; padding: 12px; border-radius: 6px;"></div>
+                    </div>
+                </div>
+            </div>
+
             <div style="margin-top: 20px; padding: 15px; background: #f0fdf4; border: 2px solid #22c55e; border-radius: 8px; text-align: center;">
                 <button class="btn" onclick="saveDraft(); this.textContent='✓ Draft Saved!'; setTimeout(() => { this.textContent='💾 Save Draft'; }, 2000);" style="background: #22c55e; padding: 10px 30px;">💾 Save Draft</button>
                 <p style="margin: 8px 0 0 0; font-size: 13px; color: #666;">Save your progress to resume later</p>
@@ -2450,6 +2500,204 @@
                 URL.revokeObjectURL(url);
                 alert('✓ Brand check results downloaded!');
             });
+        }
+
+        // ============================================================================
+        // GOOGLE DOCS EXPORT & EMAIL FUNCTIONS
+        // ============================================================================
+
+        // Store last exported doc URL for email sending
+        let lastExportedDocUrl = '';
+        let lastExportedMonth = '';
+        let lastExportedYear = '';
+
+        async function exportToGoogleDocs() {
+            const btn = document.getElementById('exportDocsBtn');
+            const btnText = document.getElementById('exportDocsBtnText');
+            const resultDiv = document.getElementById('exportDocsResult');
+            const emailSection = document.getElementById('emailAfterExportSection');
+
+            // Show loading state
+            btn.disabled = true;
+            btnText.textContent = 'Exporting...';
+            resultDiv.style.display = 'none';
+            emailSection.style.display = 'none';
+
+            try {
+                // Gather all newsletter content from editable boxes (user may have edited)
+                const newsContent = document.getElementById('newsContentBox')?.innerHTML || generatedNewsContent || '';
+                const tipContent = document.getElementById('tipContentBox')?.innerHTML || generatedTipContent || '';
+                const trendContent = document.getElementById('trendContentBox')?.innerHTML || generatedTrendContent || '';
+
+                const content = {
+                    news: {
+                        title: selectedNews?.title || generatedNewsTitle || 'Industry News',
+                        body: newsContent
+                    },
+                    tip: {
+                        title: selectedTip?.title || generatedTipTitle || 'Venue Tip',
+                        body: tipContent
+                    },
+                    trend: {
+                        title: selectedTrend?.title || generatedTrendTitle || 'Trending Now',
+                        body: trendContent
+                    }
+                };
+
+                // Format month for title
+                const monthCapitalized = selectedMonth ? selectedMonth.charAt(0).toUpperCase() + selectedMonth.slice(1) : '';
+                const year = new Date().getFullYear();
+                const title = `Venue Voice (${monthCapitalized} ${year})`;
+
+                // Store for email sending later
+                lastExportedMonth = monthCapitalized;
+                lastExportedYear = year;
+
+                const response = await fetch(`${API_BASE}/api/export-to-docs`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        content: content,
+                        title: title,
+                        month: monthCapitalized,
+                        year: year,
+                        send_email: false,  // Don't send email during export
+                        recipients: []
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Store the doc URL for later email sending
+                    lastExportedDocUrl = data.doc_url;
+                    console.log('[Export] Success! Doc URL:', data.doc_url);
+
+                    resultDiv.style.display = 'block';
+                    resultDiv.style.background = '#d1fae5';
+                    resultDiv.style.border = '1px solid #10b981';
+
+                    // Build the link HTML only if we have a valid doc_url
+                    const docLinkHtml = data.doc_url
+                        ? `<a href="${data.doc_url}" target="_blank" style="display: inline-block; margin-top: 12px; padding: 10px 20px; background: #4285f4; color: white; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 600;">
+                            Open in Google Docs
+                        </a>
+                        <p style="margin: 10px 0 0 0; font-size: 12px; color: #065f46; word-break: break-all;">
+                            <strong>Link:</strong> ${data.doc_url}
+                        </p>`
+                        : '<p style="margin: 10px 0 0 0; font-size: 14px; color: #b45309;">Link not available - check console for details.</p>';
+
+                    resultDiv.innerHTML = `
+                        <p style="margin: 0 0 8px 0; font-weight: 600; color: #065f46; font-size: 16px;">Export Successful!</p>
+                        <p style="margin: 0; font-size: 14px; color: #047857;">
+                            Your newsletter has been exported to Google Docs.
+                        </p>
+                        ${docLinkHtml}
+                    `;
+
+                    // Show the email section
+                    emailSection.style.display = 'block';
+                } else {
+                    resultDiv.style.display = 'block';
+                    resultDiv.style.background = '#fee2e2';
+                    resultDiv.style.border = '1px solid #ef4444';
+                    resultDiv.innerHTML = `
+                        <p style="margin: 0; font-weight: 600; color: #991b1b;">Export Failed</p>
+                        <p style="margin: 5px 0 0 0; font-size: 14px; color: #b91c1c;">${data.error || 'Unknown error'}</p>
+                    `;
+                }
+            } catch (error) {
+                console.error('Export error:', error);
+                resultDiv.style.display = 'block';
+                resultDiv.style.background = '#fee2e2';
+                resultDiv.style.border = '1px solid #ef4444';
+                resultDiv.innerHTML = `
+                    <p style="margin: 0; font-weight: 600; color: #991b1b;">Export Failed</p>
+                    <p style="margin: 5px 0 0 0; font-size: 14px; color: #b91c1c;">${error.message}</p>
+                `;
+            } finally {
+                btn.disabled = false;
+                btnText.textContent = 'Export to Google Docs';
+            }
+        }
+
+        // Send email with the exported doc link (called after successful export)
+        async function sendExportEmail() {
+            if (!lastExportedDocUrl) {
+                alert('Please export to Google Docs first');
+                return;
+            }
+
+            const btn = document.getElementById('sendExportEmailBtn');
+            const btnText = document.getElementById('sendExportEmailBtnText');
+            const resultDiv = document.getElementById('emailSendResult');
+
+            // Gather selected recipients from checkboxes
+            let recipients = [];
+            document.querySelectorAll('.docRecipientCheckbox:checked').forEach(cb => {
+                recipients.push(cb.value);
+            });
+
+            // Add additional emails if provided
+            const additionalEmails = document.getElementById('docAdditionalEmails')?.value.trim() || '';
+            if (additionalEmails) {
+                const extras = additionalEmails.split(',').map(e => e.trim()).filter(e => e.includes('@'));
+                recipients = recipients.concat(extras);
+            }
+
+            if (recipients.length === 0) {
+                alert('Please select at least one recipient or add an email address');
+                return;
+            }
+
+            // Show loading state
+            btn.disabled = true;
+            btnText.textContent = 'Sending...';
+            resultDiv.style.display = 'none';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/send-doc-email`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        doc_url: lastExportedDocUrl,
+                        month: lastExportedMonth,
+                        year: lastExportedYear,
+                        recipients: recipients
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    resultDiv.style.display = 'block';
+                    resultDiv.style.background = '#d1fae5';
+                    resultDiv.style.border = '1px solid #10b981';
+                    resultDiv.innerHTML = `
+                        <p style="margin: 0; font-weight: 600; color: #065f46;">Email sent to ${recipients.length} recipient${recipients.length > 1 ? 's' : ''}!</p>
+                    `;
+                } else {
+                    resultDiv.style.display = 'block';
+                    resultDiv.style.background = '#fee2e2';
+                    resultDiv.style.border = '1px solid #ef4444';
+                    resultDiv.innerHTML = `
+                        <p style="margin: 0; font-weight: 600; color: #991b1b;">Email Failed</p>
+                        <p style="margin: 5px 0 0 0; font-size: 14px; color: #b91c1c;">${data.error || 'Unknown error'}</p>
+                    `;
+                }
+            } catch (error) {
+                console.error('Email error:', error);
+                resultDiv.style.display = 'block';
+                resultDiv.style.background = '#fee2e2';
+                resultDiv.style.border = '1px solid #ef4444';
+                resultDiv.innerHTML = `
+                    <p style="margin: 0; font-weight: 600; color: #991b1b;">Email Failed</p>
+                    <p style="margin: 5px 0 0 0; font-size: 14px; color: #b91c1c;">${error.message}</p>
+                `;
+            } finally {
+                btn.disabled = false;
+                btnText.textContent = 'Send Email';
+            }
         }
 
         function exportAllCopy() {
@@ -5146,6 +5394,17 @@
         // Alias for backwards compatibility
         function updateResearchNextButton() {
             updateSelectionProgress();
+        }
+
+        // Helper function for checkbox click handling
+        function handleCheckboxClick(checkbox, e) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            const item = checkbox.closest('.research-result-item');
+            if (item && item.onclick) {
+                item.onclick();
+            }
         }
 
         // Select a research result directly from the dashboard

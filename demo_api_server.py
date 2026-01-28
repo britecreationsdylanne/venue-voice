@@ -10,6 +10,7 @@ import json
 import re
 import requests
 import secrets
+import pytz
 from datetime import datetime
 from functools import wraps
 from flask import Flask, request, jsonify, send_from_directory, Response, redirect, session, url_for
@@ -18,8 +19,20 @@ from authlib.integrations.flask_client import OAuth
 from dotenv import load_dotenv
 from werkzeug.middleware.proxy_fix import ProxyFix
 
+# SendGrid for email
+try:
+    import sendgrid
+    from sendgrid.helpers.mail import Mail, Email, To, Content, HtmlContent
+    SENDGRID_AVAILABLE = True
+except ImportError:
+    SENDGRID_AVAILABLE = False
+    print("[WARNING] SendGrid not installed. Email functionality disabled.")
+
 # Load environment
 load_dotenv()
+
+# Chicago timezone for timestamps
+CHICAGO_TZ = pytz.timezone('America/Chicago')
 
 # Add backend to path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'backend'))
@@ -2526,6 +2539,399 @@ def check_brand_guidelines():
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
+
+# ============================================================================
+# ROUTES - GOOGLE DOCS EXPORT & EMAIL
+# ============================================================================
+
+@app.route('/api/export-to-docs', methods=['POST'])
+def export_to_docs():
+    """Export newsletter content to Google Docs and optionally send link via email"""
+    try:
+        from google.oauth2 import service_account
+        from googleapiclient.discovery import build
+
+        data = request.json
+        content = data.get('content', {})
+        title = data.get('title', f"Venue Voice ({datetime.now().strftime('%B')}, {datetime.now().year})")
+        month = data.get('month', datetime.now().strftime('%B'))
+        year = data.get('year', datetime.now().year)
+        send_email = data.get('send_email', False)
+        recipients = data.get('recipients', [])  # List of email addresses
+
+        # Google Drive folder ID for saving documents - Venue Voice folder
+        GOOGLE_DRIVE_FOLDER_ID = '1OvlOIelSnFFBgWtk6XmbwXtp4Ii29XPw'
+
+        safe_print(f"[API] Exporting to Google Docs: {title}")
+
+        # Try both variable names for compatibility (with and without underscore prefix)
+        creds_json = os.environ.get('GOOGLE_DOCS_CREDENTIALS') or os.environ.get('_GOOGLE_DOCS_CREDENTIALS')
+
+        # Debug logging
+        safe_print(f"[API] GOOGLE_DOCS_CREDENTIALS exists: {bool(os.environ.get('GOOGLE_DOCS_CREDENTIALS'))}")
+        safe_print(f"[API] _GOOGLE_DOCS_CREDENTIALS exists: {bool(os.environ.get('_GOOGLE_DOCS_CREDENTIALS'))}")
+        if creds_json:
+            safe_print(f"[API] Credentials length: {len(creds_json)} chars, starts with: {creds_json[:50]}...")
+
+        if not creds_json:
+            return jsonify({
+                "success": False,
+                "error": "Google Docs credentials not configured. Set GOOGLE_DOCS_CREDENTIALS via Secret Manager."
+            }), 500
+
+        # Parse credentials
+        try:
+            creds_data = json.loads(creds_json)
+            safe_print(f"[API] Parsed credentials, project_id: {creds_data.get('project_id', 'unknown')}")
+            credentials = service_account.Credentials.from_service_account_info(
+                creds_data,
+                scopes=['https://www.googleapis.com/auth/documents', 'https://www.googleapis.com/auth/drive']
+            )
+        except json.JSONDecodeError as e:
+            safe_print(f"[API] JSON parse error: {e}")
+            safe_print(f"[API] Credentials value (first 100 chars): {creds_json[:100] if creds_json else 'None'}")
+            return jsonify({
+                "success": False,
+                "error": f"Invalid JSON in credentials: {str(e)}"
+            }), 500
+        except Exception as e:
+            safe_print(f"[API] Credentials error: {e}")
+            return jsonify({
+                "success": False,
+                "error": f"Invalid Google credentials: {str(e)}"
+            }), 500
+
+        # Build the services
+        docs_service = build('docs', 'v1', credentials=credentials)
+        drive_service = build('drive', 'v3', credentials=credentials)
+
+        # First, verify access to the folder
+        safe_print(f"[API] Checking access to folder: {GOOGLE_DRIVE_FOLDER_ID}")
+        try:
+            folder_check = drive_service.files().get(
+                fileId=GOOGLE_DRIVE_FOLDER_ID,
+                fields='id, name, driveId',
+                supportsAllDrives=True
+            ).execute()
+            safe_print(f"[API] Folder access OK: {folder_check.get('name')}, driveId: {folder_check.get('driveId', 'None (regular folder)')}")
+        except Exception as folder_err:
+            safe_print(f"[API] Folder access check failed: {folder_err}")
+            return jsonify({
+                "success": False,
+                "error": f"Cannot access Google Drive folder. Ensure the service account has access. Error: {str(folder_err)}"
+            }), 500
+
+        # Create a new Google Doc directly in the shared folder using Drive API
+        file_metadata = {
+            'name': title,
+            'mimeType': 'application/vnd.google-apps.document',
+            'parents': [GOOGLE_DRIVE_FOLDER_ID]
+        }
+
+        created_file = drive_service.files().create(
+            body=file_metadata,
+            fields='id',
+            supportsAllDrives=True
+        ).execute()
+
+        doc_id = created_file.get('id')
+        doc_url = f"https://docs.google.com/document/d/{doc_id}/edit"
+
+        safe_print(f"[API] Created Google Doc in folder: {doc_id}")
+
+        # Build document content from newsletter sections
+        requests_list = []
+
+        # Helper to convert HTML to plain text
+        def html_to_plain_text_doc(html_content):
+            if not html_content:
+                return ''
+            text = str(html_content)
+            # Convert links: <a href="url">text</a> -> text (url)
+            text = re.sub(r'<a[^>]*href=["\']([^"\']*)["\'][^>]*>([^<]*)</a>', r'\2 (\1)', text)
+            # Convert <li> to bullet points
+            text = re.sub(r'<li[^>]*>', '- ', text)
+            text = re.sub(r'</li>', '\n', text)
+            # Convert <p> to paragraphs
+            text = re.sub(r'<p[^>]*>', '', text)
+            text = re.sub(r'</p>', '\n\n', text)
+            # Remove all other HTML tags
+            text = re.sub(r'<[^>]+>', '', text)
+            # Decode HTML entities
+            text = text.replace('&amp;', '&')
+            text = text.replace('&lt;', '<')
+            text = text.replace('&gt;', '>')
+            text = text.replace('&quot;', '"')
+            text = text.replace('&#39;', "'")
+            text = text.replace('&nbsp;', ' ')
+            # Remove ** markdown bold markers
+            text = re.sub(r'\*\*([^*]+)\*\*', r'\1', text)
+            # Clean up whitespace
+            text = re.sub(r'\n{3,}', '\n\n', text)
+            return text.strip()
+
+        # Helper to add text with formatting
+        def add_text(text, bold=False, heading=False, index_offset=[1]):
+            if not text:
+                return
+            # Convert HTML to plain text
+            text = html_to_plain_text_doc(text)
+            if not text:
+                return
+            text = text.strip() + '\n\n'
+            start_index = index_offset[0]
+            end_index = start_index + len(text)
+
+            requests_list.append({
+                'insertText': {
+                    'location': {'index': start_index},
+                    'text': text
+                }
+            })
+
+            if heading:
+                requests_list.append({
+                    'updateParagraphStyle': {
+                        'range': {'startIndex': start_index, 'endIndex': end_index - 1},
+                        'paragraphStyle': {'namedStyleType': 'HEADING_2'},
+                        'fields': 'namedStyleType'
+                    }
+                })
+            elif bold:
+                requests_list.append({
+                    'updateTextStyle': {
+                        'range': {'startIndex': start_index, 'endIndex': end_index - 1},
+                        'textStyle': {'bold': True},
+                        'fields': 'bold'
+                    }
+                })
+
+            index_offset[0] = end_index
+
+        # Add newsletter sections
+        add_text(title, heading=True)
+
+        if content.get('news'):
+            add_text('Industry News', bold=True)
+            news = content['news']
+            if isinstance(news, dict):
+                if news.get('title'):
+                    add_text(news['title'])
+                if news.get('body'):
+                    add_text(news['body'])
+            else:
+                add_text(str(news))
+
+        if content.get('tip'):
+            add_text('Venue Tip', bold=True)
+            tip = content['tip']
+            if isinstance(tip, dict):
+                if tip.get('title'):
+                    add_text(tip['title'])
+                if tip.get('body'):
+                    add_text(tip['body'])
+            else:
+                add_text(str(tip))
+
+        if content.get('trend'):
+            add_text('Trending Now', bold=True)
+            trend = content['trend']
+            if isinstance(trend, dict):
+                if trend.get('title'):
+                    add_text(trend['title'])
+                if trend.get('body'):
+                    add_text(trend['body'])
+            else:
+                add_text(str(trend))
+
+        # Execute batch update
+        if requests_list:
+            docs_service.documents().batchUpdate(
+                documentId=doc_id,
+                body={'requests': requests_list}
+            ).execute()
+            safe_print(f"[API] Document content updated")
+
+        # Make the document accessible via link (anyone with link can view)
+        drive_service.permissions().create(
+            fileId=doc_id,
+            body={'type': 'anyone', 'role': 'reader'},
+            supportsAllDrives=True
+        ).execute()
+        safe_print(f"[API] Document sharing enabled")
+
+        # Optionally send email with the link to multiple recipients via SendGrid
+        emails_sent = []
+        email_errors = []
+        if send_email and recipients:
+            try:
+                # Check both with and without underscore prefix for Secret Manager
+                sendgrid_api_key = os.environ.get('SENDGRID_API_KEY') or os.environ.get('_SENDGRID_API_KEY')
+                from_email = 'marketing@brite.co'
+                from_name = 'Venue Voice'
+
+                if sendgrid_api_key and SENDGRID_AVAILABLE:
+                    sg = sendgrid.SendGridAPIClient(api_key=sendgrid_api_key)
+
+                    for recipient in recipients:
+                        try:
+                            email_html = f"""
+                            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                                <h2 style="color: #008181;">Venue Voice Newsletter Ready for Review</h2>
+                                <p>Hello,</p>
+                                <p>The <strong>{month} {year}</strong> Venue Voice Newsletter has been exported to Google Docs and is ready for your review.</p>
+                                <p style="margin: 20px 0;">
+                                    <a href="{doc_url}" style="background: #008181; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
+                                        Open Google Doc
+                                    </a>
+                                </p>
+                                <p style="color: #666; font-size: 14px;">Or copy this link: {doc_url}</p>
+                                <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                                <p style="color: #999; font-size: 12px;">Sent by Venue Voice Newsletter Generator</p>
+                            </div>
+                            """
+
+                            message = Mail(
+                                from_email=(from_email, from_name),
+                                to_emails=recipient,
+                                subject=f"Venue Voice Newsletter ({month} {year}) - Ready for Review",
+                                html_content=email_html
+                            )
+
+                            response = sg.send(message)
+
+                            if response.status_code in [200, 201, 202]:
+                                emails_sent.append(recipient)
+                                safe_print(f"[API] Email sent to {recipient}")
+                            else:
+                                error_msg = f"SendGrid returned status {response.status_code} for {recipient}"
+                                email_errors.append(error_msg)
+                                safe_print(f"[API] {error_msg}")
+
+                        except Exception as email_error:
+                            error_msg = f"Failed to send to {recipient}: {str(email_error)}"
+                            email_errors.append(error_msg)
+                            safe_print(f"[API] {error_msg}")
+                else:
+                    safe_print("[API] SendGrid not configured (SENDGRID_API_KEY not set)")
+                    email_errors.append("SendGrid not configured")
+            except Exception as e:
+                safe_print(f"[API] Email send failed: {e}")
+                # Don't fail the whole operation if email fails
+
+        return jsonify({
+            "success": True,
+            "doc_url": doc_url,
+            "doc_id": doc_id,
+            "title": title,
+            "emails_sent": emails_sent,
+            "email_errors": email_errors,
+            "message": f"Newsletter exported to Google Docs{f' and {len(emails_sent)} email(s) sent' if emails_sent else ''}"
+        })
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        safe_print(f"[API] Export error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/send-doc-email', methods=['POST'])
+def send_doc_email():
+    """Send email with Google Doc link (separate from export)"""
+    try:
+        data = request.json
+        doc_url = data.get('doc_url', '')
+        month = data.get('month', '')
+        year = data.get('year', datetime.now().year)
+        recipients = data.get('recipients', [])
+
+        if not doc_url:
+            return jsonify({"success": False, "error": "No document URL provided"}), 400
+
+        if not recipients:
+            return jsonify({"success": False, "error": "No recipients provided"}), 400
+
+        safe_print(f"[API] Sending doc email to {len(recipients)} recipients")
+
+        if not SENDGRID_AVAILABLE:
+            return jsonify({"success": False, "error": "SendGrid not available"}), 500
+
+        # Check both with and without underscore prefix for Secret Manager
+        sendgrid_api_key = os.environ.get('SENDGRID_API_KEY') or os.environ.get('_SENDGRID_API_KEY')
+        from_email = 'marketing@brite.co'
+        from_name = 'Venue Voice'
+
+        # Debug logging
+        safe_print(f"[API] SendGrid API key length: {len(sendgrid_api_key) if sendgrid_api_key else 0}")
+        safe_print(f"[API] SendGrid from: {from_email} ({from_name})")
+        safe_print(f"[API] Recipients: {recipients}")
+
+        if not sendgrid_api_key:
+            return jsonify({"success": False, "error": "SendGrid API key not configured"}), 500
+
+        if len(sendgrid_api_key) < 20:
+            safe_print(f"[API] WARNING: SendGrid API key appears too short ({len(sendgrid_api_key)} chars)")
+
+        sg = sendgrid.SendGridAPIClient(api_key=sendgrid_api_key)
+
+        emails_sent = []
+        email_errors = []
+
+        for recipient in recipients:
+            try:
+                email_html = f"""
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #008181;">Venue Voice Newsletter Ready for Review</h2>
+                    <p>Hello,</p>
+                    <p>The <strong>{month} {year}</strong> Venue Voice Newsletter has been exported to Google Docs and is ready for your review.</p>
+                    <p style="margin: 20px 0;">
+                        <a href="{doc_url}" style="background: #008181; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
+                            Open Google Doc
+                        </a>
+                    </p>
+                    <p style="color: #666; font-size: 14px;">Or copy this link: {doc_url}</p>
+                    <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                    <p style="color: #999; font-size: 12px;">Sent by Venue Voice Newsletter Generator</p>
+                </div>
+                """
+
+                # Use simpler Mail constructor for reliability
+                message = Mail(
+                    from_email=(from_email, from_name),
+                    to_emails=recipient,
+                    subject=f"Venue Voice Newsletter ({month} {year}) - Ready for Review",
+                    html_content=email_html
+                )
+
+                response = sg.send(message)
+                safe_print(f"[API] Email sent to {recipient}, status: {response.status_code}")
+                emails_sent.append(recipient)
+            except Exception as email_error:
+                import traceback
+                safe_print(f"[API] Failed to send to {recipient}: {email_error}")
+                safe_print(f"[API] Email error traceback: {traceback.format_exc()}")
+                email_errors.append(str(email_error))
+
+        if emails_sent:
+            return jsonify({
+                "success": True,
+                "emails_sent": emails_sent,
+                "errors": email_errors
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "error": email_errors[0] if email_errors else "Failed to send emails"
+            }), 500
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        safe_print(f"[API] Send doc email error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @app.route('/api/send-test-email', methods=['POST'])
 def send_test_email():
     """Send test email using SMTP"""
@@ -3442,7 +3848,7 @@ def save_draft():
             'subjectLine': data.get('subjectLine'),
             'preheader': data.get('preheader'),
             'lastSavedBy': data.get('savedBy', 'unknown'),
-            'lastSavedAt': datetime.now().isoformat()
+            'lastSavedAt': datetime.now(CHICAGO_TZ).isoformat()
         }
 
         bucket = gcs_client.bucket(GCS_BUCKET_NAME)
@@ -3647,7 +4053,7 @@ def add_saved_article():
         if any(a.get('url') == article['url'] for a in articles):
             return jsonify({'success': True, 'message': 'Already saved', 'articles': articles})
 
-        article['dateSaved'] = datetime.now().isoformat()
+        article['dateSaved'] = datetime.now(CHICAGO_TZ).isoformat()
         articles.insert(0, article)
 
         blob.upload_from_string(json.dumps({'articles': articles}), content_type='application/json')
