@@ -3390,6 +3390,7 @@ def search_perplexity_v2():
         # Build query description for UI
         time_desc = {
             '7d': 'past week',
+            '15d': 'past 2 weeks',
             '30d': 'past month',
             '90d': 'past 3 months'
         }.get(time_window, 'recent')
@@ -3602,6 +3603,143 @@ def delete_draft():
     except Exception as e:
         safe_print(f"[DRAFT DELETE ERROR] {str(e)}")
         return jsonify({'success': True})
+
+
+# ============================================================================
+# ROUTES - SAVED ARTICLES (Google Cloud Storage)
+# ============================================================================
+
+SAVED_ARTICLES_BLOB = 'saved-articles/global.json'
+
+@app.route('/api/saved-articles', methods=['GET'])
+def get_saved_articles():
+    if not gcs_client:
+        return jsonify({'success': True, 'articles': []})
+    try:
+        bucket = gcs_client.bucket(GCS_BUCKET_NAME)
+        blob = bucket.blob(SAVED_ARTICLES_BLOB)
+        if blob.exists():
+            data = json.loads(blob.download_as_text())
+            return jsonify({'success': True, 'articles': data.get('articles', [])})
+        return jsonify({'success': True, 'articles': []})
+    except Exception as e:
+        safe_print(f"[SAVED ARTICLES] Error loading: {str(e)}")
+        return jsonify({'success': True, 'articles': []})
+
+
+@app.route('/api/saved-articles', methods=['POST'])
+def add_saved_article():
+    if not gcs_client:
+        return jsonify({'success': False, 'error': 'GCS not available'}), 503
+    try:
+        article = request.json.get('article')
+        if not article or not article.get('url'):
+            return jsonify({'success': False, 'error': 'Article with URL required'}), 400
+
+        bucket = gcs_client.bucket(GCS_BUCKET_NAME)
+        blob = bucket.blob(SAVED_ARTICLES_BLOB)
+
+        articles = []
+        if blob.exists():
+            data = json.loads(blob.download_as_text())
+            articles = data.get('articles', [])
+
+        if any(a.get('url') == article['url'] for a in articles):
+            return jsonify({'success': True, 'message': 'Already saved', 'articles': articles})
+
+        article['dateSaved'] = datetime.now().isoformat()
+        articles.insert(0, article)
+
+        blob.upload_from_string(json.dumps({'articles': articles}), content_type='application/json')
+        return jsonify({'success': True, 'articles': articles})
+
+    except Exception as e:
+        safe_print(f"[SAVED ARTICLES] Error saving: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/saved-articles', methods=['DELETE'])
+def delete_saved_article():
+    if not gcs_client:
+        return jsonify({'success': False, 'error': 'GCS not available'}), 503
+    try:
+        url = request.json.get('url')
+        if not url:
+            return jsonify({'success': False, 'error': 'URL required'}), 400
+
+        bucket = gcs_client.bucket(GCS_BUCKET_NAME)
+        blob = bucket.blob(SAVED_ARTICLES_BLOB)
+
+        articles = []
+        if blob.exists():
+            data = json.loads(blob.download_as_text())
+            articles = data.get('articles', [])
+
+        articles = [a for a in articles if a.get('url') != url]
+        blob.upload_from_string(json.dumps({'articles': articles}), content_type='application/json')
+        return jsonify({'success': True, 'articles': articles})
+
+    except Exception as e:
+        safe_print(f"[SAVED ARTICLES] Error deleting: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/fetch-article-metadata', methods=['POST'])
+def fetch_article_metadata():
+    try:
+        import requests as req
+        from bs4 import BeautifulSoup
+
+        data = request.json
+        url = data.get('url', '')
+
+        if not url:
+            return jsonify({'success': False, 'error': 'URL is required'}), 400
+
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+
+        try:
+            response = req.get(url, headers=headers, timeout=10)
+            response.raise_for_status()
+        except req.RequestException as e:
+            return jsonify({'success': False, 'error': f'Failed to fetch URL: {str(e)}'}), 400
+
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        title = ''
+        og_title = soup.find('meta', property='og:title')
+        if og_title and og_title.get('content'):
+            title = og_title['content']
+        elif soup.title:
+            title = soup.title.string or ''
+
+        description = ''
+        og_desc = soup.find('meta', property='og:description')
+        if og_desc and og_desc.get('content'):
+            description = og_desc['content']
+        else:
+            meta_desc = soup.find('meta', attrs={'name': 'description'})
+            if meta_desc and meta_desc.get('content'):
+                description = meta_desc['content']
+
+        publisher = ''
+        og_site = soup.find('meta', property='og:site_name')
+        if og_site and og_site.get('content'):
+            publisher = og_site['content']
+
+        return jsonify({
+            'success': True,
+            'title': title,
+            'description': description,
+            'publisher': publisher,
+            'url': url
+        })
+
+    except Exception as e:
+        safe_print(f"[API] Error fetching metadata: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 if __name__ == '__main__':
