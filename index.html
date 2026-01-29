@@ -5787,21 +5787,31 @@
         function handleItemClick(item) {
             const idx = parseInt(item.getAttribute('data-article-idx'));
             const section = item.getAttribute('data-section') || 'research';
-            if (isNaN(idx) || !window._displayedArticles || !window._displayedArticles[idx]) return;
+            console.log('[Click] handleItemClick:', { idx, section, hasArticles: !!window._displayedArticles, count: window._displayedArticles?.length });
+            if (isNaN(idx) || !window._displayedArticles || !window._displayedArticles[idx]) {
+                console.warn('[Click] handleItemClick skipped - idx:', idx, 'articles:', window._displayedArticles?.length);
+                return;
+            }
             const article = window._displayedArticles[idx];
             const cardType = item.dataset.cardType || article._cardType || 'perplexity';
-            selectResearchResult(cardType, idx, item, article);
+            try {
+                selectResearchResult(cardType, idx, item, article);
+            } catch (err) {
+                console.error('[Click] selectResearchResult error:', err);
+            }
         }
 
         // Helper function for checkbox click handling
         function handleCheckboxClick(checkbox, e) {
             e.stopPropagation();
-            e.stopImmediatePropagation();
+            e._checkboxHandled = true;
+            console.log('[Click] handleCheckboxClick fired');
             const item = checkbox.closest('.research-result-item');
             if (item) {
                 handleItemClick(item);
-                // Sync checkbox to match actual selection state
-                checkbox.checked = item.classList.contains('selected');
+                setTimeout(function() {
+                    checkbox.checked = item.classList.contains('selected');
+                }, 0);
             }
         }
 
@@ -6921,6 +6931,27 @@
             }
         });
     })();
+
+    // === BACKUP: Event delegation for checkbox clicks ===
+    document.addEventListener('click', function(e) {
+        if (e.target && e.target.classList && e.target.classList.contains('research-result-checkbox')) {
+            if (e._checkboxHandled) return;
+            console.log('[Delegation] Checkbox click caught by backup delegation');
+            var checkbox = e.target;
+            var item = checkbox.closest('.research-result-item');
+            if (item) {
+                e.stopPropagation();
+                try {
+                    handleItemClick(item);
+                } catch (err) {
+                    console.error('[Delegation] handleItemClick error:', err);
+                }
+                setTimeout(function() {
+                    checkbox.checked = item.classList.contains('selected');
+                }, 0);
+            }
+        }
+    });
     </script>
 
     <!-- Previous Newsletters Section -->
