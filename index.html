@@ -2073,43 +2073,45 @@
             const resultsDiv = document.getElementById('perplexityResults');
             if (!resultsDiv) return;
 
-            if (!window._displayedArticles) window._displayedArticles = {};
-            const articleIdx = Object.keys(window._displayedArticles).length;
-            window._displayedArticles[articleIdx] = article;
+            if (!window._displayedArticles) window._displayedArticles = [];
+            if (!Array.isArray(window._displayedArticles)) window._displayedArticles = [];
+            const articleIdx = window._displayedArticles.length;
+            article._cardType = 'custom';
+            window._displayedArticles.push(article);
 
             const item = document.createElement('div');
             item.className = 'research-result-item';
-            item.style.cssText = 'padding: 12px; border: 2px solid #059669; border-radius: 8px; margin-bottom: 8px; background: #ecfdf5; cursor: pointer; position: relative;';
-            item.dataset.cardType = 'custom';
-            item.dataset.index = articleIdx;
-            item.dataset.url = article.url || '';
+            item.style.borderLeft = '4px solid #059669';
+            item.setAttribute('data-article-idx', articleIdx);
+            item.setAttribute('data-section', section || currentResearchSection || 'news');
+            item.setAttribute('data-preserved', 'true');
+            item.setAttribute('onclick', 'handleItemClick(this)');
             item.innerHTML = `
-                <div class="selection-indicator" style="position: absolute; top: 8px; right: 8px; width: 20px; height: 20px; border: 2px solid #ccc; border-radius: 4px; display: flex; align-items: center; justify-content: center; background: white; transition: all 0.2s;">
-                    <svg class="check-icon" style="display: none; width: 14px; height: 14px; color: white;" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                    </svg>
+                <div class="research-result-header">
+                    <span class="research-result-badge" style="background: #059669; color: white;">CUSTOM</span>
+                    <div class="research-result-meta">
+                        <span>${article.publisher}</span>
+                        <a href="${article.url}" target="_blank" onclick="event.stopPropagation()">Source →</a>
+                        <input type="checkbox" class="research-result-checkbox" onclick="handleCheckboxClick(this, event)">
+                    </div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; padding-right: 28px;">
-                    <span style="background: #059669; color: white; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: bold;">CUSTOM</span>
-                    <span style="margin-left: auto; font-size: 10px; color: #64748b;">${article.publisher}</span>
-                    <a href="${article.url}" target="_blank" style="font-size: 10px; color: #3b82f6; text-decoration: none; margin-left: 6px;" onclick="event.stopPropagation()">Source &rarr;</a>
-                </div>
-                <div style="font-size: 13px; font-weight: 600; color: #1a1a1a; line-height: 1.3; margin-bottom: 8px;">${article.headline}</div>
+                <div class="research-result-title">${article.headline}</div>
                 ${article.snippet ? `
-                <div style="background: #f8fafc; border-left: 3px solid #059669; padding: 6px 10px; border-radius: 0 4px 4px 0;">
-                    <div style="font-size: 9px; text-transform: uppercase; color: #64748b; font-weight: 600; margin-bottom: 2px;">Summary</div>
-                    <div style="font-size: 11px; color: #334155; line-height: 1.4;">${article.snippet.substring(0, 250)}${article.snippet.length > 250 ? '...' : ''}</div>
+                <div class="research-result-keydata">
+                    <div class="research-result-keydata-label">SUMMARY</div>
+                    <p>${article.snippet.substring(0, 250)}${article.snippet.length > 250 ? '...' : ''}</p>
                 </div>
                 ` : ''}
             `;
-
-            item.onclick = () => selectResearchResult('custom', articleIdx, item, article);
 
             if (resultsDiv.firstChild) {
                 resultsDiv.insertBefore(item, resultsDiv.firstChild);
             } else {
                 resultsDiv.appendChild(item);
             }
+
+            // Auto-select the custom article
+            setTimeout(() => handleItemClick(item), 50);
         }
 
         function removeCustomLink(index) {
@@ -5401,7 +5403,10 @@
                     tabSearchState[currentTab].results.perplexity = data.results;
 
                     // Show queries header then three-section results
+                    // Preserve saved/custom article cards before clearing
+                    const preservedCards = Array.from(resultsDiv.querySelectorAll('.research-result-item[data-preserved="true"]'));
                     resultsDiv.innerHTML = '';
+                    preservedCards.forEach(card => resultsDiv.appendChild(card));
                     if (data.queries_used && data.queries_used.length > 0) {
                         const headerDiv = document.createElement('div');
                         headerDiv.style.cssText = 'font-size: 11px; color: #666; background: #f5f5f5; padding: 8px; margin-bottom: 10px; border-radius: 4px;';
@@ -5523,7 +5528,10 @@
         }
 
         function displayInsightResults(results, container, signalsSearched = []) {
+            // Preserve saved/custom article cards before clearing
+            const preservedCards = Array.from(container.querySelectorAll('.research-result-item[data-preserved="true"]'));
             container.innerHTML = '';
+            preservedCards.forEach(card => container.appendChild(card));
 
             // Show signals searched header
             if (signalsSearched && signalsSearched.length > 0) {
@@ -5564,59 +5572,51 @@
                 const industryData = result.industry_data || result.snippet || result.description || '';
                 const soWhat = result.so_what || result.venue_implications || '';
 
+                // Track in displayedArticles array for handleItemClick
+                if (!window._displayedArticles) window._displayedArticles = [];
+                // If _displayedArticles was accidentally set as object, reset to array
+                if (!Array.isArray(window._displayedArticles)) window._displayedArticles = [];
+                const articleIdx = window._displayedArticles.length;
+                window._displayedArticles.push(result);
+                const isSaved = savedArticlesCache.some(sa => sa.url === result.url);
+
                 const item = document.createElement('div');
                 item.className = 'research-result-item';
                 item.dataset.cardType = cardType;
                 item.dataset.index = index;
                 item.dataset.url = result.url || '';
-                item.style.cssText = 'padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; margin-bottom: 8px; background: #fff; cursor: pointer; position: relative;';
+                item.setAttribute('data-article-idx', articleIdx);
+                item.setAttribute('data-section', currentResearchSection || 'news');
+                item.setAttribute('onclick', 'handleItemClick(this)');
                 item.innerHTML = `
-                    <!-- Selection checkbox indicator -->
-                    <div class="selection-indicator" style="position: absolute; top: 8px; right: 8px; width: 20px; height: 20px; border: 2px solid #ccc; border-radius: 4px; display: flex; align-items: center; justify-content: center; background: white; transition: all 0.2s;">
-                        <svg class="check-icon" style="display: none; width: 14px; height: 14px; color: white;" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                        </svg>
-                    </div>
-
-                    <!-- Header: Impact badge, signal tags, publisher, link -->
-                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; padding-right: 28px;">
-                        <span style="background: ${colors.bg}; border: 1px solid ${colors.border}; color: ${colors.text}; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: bold;">${impact}</span>
+                    <div class="research-result-header">
+                        <span class="research-result-badge" style="background: ${colors.bg}; border: 1px solid ${colors.border}; color: ${colors.text};">${impact}</span>
                         ${signalTags}
-                        <span style="margin-left: auto; font-size: 10px; color: #64748b;">${result.publisher || ''}</span>
-                        ${result.url ? `<a href="${result.url}" target="_blank" style="font-size: 10px; color: #3b82f6; text-decoration: none; margin-left: 6px;" onclick="event.stopPropagation()">Source →</a>` : ''}
-                        ${result.url ? `<button class="save-article-btn ${savedArticlesCache.some(sa => sa.url === result.url) ? 'is-saved' : ''}" data-article-url="${(result.url || '').replace(/"/g, '&quot;')}" onclick="event.stopPropagation(); toggleSaveArticleByUrl(this)" title="Save for later">${savedArticlesCache.some(sa => sa.url === result.url) ? '\u{1F4CC}' : '\u{1F4CD}'}</button>` : ''}
+                        <div class="research-result-meta">
+                            <span>${result.publisher || ''}</span>
+                            ${result.url ? `<a href="${result.url}" target="_blank" onclick="event.stopPropagation()">Source →</a>` : ''}
+                            ${result.url ? `<button class="save-article-btn ${isSaved ? 'is-saved' : ''}" data-article-url="${(result.url || '').replace(/"/g, '&quot;')}" onclick="event.preventDefault(); event.stopPropagation(); event.stopImmediatePropagation(); toggleSaveArticleByUrl(this)" title="${isSaved ? 'Saved' : 'Save for later'}">${isSaved ? '\u{1F4CC}' : '\u{1F4CD}'}</button>` : ''}
+                            <input type="checkbox" class="research-result-checkbox" onclick="handleCheckboxClick(this, event)">
+                        </div>
                     </div>
 
-                    <!-- Section 1: Headline -->
-                    <div style="font-size: 13px; font-weight: 600; color: #1a1a1a; line-height: 1.3; margin-bottom: 8px;">
-                        ${headline}
-                    </div>
+                    <div class="research-result-title">${headline}</div>
 
-                    <!-- Section 2: Industry Data -->
                     ${industryData ? `
-                    <div style="background: #f8fafc; border-left: 3px solid #3b82f6; padding: 6px 10px; margin-bottom: 8px; border-radius: 0 4px 4px 0;">
-                        <div style="font-size: 9px; text-transform: uppercase; color: #64748b; font-weight: 600; margin-bottom: 2px;">Key Data</div>
-                        <div style="font-size: 11px; color: #334155; line-height: 1.4;">${industryData}</div>
+                    <div class="research-result-keydata">
+                        <div class="research-result-keydata-label">KEY DATA</div>
+                        <p>${industryData.substring(0, 250)}${industryData.length > 250 ? '...' : ''}</p>
                     </div>
                     ` : ''}
 
-                    <!-- Section 3: Why It Matters / So What -->
                     ${soWhat ? `
-                    <div style="background: #f0fdf4; border-left: 3px solid #22c55e; padding: 6px 10px; border-radius: 0 4px 4px 0;">
-                        <div style="font-size: 9px; text-transform: uppercase; color: #15803d; font-weight: 600; margin-bottom: 2px;">Action</div>
-                        <div style="font-size: 11px; color: #166534; line-height: 1.4;">${soWhat}</div>
+                    <div class="research-result-action">
+                        <div class="research-result-action-label">ACTION</div>
+                        <p>${soWhat}</p>
                     </div>
                     ` : ''}
                 `;
 
-                // Store displayed article for pin feature
-                if (result.url) {
-                    window._displayedArticles = window._displayedArticles || {};
-                    window._displayedArticles[result.url] = result;
-                }
-
-                // Add click handler for selection
-                item.onclick = () => selectResearchResult(cardType, index, item, result);
                 container.appendChild(item);
             });
         }
@@ -5795,11 +5795,14 @@
 
         // Helper function for checkbox click handling
         function handleCheckboxClick(checkbox, e) {
-            e.preventDefault();
             e.stopPropagation();
             e.stopImmediatePropagation();
             const item = checkbox.closest('.research-result-item');
-            if (item) handleItemClick(item);
+            if (item) {
+                handleItemClick(item);
+                // Sync checkbox to match actual selection state
+                checkbox.checked = item.classList.contains('selected');
+            }
         }
 
         // Select a research result directly from the dashboard
@@ -5873,7 +5876,10 @@
         }
 
         function displayExplorerResults(results, container, queriesUsed = null) {
+            // Preserve saved/custom article cards before clearing
+            const preservedCards = Array.from(container.querySelectorAll('.research-result-item[data-preserved="true"]'));
             container.innerHTML = '';
+            preservedCards.forEach(card => container.appendChild(card));
 
             // Store results for selection
             researchResults.explorer = results;
@@ -5900,41 +5906,40 @@
                 const contentType = result.content_type || 'insight';
                 const colors = typeColors[contentType] || typeColors['insight'];
 
+                if (!window._displayedArticles) window._displayedArticles = [];
+                if (!Array.isArray(window._displayedArticles)) window._displayedArticles = [];
+                const articleIdx = window._displayedArticles.length;
+                window._displayedArticles.push(result);
+                const isSaved = savedArticlesCache.some(sa => sa.url === result.url);
+
                 const item = document.createElement('div');
                 item.className = 'research-result-item';
                 item.dataset.cardType = 'explorer';
                 item.dataset.index = index;
                 item.dataset.url = result.url || '';
-                item.style.cssText = 'position: relative; cursor: pointer;';
+                item.setAttribute('data-article-idx', articleIdx);
+                item.setAttribute('data-section', currentResearchSection || 'news');
+                item.setAttribute('onclick', 'handleItemClick(this)');
                 item.innerHTML = `
-                    <!-- Selection checkbox indicator -->
-                    <div class="selection-indicator" style="position: absolute; top: 8px; right: 8px; width: 20px; height: 20px; border: 2px solid #ccc; border-radius: 4px; display: flex; align-items: center; justify-content: center; background: white; transition: all 0.2s;">
-                        <svg class="check-icon" style="display: none; width: 14px; height: 14px; color: white;" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                        </svg>
-                    </div>
-
-                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; padding-right: 28px;">
-                        <span style="background: ${colors.bg}; border: 1px solid ${colors.border}; color: ${colors.text}; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase;">${contentType.replace('_', ' ')}</span>
+                    <div class="research-result-header">
+                        <span class="research-result-badge" style="background: ${colors.bg}; border: 1px solid ${colors.border}; color: ${colors.text}; text-transform: uppercase;">${contentType.replace('_', ' ')}</span>
+                        <div class="research-result-meta">
+                            <span>${result.publisher || 'Unknown source'}</span>
+                            ${result.url ? `<a href="${result.url}" target="_blank" onclick="event.stopPropagation()">View →</a>` : ''}
+                            ${result.url ? `<button class="save-article-btn ${isSaved ? 'is-saved' : ''}" data-article-url="${(result.url || '').replace(/"/g, '&quot;')}" onclick="event.preventDefault(); event.stopPropagation(); event.stopImmediatePropagation(); toggleSaveArticleByUrl(this)" title="${isSaved ? 'Saved' : 'Save for later'}">${isSaved ? '\u{1F4CC}' : '\u{1F4CD}'}</button>` : ''}
+                            <input type="checkbox" class="research-result-checkbox" onclick="handleCheckboxClick(this, event)">
+                        </div>
                     </div>
                     <div class="research-result-title">${result.headline || result.title || 'Untitled'}</div>
-                    <div class="research-result-snippet" style="font-style: italic; color: #555;">${result.story_angle || ''}</div>
-                    <div class="research-result-snippet" style="margin-top: 4px; font-size: 12px;">${result.why_it_matters || result.venue_implications || ''}</div>
-                    <div class="research-result-meta">
-                        <span>${result.publisher || 'Unknown source'}</span>
-                        ${result.url ? `<a href="${result.url}" target="_blank" class="research-result-link" onclick="event.stopPropagation()">View →</a>` : ''}
-                        ${result.url ? `<button class="save-article-btn ${savedArticlesCache.some(sa => sa.url === result.url) ? 'is-saved' : ''}" data-article-url="${(result.url || '').replace(/"/g, '&quot;')}" onclick="event.stopPropagation(); toggleSaveArticleByUrl(this)" title="Save for later">${savedArticlesCache.some(sa => sa.url === result.url) ? '\u{1F4CC}' : '\u{1F4CD}'}</button>` : ''}
+                    ${result.story_angle ? `<div style="font-style: italic; color: #555; font-size: 13px; margin-bottom: 6px;">${result.story_angle}</div>` : ''}
+                    ${(result.why_it_matters || result.venue_implications) ? `
+                    <div class="research-result-action">
+                        <div class="research-result-action-label">WHY IT MATTERS</div>
+                        <p>${result.why_it_matters || result.venue_implications}</p>
                     </div>
+                    ` : ''}
                 `;
 
-                // Store displayed article for pin feature
-                if (result.url) {
-                    window._displayedArticles = window._displayedArticles || {};
-                    window._displayedArticles[result.url] = result;
-                }
-
-                // Add click handler for selection
-                item.onclick = () => selectResearchResult('explorer', index, item, result);
                 container.appendChild(item);
             });
         }
@@ -6522,6 +6527,7 @@
             item.style.borderLeft = '4px solid #7c3aed';
             item.setAttribute('data-article-idx', savedArticleIdx);
             item.setAttribute('data-section', actualSection);
+            item.setAttribute('data-preserved', 'true');
             item.setAttribute('onclick', 'handleItemClick(this)');
             item.innerHTML = `
                 <div class="research-result-header">
@@ -6529,6 +6535,7 @@
                     <div class="research-result-meta">
                         <span>${article.publisher}</span>
                         <a href="${article.url}" target="_blank" onclick="event.stopPropagation()">Source →</a>
+                        <button class="save-article-btn is-saved" onclick="event.preventDefault(); event.stopPropagation(); event.stopImmediatePropagation();" title="Saved">📌</button>
                         <input type="checkbox" class="research-result-checkbox" onclick="handleCheckboxClick(this, event)">
                     </div>
                 </div>
