@@ -527,11 +527,32 @@
             background: #e0f2f2;
         }
 
+        .research-result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .research-result-badge {
+            background: #FE8916;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .research-result-badge.high { background: #dc2626; }
+        .research-result-badge.low { background: #6b7280; }
+        .research-result-badge.saved { background: #7c3aed; }
+
         .research-result-title {
             font-weight: 600;
             color: #272d3f;
             font-size: 14px;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
+            line-height: 1.4;
         }
 
         .research-result-snippet {
@@ -543,11 +564,62 @@
 
         .research-result-meta {
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            gap: 8px;
             font-size: 12px;
-            color: #999;
+            color: #9ca3af;
         }
+
+        .research-result-meta a {
+            color: #018181;
+            text-decoration: none;
+        }
+
+        .research-result-meta a:hover {
+            text-decoration: underline;
+        }
+
+        .research-result-checkbox {
+            width: 16px;
+            height: 16px;
+            accent-color: #018181;
+            cursor: pointer;
+        }
+
+        .research-result-keydata {
+            background: white;
+            border-left: 3px solid #3b82f6;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .research-result-keydata-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: #3b82f6;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .research-result-keydata p { margin: 0; font-size: 13px; color: #555; line-height: 1.5; }
+
+        .research-result-action {
+            background: #f0fdf4;
+            border-left: 3px solid #22c55e;
+            padding: 10px 12px;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .research-result-action-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: #15803d;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .research-result-action p { margin: 0; font-size: 13px; color: #166534; line-height: 1.5; }
 
         .research-result-link {
             color: #018181;
@@ -5711,15 +5783,23 @@
             updateSelectionProgress();
         }
 
+        // Handle clicks on research result items (uses data attributes, survives innerHTML cache)
+        function handleItemClick(item) {
+            const idx = parseInt(item.getAttribute('data-article-idx'));
+            const section = item.getAttribute('data-section') || 'research';
+            if (isNaN(idx) || !window._displayedArticles || !window._displayedArticles[idx]) return;
+            const article = window._displayedArticles[idx];
+            const cardType = item.dataset.cardType || article._cardType || 'perplexity';
+            selectResearchResult(cardType, idx, item, article);
+        }
+
         // Helper function for checkbox click handling
         function handleCheckboxClick(checkbox, e) {
             e.preventDefault();
             e.stopPropagation();
             e.stopImmediatePropagation();
             const item = checkbox.closest('.research-result-item');
-            if (item && item.onclick) {
-                item.onclick();
-            }
+            if (item) handleItemClick(item);
         }
 
         // Select a research result directly from the dashboard
@@ -6388,16 +6468,25 @@
         function useSavedArticle(index) {
             const article = savedArticlesCache[index];
             if (!article) return;
-            addSavedArticleToResults(article);
+            const articleObj = {
+                url: article.url,
+                title: article.title || article.url,
+                headline: article.title || article.url,
+                snippet: article.snippet || '',
+                publisher: article.publisher || '',
+                impact: 'SAVED',
+                _cardType: 'saved',
+                isSavedArticle: true
+            };
+            addSavedArticleToResults(articleObj);
             hideSavedArticlesModal();
         }
 
         function addSavedArticleToResults(article) {
-            // Get the perplexity results container
             const resultsDiv = document.getElementById('perplexityResults');
             if (!resultsDiv) return;
 
-            // Check for duplicate - don't add if article URL already exists in results
+            // Check for duplicate
             const existingItems = resultsDiv.querySelectorAll('.research-result-item');
             for (const existing of existingItems) {
                 const link = existing.querySelector('a[href]');
@@ -6407,43 +6496,34 @@
                 }
             }
 
-            // Build a result object matching the format used by selectResearchResult
-            const resultObj = {
-                title: article.title || 'Untitled',
-                headline: article.title || 'Untitled',
-                description: article.description || '',
-                industry_data: article.description || '',
-                snippet: article.description || '',
-                url: article.url,
-                source_url: article.url,
-                publisher: article.publisher || '',
-                so_what: '',
-                venue_implications: '',
-                impact: 'SAVED',
-                _cardType: 'saved'
-            };
+            const savedArticleIdx = window._displayedArticles ? window._displayedArticles.length : 0;
+            if (!window._displayedArticles) window._displayedArticles = [];
+            window._displayedArticles.push(article);
 
-            // Create a visual element for the results list
             const item = document.createElement('div');
             item.className = 'research-result-item';
             item.style.borderLeft = '4px solid #7c3aed';
+            item.setAttribute('data-article-idx', savedArticleIdx);
+            item.setAttribute('data-section', 'research');
+            item.setAttribute('data-card-type', 'saved');
+            item.setAttribute('onclick', 'handleItemClick(this)');
             item.innerHTML = `
-                <div class="research-result-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <span style="background: #f3e8ff; color: #7c3aed; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">SAVED</span>
-                    <div style="display: flex; gap: 12px; align-items: center; font-size: 12px; color: #666;">
-                        <span>${resultObj.publisher}</span>
-                        <a href="${resultObj.url}" target="_blank" style="color: #018181;">Source →</a>
+                <div class="research-result-header">
+                    <span class="research-result-badge saved">SAVED</span>
+                    <div class="research-result-meta">
+                        <span>${article.publisher}</span>
+                        <a href="${article.url}" target="_blank" onclick="event.stopPropagation()">Source →</a>
+                        <input type="checkbox" class="research-result-checkbox" onclick="handleCheckboxClick(this, event)">
                     </div>
                 </div>
-                <div style="font-weight: 600; font-size: 15px; color: #272d3f; margin-bottom: 6px;">${resultObj.headline}</div>
-                ${resultObj.snippet ? `
-                    <div style="background: #f9fafb; padding: 10px; border-radius: 6px; margin-top: 8px;">
-                        <div style="font-size: 10px; font-weight: 600; color: #666; margin-bottom: 4px; text-transform: uppercase;">SUMMARY</div>
-                        <p style="margin: 0; font-size: 13px; color: #555; line-height: 1.5;">${resultObj.snippet.substring(0, 250)}${resultObj.snippet.length > 250 ? '...' : ''}</p>
+                <div class="research-result-title">${article.headline}</div>
+                ${article.snippet ? `
+                    <div class="research-result-keydata">
+                        <div class="research-result-keydata-label">SUMMARY</div>
+                        <p>${article.snippet.substring(0, 250)}${article.snippet.length > 250 ? '...' : ''}</p>
                     </div>
                 ` : ''}
             `;
-            item.onclick = () => selectResearchResult('saved', 0, item, resultObj);
 
             // Insert at top of results
             if (resultsDiv.firstChild) {
@@ -6453,9 +6533,7 @@
             }
 
             // Auto-select the article immediately after adding
-            setTimeout(() => {
-                selectResearchResult('saved', 0, item, resultObj);
-            }, 50);
+            setTimeout(() => handleItemClick(item), 50);
         }
 
         function toggleSaveArticleByUrl(btn) {
