@@ -5815,6 +5815,8 @@
                     indicator.style.borderColor = '#ccc';
                     indicator.querySelector('.check-icon').style.display = 'none';
                 }
+                const cb = item.querySelector('.research-result-checkbox');
+                if (cb) cb.checked = false;
             });
 
             // Mark this one as selected
@@ -5827,6 +5829,8 @@
                 indicator.style.borderColor = '#018181';
                 indicator.querySelector('.check-icon').style.display = 'block';
             }
+            const checkbox = element.querySelector('.research-result-checkbox');
+            if (checkbox) checkbox.checked = true;
 
             // Store the selection in the correct variable based on current tab
             const selectedObj = {
