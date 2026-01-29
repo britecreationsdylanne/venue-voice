@@ -1920,27 +1920,23 @@
         <!-- Step 15: Push to Ontraport -->
         <div class="step" id="step15">
             <h2>🚀 Push to Ontraport</h2>
-            <p>Send your newsletter to Ontraport with pre-configured BriteCo settings</p>
+            <p class="step-description">Send your newsletter to Ontraport with pre-configured BriteCo settings</p>
 
             <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #e5e7eb;">
-                <div style="margin-bottom: 20px; padding: 15px; background-color: #f9fafb; border-radius: 6px; border-left: 4px solid #008181;">
-                    <p style="margin: 0 0 8px 0; font-weight: 600; color: #272d3f;">Pre-configured Settings:</p>
-                    <ul style="margin: 0; padding-left: 20px; font-size: 14px; color: #555;">
-                        <li>From: BriteCo Event Insurance (eventinsurance@brite.co)</li>
-                        <li>Reply-To: eventinsurance@brite.co</li>
-                    </ul>
+                <div style="padding: 15px; background-color: #f0fdf4; border-radius: 6px; border-left: 4px solid #22c55e; margin-bottom: 20px;">
+                    <label style="display: block; font-weight: 600; color: #166534; margin-bottom: 5px;">Subject Line:</label>
+                    <input type="text" id="subject" style="width: 100%; padding: 10px; font-size: 16px; color: #272d3f; border: 2px solid #22c55e; border-radius: 6px; background: #ffffff; box-sizing: border-box;" placeholder="Your Monthly Venue Newsletter" />
                 </div>
 
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 5px;">Subject Line:</label>
-                    <input type="text" id="subject" placeholder="Your Monthly Venue Newsletter" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 4px; font-size: 14px;">
-                </div>
+                <button class="btn" onclick="pushToOntraport(event)" id="ontraportBtn" style="width: 100%; padding: 15px; font-size: 16px;">
+                    <span id="ontraportBtnText">🚀 Push to Ontraport</span>
+                </button>
 
-                <button class="btn" onclick="pushToOntraport(event)">🚀 Push to Ontraport</button>
+                <div id="ontraportResult" style="display: none; margin-top: 20px; padding: 15px; border-radius: 6px;"></div>
             </div>
 
             <div class="buttons">
-                <button class="btn-secondary btn" onclick="showStep(13)">← Back to Preview</button>
+                <button class="btn btn-secondary" onclick="showStep(13)">← Back to Preview</button>
             </div>
         </div>
 
@@ -2645,7 +2641,7 @@
             html += '<div style="margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 15px;">';
             html += '<h3 style="margin: 0 0 5px 0; color: #008181;">📰 News You Can Use</h3>';
             html += `<h4 style="margin: 0 0 8px 0; color: #1f2937; font-size: 16px;">${selectedNews.title}</h4>`;
-            html += `<div id="newsContentBox" contenteditable="true" style="outline: none; color: #555; font-size: 14px; line-height: 1.6;">${newsContent}${makeSourceLink(selectedNews?.url || selectedNews?.source_url)}</div>`;
+            html += `<div id="newsContentBox" contenteditable="true" style="outline: none; color: #555; font-size: 14px; line-height: 1.6;">${newsContent}</div>`;
             html += `<button class="btn-secondary btn" style="font-size: 12px; padding: 6px 12px; margin-top: 8px;" onclick="editSection('news')">✏️ Edit</button>`;
             html += `</div>`;
 
@@ -2653,7 +2649,7 @@
             html += '<div style="margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 15px;">';
             html += '<h3 style="margin: 0 0 5px 0; color: #008181;">💡 Tip of the Month</h3>';
             html += `<h4 style="margin: 0 0 8px 0; color: #1f2937; font-size: 16px;">${displayTipTitle}</h4>`;
-            html += `<div id="tipContentBox" contenteditable="true" style="outline: none; color: #555; font-size: 14px; line-height: 1.6;">${tipContent}${makeSourceLink(selectedTip?.url || selectedTip?.source_url)}</div>`;
+            html += `<div id="tipContentBox" contenteditable="true" style="outline: none; color: #555; font-size: 14px; line-height: 1.6;">${tipContent}</div>`;
             html += `<button class="btn-secondary btn" style="font-size: 12px; padding: 6px 12px; margin-top: 8px;" onclick="editSection('tip')">✏️ Edit</button>`;
             html += `</div>`;
 
@@ -2661,7 +2657,7 @@
             html += '<div style="margin-bottom: 20px;">';
             html += '<h3 style="margin: 0 0 5px 0; color: #008181;">📈 Trend Watch</h3>';
             html += `<h4 style="margin: 0 0 8px 0; color: #1f2937; font-size: 16px;">${displayTrendTitle}</h4>`;
-            html += `<div id="trendContentBox" contenteditable="true" style="outline: none; color: #555; font-size: 14px; line-height: 1.6;">${trendContent}${makeSourceLink(selectedTrend?.url || selectedTrend?.source_url)}</div>`;
+            html += `<div id="trendContentBox" contenteditable="true" style="outline: none; color: #555; font-size: 14px; line-height: 1.6;">${trendContent}</div>`;
             html += `<button class="btn-secondary btn" style="font-size: 12px; padding: 6px 12px; margin-top: 8px;" onclick="editSection('trend')">✏️ Edit</button>`;
             html += `</div>`;
 
@@ -4659,7 +4655,7 @@
       <td align="center" style="padding: 40px 20px;">
 
         <!-- CONTAINER -->
-        <table role="presentation" cellpadding="0" cellspacing="0" width="560" class="mobile-full" style="max-width: 560px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="600" class="mobile-full" style="max-width: 600px;">
 
           <!-- HEADER - NAVY BLOCK -->
           <tr>
@@ -4704,21 +4700,21 @@
                           <!-- AGENDA ITEMS -->
                           <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
                             <tr>
-                              <td style="padding: 12px 0; border-top: 1px solid #A9C1CB;">
-                                <span style="font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 14px; font-weight: 600; color: #008181;">01</span>
-                                <span style="font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 15px; font-weight: 500; color: #272d3f; padding-left: 16px;">{{NEWS_TITLE}}</span>
+                              <td style="padding: 12px 0; border-top: 1px solid #A9C1CB; font-family: 'Gilroy', Trebuchet MS, sans-serif; color: #333333;">
+                                <span style="font-size: 14px; font-weight: 600; color: #008181;">01</span>
+                                <span style="font-size: 15px; font-weight: 500; color: #333333; padding-left: 16px;">{{NEWS_TITLE}}</span>
                               </td>
                             </tr>
                             <tr>
-                              <td style="padding: 12px 0; border-top: 1px solid #A9C1CB;">
-                                <span style="font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 14px; font-weight: 600; color: #008181;">02</span>
-                                <span style="font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 15px; font-weight: 500; color: #272d3f; padding-left: 16px;">{{TIP_TITLE}}</span>
+                              <td style="padding: 12px 0; border-top: 1px solid #A9C1CB; font-family: 'Gilroy', Trebuchet MS, sans-serif; color: #333333;">
+                                <span style="font-size: 14px; font-weight: 600; color: #008181;">02</span>
+                                <span style="font-size: 15px; font-weight: 500; color: #333333; padding-left: 16px;">{{TIP_TITLE}}</span>
                               </td>
                             </tr>
                             <tr>
-                              <td style="padding: 12px 0 0 0; border-top: 1px solid #A9C1CB;">
-                                <span style="font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 14px; font-weight: 600; color: #008181;">03</span>
-                                <span style="font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 15px; font-weight: 500; color: #272d3f; padding-left: 16px;">{{TREND_TITLE}}</span>
+                              <td style="padding: 12px 0 0 0; border-top: 1px solid #A9C1CB; font-family: 'Gilroy', Trebuchet MS, sans-serif; color: #333333;">
+                                <span style="font-size: 14px; font-weight: 600; color: #008181;">03</span>
+                                <span style="font-size: 15px; font-weight: 500; color: #333333; padding-left: 16px;">{{TREND_TITLE}}</span>
                               </td>
                             </tr>
                           </table>
@@ -4745,7 +4741,7 @@
                           <!-- NEWS IMAGE - Full width inside the color block -->
                           <img src="{{NEWS_IMAGE}}" alt="News Image" width="432" style="width: 100%; max-width: 432px; height: auto; display: block; border-radius: 4px; margin-bottom: 16px;">
 
-                          {{NEWS_CONTENT}}
+                          <div style="font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 15px; line-height: 1.6; color: #333333;">{{NEWS_CONTENT}}</div>
                         </td>
                       </tr>
                     </table>
@@ -4769,7 +4765,7 @@
                           <!-- TIP IMAGE - Full width inside the color block -->
                           <img src="{{TIP_IMAGE}}" alt="Insight Image" width="432" style="width: 100%; max-width: 432px; height: auto; display: block; border-radius: 4px; margin-bottom: 16px;">
 
-                          {{TIP_CONTENT}}
+                          <div style="font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 15px; line-height: 1.6; color: #333333;">{{TIP_CONTENT}}</div>
                         </td>
                       </tr>
                     </table>
@@ -4793,7 +4789,7 @@
                           <!-- TREND IMAGE - Full width inside the color block -->
                           <img src="{{TREND_IMAGE}}" alt="Trend Image" width="432" style="width: 100%; max-width: 432px; height: auto; display: block; border-radius: 4px; margin-bottom: 16px;">
 
-                          {{TREND_CONTENT}}
+                          <div style="font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 15px; line-height: 1.6; color: #ffffff;">{{TREND_CONTENT}}</div>
                         </td>
                       </tr>
                     </table>
@@ -4961,17 +4957,18 @@
             }
 
             // Show loading state
-            const originalButton = event.target;
-            const originalText = originalButton.innerHTML;
-            originalButton.innerHTML = '⏳ Uploading images...';
-            originalButton.disabled = true;
+            const btn = document.getElementById('ontraportBtn');
+            const btnText = document.getElementById('ontraportBtnText');
+            const originalText = btnText.textContent;
+            btnText.textContent = '📤 Uploading images...';
+            btn.disabled = true;
 
             try {
                 // First, upload images to GCS
                 console.log('[ONTRAPORT] Uploading images to GCS...');
                 const gcsUrls = await uploadImagesToGCS();
 
-                originalButton.innerHTML = '⏳ Pushing to Ontraport...';
+                btnText.textContent = '🚀 Pushing to Ontraport...';
 
                 console.log('[ONTRAPORT] Generating newsletter HTML...');
                 let html = generateNewsletterHTML();
@@ -5035,8 +5032,8 @@
                 alert('❌ Error pushing to Ontraport:\n\n' + error.message);
             } finally {
                 // Restore button state
-                originalButton.innerHTML = originalText;
-                originalButton.disabled = false;
+                btnText.textContent = originalText;
+                btn.disabled = false;
             }
         }
 
@@ -5676,6 +5673,17 @@
 
         // Switch between research section tabs (NEWS, TIP, TREND)
         function switchResearchTab(section) {
+            // Save current tab's HTML cache before switching
+            const oldTab = currentResearchSection;
+            if (tabSearchState[oldTab]) {
+                const perplexityDiv = document.getElementById('perplexityResults');
+                const insightDiv = document.getElementById('insightResults');
+                const explorerDiv = document.getElementById('explorerResults');
+                if (perplexityDiv) tabSearchState[oldTab].htmlCache.perplexity = perplexityDiv.innerHTML;
+                if (insightDiv) tabSearchState[oldTab].htmlCache.insight = insightDiv.innerHTML;
+                if (explorerDiv) tabSearchState[oldTab].htmlCache.explorer = explorerDiv.innerHTML;
+            }
+
             currentResearchSection = section;
 
             // Update tab styling
