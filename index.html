@@ -6478,12 +6478,23 @@
                 _cardType: 'saved',
                 isSavedArticle: true
             };
-            addSavedArticleToResults(articleObj);
+            const section = savedArticlesModalSection;
+            addSavedArticleToResults(section, articleObj);
             hideSavedArticlesModal();
         }
 
-        function addSavedArticleToResults(article) {
-            const resultsDiv = document.getElementById('perplexityResults');
+        function addSavedArticleToResults(section, article) {
+            let resultsDiv;
+            let stateCache;
+
+            // All venue tabs (news, tip, trend) share the same perplexityResults container
+            resultsDiv = document.getElementById('perplexityResults');
+            if (section && tabSearchState[section]) {
+                stateCache = tabSearchState[section];
+            } else if (tabSearchState[currentResearchSection]) {
+                stateCache = tabSearchState[currentResearchSection];
+            }
+
             if (!resultsDiv) return;
 
             // Check for duplicate
@@ -6498,14 +6509,15 @@
 
             const savedArticleIdx = window._displayedArticles ? window._displayedArticles.length : 0;
             if (!window._displayedArticles) window._displayedArticles = [];
+            article._cardType = 'saved';
             window._displayedArticles.push(article);
+            const actualSection = section || currentResearchSection || 'news';
 
             const item = document.createElement('div');
             item.className = 'research-result-item';
             item.style.borderLeft = '4px solid #7c3aed';
             item.setAttribute('data-article-idx', savedArticleIdx);
-            item.setAttribute('data-section', 'research');
-            item.setAttribute('data-card-type', 'saved');
+            item.setAttribute('data-section', actualSection);
             item.setAttribute('onclick', 'handleItemClick(this)');
             item.innerHTML = `
                 <div class="research-result-header">
@@ -6530,6 +6542,10 @@
                 resultsDiv.insertBefore(item, resultsDiv.firstChild);
             } else {
                 resultsDiv.appendChild(item);
+            }
+
+            if (stateCache) {
+                stateCache.htmlCache.perplexity = resultsDiv.innerHTML;
             }
 
             // Auto-select the article immediately after adding
