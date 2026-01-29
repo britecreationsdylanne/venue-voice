@@ -5856,17 +5856,33 @@
 
         // Select a research result directly from the dashboard
         function selectResearchResult(cardType, index, element, result) {
+            // Toggle: if clicking already-selected article, deselect it
+            if (element.classList.contains('selected')) {
+                element.classList.remove('selected');
+                element.style.borderColor = '#e5e7eb';
+                element.style.background = '#fff';
+                const cb = element.querySelector('.research-result-checkbox');
+                if (cb) cb.checked = false;
+                if (currentResearchSection === 'news') {
+                    selectedNews = null;
+                    document.getElementById('newsTabCheck').style.display = 'none';
+                } else if (currentResearchSection === 'tip') {
+                    selectedTip = null;
+                    document.getElementById('tipTabCheck').style.display = 'none';
+                } else if (currentResearchSection === 'trend') {
+                    selectedTrend = null;
+                    document.getElementById('trendTabCheck').style.display = 'none';
+                }
+                trackSelection(currentResearchSection, result, true);
+                updateResearchNextButton();
+                return;
+            }
+
             // Clear all selections in all research cards
             document.querySelectorAll('.research-result-item').forEach(item => {
                 item.classList.remove('selected');
                 item.style.borderColor = '#e5e7eb';
                 item.style.background = '#fff';
-                const indicator = item.querySelector('.selection-indicator');
-                if (indicator) {
-                    indicator.style.background = 'white';
-                    indicator.style.borderColor = '#ccc';
-                    indicator.querySelector('.check-icon').style.display = 'none';
-                }
                 const cb = item.querySelector('.research-result-checkbox');
                 if (cb) cb.checked = false;
             });
@@ -5875,12 +5891,6 @@
             element.classList.add('selected');
             element.style.borderColor = '#018181';
             element.style.background = '#e6f4f4';
-            const indicator = element.querySelector('.selection-indicator');
-            if (indicator) {
-                indicator.style.background = '#018181';
-                indicator.style.borderColor = '#018181';
-                indicator.querySelector('.check-icon').style.display = 'block';
-            }
             const checkbox = element.querySelector('.research-result-checkbox');
             if (checkbox) checkbox.checked = true;
 
@@ -6624,8 +6634,8 @@
             menu.className = 'dots-menu';
             menu.style.display = 'block';
             menu.innerHTML = `
-                <div class="dots-menu-item save" onclick="event.stopPropagation(); doSaveForLater(${articleIdx}); this.closest('.dots-menu').remove();">
-                    <span class="icon">${alreadySaved ? '✓' : '📌'}</span> ${alreadySaved ? 'Already Saved' : 'Save for Later'}
+                <div class="dots-menu-item save" onclick="event.stopPropagation(); ${alreadySaved ? `doRemoveFromSaved(${articleIdx})` : `doSaveForLater(${articleIdx})`}; this.closest('.dots-menu').remove();">
+                    <span class="icon">${alreadySaved ? '🗑' : '📌'}</span> ${alreadySaved ? 'Remove from Saved' : 'Save for Later'}
                 </div>
                 <div class="dots-menu-divider"></div>
                 <div class="dots-menu-item notfit" onclick="event.stopPropagation(); doNotGoodFit(${articleIdx}); this.closest('.dots-menu').remove();">
@@ -6654,6 +6664,31 @@
                 if (dotsBtn) dotsBtn.style.color = '#f59e0b';
             });
             showCardToast('Saved for later');
+        }
+
+        async function doRemoveFromSaved(articleIdx) {
+            const article = window._displayedArticles[articleIdx];
+            if (!article) return;
+            try {
+                const res = await fetch('/api/saved-articles', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: article.url })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    savedArticlesCache = data.articles || [];
+                    renderSavedArticlesList();
+                    const cards = document.querySelectorAll(`.research-result-item[data-article-idx="${articleIdx}"]`);
+                    cards.forEach(card => {
+                        const dotsBtn = card.querySelector('.dots-btn');
+                        if (dotsBtn) dotsBtn.style.color = '#9ca3af';
+                    });
+                }
+            } catch (e) {
+                console.error('[SavedArticles] Remove error:', e);
+            }
+            showCardToast('Removed from saved');
         }
 
         async function doNotGoodFit(articleIdx) {
