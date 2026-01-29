@@ -902,6 +902,73 @@
             font-size: 14px;
             margin: 0;
         }
+
+        /* Research Section Header */
+        .research-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .research-section-info h3 {
+            font-size: 18px;
+            color: #272d3f;
+            margin-bottom: 4px;
+        }
+
+        .research-section-info p {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 0;
+        }
+
+        /* Added Links List (Custom Link Modal) */
+        .added-links-list {
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .added-links-list.show {
+            display: block;
+        }
+
+        .added-links-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #059669;
+            margin-bottom: 8px;
+        }
+
+        .added-links-container {
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid #d1fae5;
+            border-radius: 6px;
+            padding: 8px;
+            background: #ecfdf5;
+        }
+
+        .added-link-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            background: white;
+            border-radius: 4px;
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+
+        .added-link-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .added-link-remove {
+            color: #dc2626;
+            cursor: pointer;
+            font-size: 16px;
+        }
     </style>
 
 </head>
@@ -998,6 +1065,27 @@
         </div>
     </div>
 
+    <!-- Custom Link Modal (unified for all sections) -->
+    <div class="modal-overlay" id="customLinkModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Custom Article Links</h3>
+                <button class="modal-close" onclick="hideCustomLinkModal()">&times;</button>
+            </div>
+            <p class="modal-description">Paste links to articles you'd like to include in your research.</p>
+            <div class="added-links-list" id="addedLinksList">
+                <p class="added-links-label">Added Links:</p>
+                <div class="added-links-container" id="addedLinksContainer"></div>
+            </div>
+            <input type="text" class="modal-input" id="customLinkInput" placeholder="https://example.com/article...">
+            <p class="modal-error" id="customLinkError"></p>
+            <div class="modal-actions" style="justify-content: space-between;">
+                <button class="btn btn-green" onclick="addCustomLink()">+ Add This Link</button>
+                <button class="btn btn-secondary" onclick="hideCustomLinkModal()">Done</button>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <div class="header">
             <h1>Venue Voice Generator</h1>
@@ -1047,11 +1135,13 @@
                 </button>
             </div>
 
-            <div class="research-section-header" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 16px; flex-wrap: wrap;">
+            <div class="research-section-header">
                 <div class="research-section-info">
-                    <p id="researchSectionLabel" style="margin: 0; font-size: 15px; color: #555;">Researching for: <strong>NEWS</strong> section. Search and select one article below.</p>
+                    <h3>Researching for: <strong id="researchSectionTitle">NEWS</strong> section. Search and select one article below.</h3>
+                    <p id="researchSectionDesc">Venue and event industry news</p>
                 </div>
                 <div style="display: flex; gap: 6px; flex-shrink: 0;">
+                    <button class="btn-add-link" onclick="showCustomLinkModal('research')">📎 Add Custom Link</button>
                     <button class="btn-add-link" onclick="showSavedArticlesModal('research')">📌 Saved Articles</button>
                 </div>
             </div>
@@ -1794,6 +1884,170 @@
         let newsTopics = [];
         let tipTopics = [];
         let trendTopics = [];
+
+        // ========== CUSTOM LINK MODAL ==========
+        let customLinks = { research: [] };
+        let currentModalSection = '';
+
+        function showCustomLinkModal(section) {
+            currentModalSection = section;
+            document.getElementById('customLinkModal').classList.add('show');
+            document.getElementById('customLinkInput').value = '';
+            document.getElementById('customLinkError').style.display = 'none';
+            updateAddedLinksDisplay();
+        }
+
+        function hideCustomLinkModal() {
+            document.getElementById('customLinkModal').classList.remove('show');
+        }
+
+        function updateAddedLinksDisplay() {
+            const links = customLinks[currentModalSection] || [];
+            const container = document.getElementById('addedLinksContainer');
+            const list = document.getElementById('addedLinksList');
+
+            if (links.length === 0) {
+                list.classList.remove('show');
+                return;
+            }
+
+            list.classList.add('show');
+            container.innerHTML = links.map((link, i) => `
+                <div class="added-link-item">
+                    <span>${link.title || link.url}</span>
+                    <span class="added-link-remove" onclick="removeCustomLink(${i})">×</span>
+                </div>
+            `).join('');
+        }
+
+        async function addCustomLink() {
+            const url = document.getElementById('customLinkInput').value.trim();
+            const errorDiv = document.getElementById('customLinkError');
+            const btn = document.querySelector('#customLinkModal .btn-green');
+
+            if (!url) {
+                errorDiv.textContent = 'Please enter a URL';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                errorDiv.textContent = 'Please enter a valid URL starting with http:// or https://';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            errorDiv.style.display = 'none';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner" style="width:14px;height:14px;display:inline-block;vertical-align:middle;margin-right:6px;"></span> Adding...';
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/fetch-article-metadata`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+
+                const data = await response.json();
+
+                const article = {
+                    url: url,
+                    title: data.title || url,
+                    headline: data.title || url,
+                    snippet: data.description || '',
+                    publisher: data.publisher || new URL(url).hostname,
+                    impact: 'CUSTOM',
+                    isCustomLink: true
+                };
+
+                if (!customLinks[currentModalSection]) customLinks[currentModalSection] = [];
+                customLinks[currentModalSection].push(article);
+
+                addCustomLinkToResults(currentModalSection, article);
+
+                document.getElementById('customLinkInput').value = '';
+                updateAddedLinksDisplay();
+
+            } catch (error) {
+                const article = {
+                    url: url,
+                    title: url,
+                    headline: url,
+                    snippet: '',
+                    publisher: new URL(url).hostname,
+                    impact: 'CUSTOM',
+                    isCustomLink: true
+                };
+
+                if (!customLinks[currentModalSection]) customLinks[currentModalSection] = [];
+                customLinks[currentModalSection].push(article);
+
+                addCustomLinkToResults(currentModalSection, article);
+
+                document.getElementById('customLinkInput').value = '';
+                updateAddedLinksDisplay();
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '+ Add This Link';
+                }
+            }
+        }
+
+        function addCustomLinkToResults(section, article) {
+            const resultsDiv = document.getElementById('perplexityResults');
+            if (!resultsDiv) return;
+
+            if (!window._displayedArticles) window._displayedArticles = {};
+            const articleIdx = Object.keys(window._displayedArticles).length;
+            window._displayedArticles[articleIdx] = article;
+
+            const item = document.createElement('div');
+            item.className = 'research-result-item';
+            item.style.cssText = 'padding: 12px; border: 2px solid #059669; border-radius: 8px; margin-bottom: 8px; background: #ecfdf5; cursor: pointer; position: relative;';
+            item.dataset.cardType = 'custom';
+            item.dataset.index = articleIdx;
+            item.dataset.url = article.url || '';
+            item.innerHTML = `
+                <div class="selection-indicator" style="position: absolute; top: 8px; right: 8px; width: 20px; height: 20px; border: 2px solid #ccc; border-radius: 4px; display: flex; align-items: center; justify-content: center; background: white; transition: all 0.2s;">
+                    <svg class="check-icon" style="display: none; width: 14px; height: 14px; color: white;" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; padding-right: 28px;">
+                    <span style="background: #059669; color: white; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: bold;">CUSTOM</span>
+                    <span style="margin-left: auto; font-size: 10px; color: #64748b;">${article.publisher}</span>
+                    <a href="${article.url}" target="_blank" style="font-size: 10px; color: #3b82f6; text-decoration: none; margin-left: 6px;" onclick="event.stopPropagation()">Source &rarr;</a>
+                </div>
+                <div style="font-size: 13px; font-weight: 600; color: #1a1a1a; line-height: 1.3; margin-bottom: 8px;">${article.headline}</div>
+                ${article.snippet ? `
+                <div style="background: #f8fafc; border-left: 3px solid #059669; padding: 6px 10px; border-radius: 0 4px 4px 0;">
+                    <div style="font-size: 9px; text-transform: uppercase; color: #64748b; font-weight: 600; margin-bottom: 2px;">Summary</div>
+                    <div style="font-size: 11px; color: #334155; line-height: 1.4;">${article.snippet.substring(0, 250)}${article.snippet.length > 250 ? '...' : ''}</div>
+                </div>
+                ` : ''}
+            `;
+
+            item.onclick = () => selectResearchResult('custom', articleIdx, item, article);
+
+            if (resultsDiv.firstChild) {
+                resultsDiv.insertBefore(item, resultsDiv.firstChild);
+            } else {
+                resultsDiv.appendChild(item);
+            }
+        }
+
+        function removeCustomLink(index) {
+            customLinks[currentModalSection].splice(index, 1);
+            updateAddedLinksDisplay();
+        }
+
+        // Close custom link modal on background click
+        document.getElementById('customLinkModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'customLinkModal') hideCustomLinkModal();
+        });
 
         // Saved Articles state
         let savedArticlesCache = [];
@@ -6380,6 +6634,7 @@
             if (e.key === 'Escape') {
                 closeNewsletterModal();
                 hideSavedArticlesModal();
+                hideCustomLinkModal();
             }
         });
 
