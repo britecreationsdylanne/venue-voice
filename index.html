@@ -4513,8 +4513,7 @@
             const btn = document.getElementById('htmlViewBtn');
 
             if (codeView.style.display === 'none') {
-                // Generate and show HTML
-                const html = generateNewsletterHTML();
+                const html = savedEditedHTML || generateNewsletterHTML();
                 document.getElementById('htmlCode').textContent = html;
                 codeView.style.display = 'block';
                 btn.textContent = '👁️ Hide HTML Code';
@@ -4526,7 +4525,7 @@
 
         // Copy HTML code to clipboard
         function copyHTMLCode() {
-            let html = generateNewsletterHTML();
+            let html = savedEditedHTML || generateNewsletterHTML();
             // Strip base64 images for hosted placeholder URLs
             let ci = 0;
             const ciLabels = ['meme-image', 'news-image', 'tip-image', 'trend-image'];
@@ -4605,215 +4604,255 @@
             const template = `<!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="color-scheme" content="light dark">
-  <meta name="supported-color-schemes" content="light dark">
-  <title>Venue Voice Newsletter</title>
-  <!--[if mso]>
-  <noscript>
-    <xml>
-      <o:OfficeDocumentSettings>
-        <o:PixelsPerInch>96</o:PixelsPerInch>
-      </o:OfficeDocumentSettings>
-    </xml>
-  </noscript>
-  <![endif]-->
-  <style>
-    :root { color-scheme: light dark; supported-color-schemes: light dark; }
-    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
-    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
-    img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
-    body { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
+<title>Venue Voice Newsletter</title>
+<!--[if mso]>
+<noscript>
+  <xml>
+    <o:OfficeDocumentSettings>
+      <o:PixelsPerInch>96</o:PixelsPerInch>
+    </o:OfficeDocumentSettings>
+  </xml>
+</noscript>
+<style type="text/css">
+  body, table, td { font-family: Trebuchet MS, Arial, sans-serif !important; }
+</style>
+<![endif]-->
+<style type="text/css">
+  :root { color-scheme: light dark; supported-color-schemes: light dark; }
 
-    @media screen and (max-width: 600px) {
-      .mobile-full { width: 100% !important; }
-      .mobile-padding { padding-left: 20px !important; padding-right: 20px !important; }
-      .mobile-stack { display: block !important; width: 100% !important; }
-      .mobile-center { text-align: center !important; }
-      .mobile-img { width: 100% !important; height: auto !important; }
-      .mobile-column { display: block !important; width: 100% !important; padding-right: 0 !important; padding-left: 0 !important; padding-bottom: 12px !important; }
-      .mobile-column-last { padding-bottom: 0 !important; }
-      .mobile-hide { display: none !important; }
-    }
+  body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+  table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+  img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
+  body { margin: 0 !important; padding: 0 !important; width: 100% !important; }
 
-    @media (prefers-color-scheme: dark) {
-      .dark-mode-bg { background-color: #1a1a1a !important; }
-      .dark-mode-card { background-color: #272d3f !important; }
-      .dark-mode-text { color: #ffffff !important; }
-      .dark-mode-secondary { color: #cccccc !important; }
-      .dark-mode-border { border-color: #444444 !important; }
-    }
-  </style>
+  /* Force link colors */
+  a[x-apple-data-detectors] { color: inherit !important; text-decoration: none !important; }
+
+  @media screen and (max-width: 600px) {
+    .mobile-full { width: 100% !important; }
+    .mobile-padding { padding-left: 20px !important; padding-right: 20px !important; }
+    .mobile-stack { display: block !important; width: 100% !important; }
+    .mobile-center { text-align: center !important; }
+    .mobile-img { width: 100% !important; height: auto !important; }
+    .mobile-column { display: block !important; width: 100% !important; padding-right: 0 !important; padding-left: 0 !important; padding-bottom: 12px !important; }
+    .mobile-column-last { padding-bottom: 0 !important; }
+    .mobile-hide { display: none !important; }
+  }
+
+  /* Dark mode styles - Gmail, Apple Mail, Outlook.com */
+  @media (prefers-color-scheme: dark) {
+    .dark-mode-bg { background-color: #1a1a1a !important; }
+    .dark-mode-card { background-color: #2d2d2d !important; }
+    .dark-mode-text { color: #ffffff !important; }
+    .dark-mode-text-dark { color: #ffffff !important; }
+    .dark-mode-secondary { color: #e0e0e0 !important; }
+    .dark-mode-border { border-color: #444444 !important; }
+    .dark-mode-light-box { background-color: #3d3d3d !important; }
+    .dark-mode-teal-box { background-color: #3a4a52 !important; }
+  }
+
+  /* Outlook.com dark mode */
+  [data-ogsc] .dark-mode-bg { background-color: #1a1a1a !important; }
+  [data-ogsc] .dark-mode-card { background-color: #2d2d2d !important; }
+  [data-ogsc] .dark-mode-text { color: #ffffff !important; }
+  [data-ogsc] .dark-mode-text-dark { color: #ffffff !important; }
+  [data-ogsc] .dark-mode-secondary { color: #e0e0e0 !important; }
+  [data-ogsc] .dark-mode-border { border-color: #444444 !important; }
+  [data-ogsc] .dark-mode-light-box { background-color: #3d3d3d !important; }
+  [data-ogsc] .dark-mode-teal-box { background-color: #3a4a52 !important; }
+
+  /* Gmail dark mode (u + specificity) */
+  u + .body .dark-mode-bg { background-color: #1a1a1a !important; }
+  u + .body .dark-mode-card { background-color: #2d2d2d !important; }
+  u + .body .dark-mode-text { color: #ffffff !important; }
+  u + .body .dark-mode-text-dark { color: #ffffff !important; }
+  u + .body .dark-mode-secondary { color: #e0e0e0 !important; }
+  u + .body .dark-mode-border { border-color: #444444 !important; }
+  u + .body .dark-mode-light-box { background-color: #3d3d3d !important; }
+  u + .body .dark-mode-teal-box { background-color: #3a4a52 !important; }
+</style>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f5f5f5;" class="dark-mode-bg">
+<body class="body" style="margin: 0; padding: 0; width: 100%; background-color: #f5f5f5;">
+<!-- WRAPPER -->
+<table cellpadding="0" cellspacing="0" border="0" class="dark-mode-bg" role="presentation" style="background-color: #f5f5f5; width: 100%;" width="100%">
+  <tr>
+    <td align="center" style="padding: 40px 20px;">
+      <!-- CONTAINER -->
+      <table cellpadding="0" cellspacing="0" border="0" class="mobile-full" role="presentation" style="max-width: 600px; width: 100%;" width="600">
 
-  <!-- WRAPPER -->
-  <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f5f5f5;" class="dark-mode-bg">
-    <tr>
-      <td align="center" style="padding: 40px 20px;">
+        <!-- HEADER - NAVY BLOCK -->
+        <tr>
+          <td class="mobile-padding" style="background-color: #272d3f; padding: 24px 40px; border-radius: 4px 4px 0 0;">
+            <table cellpadding="0" cellspacing="0" border="0" role="presentation" width="100%">
+              <tr>
+                <td class="mobile-center" style="text-align: left;">
+                  <img alt="BriteCo" src="{{LOGO_URL}}" style="max-width: 140px; height: auto; display: block;" width="140">
+                </td>
+                <td align="right" class="mobile-center" style="padding-top: 4px; text-align: right;">
+                  <!--[if mso]>
+                  <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{DASHBOARD_URL}}" style="height:36px;v-text-anchor:middle;width:130px;" arcsize="14%" stroke="f" fillcolor="#FE8916">
+                    <w:anchorlock/>
+                    <center style="color:#ffffff;font-family:Trebuchet MS,sans-serif;font-size:12px;font-weight:bold;">YOUR DASHBOARD</center>
+                  </v:roundrect>
+                  <![endif]-->
+                  <!--[if !mso]><!-->
+                  <a href="{{DASHBOARD_URL}}" style="display: inline-block; background-color: #FE8916; color: #ffffff; font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; font-size: 12px; font-weight: 700; padding: 10px 18px; text-decoration: none; border-radius: 5px; mso-hide: all;">YOUR DASHBOARD</a>
+                  <!--<![endif]-->
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
 
-        <!-- CONTAINER -->
-        <table role="presentation" cellpadding="0" cellspacing="0" width="600" class="mobile-full" style="max-width: 600px;">
+        <!-- MAIN CONTENT - WHITE -->
+        <tr>
+          <td class="dark-mode-card" style="background-color: #ffffff;">
 
-          <!-- HEADER - NAVY BLOCK -->
-          <tr>
-            <td style="background-color: #272d3f; padding: 24px 40px; border-radius: 4px 4px 0 0;" class="mobile-padding">
-              <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
-                <tr>
-                  <td class="mobile-center">
-                    <!-- LOGO: Replace src with your hosted logo -->
-                    <img src="{{LOGO_URL}}" alt="BriteCo" width="140" style="max-width: 140px; height: auto;">
-                  </td>
-                  <td align="right" class="mobile-center" style="padding-top: 4px;">
-                    <a href="{{DASHBOARD_URL}}" style="display: inline-block; background-color: #FE8916; color: #ffffff; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 12px; font-weight: 700; padding: 10px 18px; text-decoration: none; border-radius: 5px;">YOUR DASHBOARD</a>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
+            <!-- HERO/MEME IMAGE -->
+            <table cellpadding="0" cellspacing="0" border="0" role="presentation" width="100%">
+              <tr>
+                <td class="mobile-padding" style="padding: 40px 40px 0 40px;">
+                  <img alt="Monthly Meme" src="{{MEME_IMAGE}}" style="width: 100%; max-width: 520px; height: auto; display: block; border-radius: 4px;" width="520">
+                </td>
+              </tr>
+            </table>
 
-          <!-- MAIN CONTENT - WHITE -->
-          <tr>
-            <td style="background-color: #ffffff;" class="dark-mode-card">
+            <!-- AGENDA PANEL - BORDERED BOX -->
+            <table cellpadding="0" cellspacing="0" border="0" role="presentation" width="100%">
+              <tr>
+                <td class="mobile-padding" style="padding: 40px 40px 0 40px;">
+                  <table cellpadding="0" cellspacing="0" border="0" class="dark-mode-card dark-mode-border" role="presentation" style="background-color: #FFFFFF; border-radius: 8px; border: 2px solid #A9C1CB; width: 100%;" width="100%">
+                    <tr>
+                      <td style="padding: 28px 32px;">
+                        <!-- AGENDA TITLE -->
+                        <h1 class="dark-mode-text" style="margin: 0 0 20px 0; font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; font-size: 28px; font-weight: 600; color: #272d3f; text-align: center; line-height: 36px;">{{AGENDA_TITLE}}</h1>
 
-              <!-- HERO/MEME IMAGE -->
-              <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
-                <tr>
-                  <td style="padding: 40px 40px 0 40px;" class="mobile-padding">
-                    <img src="{{MEME_IMAGE}}" alt="Monthly Meme" width="480" style="width: 100%; max-width: 480px; height: auto; display: block; border-radius: 4px;">
-                  </td>
-                </tr>
-              </table>
+                        <!-- AGENDA ITEMS -->
+                        <table cellpadding="0" cellspacing="0" border="0" role="presentation" width="100%">
+                          <tr>
+                            <td class="dark-mode-secondary" style="padding: 12px 0; border-top: 1px solid #A9C1CB; font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; color: #333333;">
+                              <span style="font-size: 14px; font-weight: 600; color: #008181;">01</span>
+                              <span class="dark-mode-secondary" style="font-size: 15px; font-weight: 500; color: #333333; padding-left: 16px;">{{NEWS_TITLE}}</span>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td class="dark-mode-secondary" style="padding: 12px 0; border-top: 1px solid #A9C1CB; font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; color: #333333;">
+                              <span style="font-size: 14px; font-weight: 600; color: #008181;">02</span>
+                              <span class="dark-mode-secondary" style="font-size: 15px; font-weight: 500; color: #333333; padding-left: 16px;">{{TIP_TITLE}}</span>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td class="dark-mode-secondary" style="padding: 12px 0 0 0; border-top: 1px solid #A9C1CB; font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; color: #333333;">
+                              <span style="font-size: 14px; font-weight: 600; color: #008181;">03</span>
+                              <span class="dark-mode-secondary" style="font-size: 15px; font-weight: 500; color: #333333; padding-left: 16px;">{{TREND_TITLE}}</span>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
 
-              <!-- AGENDA PANEL - TEAL BLOCK -->
-              <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
-                <tr>
-                  <td style="padding: 40px 40px 0 40px;" class="mobile-padding">
-                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #FFFFFF; border-radius: 8px; border: 2px solid #A9C1CB;">
-                      <tr>
-                        <td style="padding: 28px 32px;">
-                          <!-- AGENDA TITLE -->
-                          <h1 style="margin: 0 0 20px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 28px; font-weight: 600; color: #272d3f; text-align: center; line-height: 36px;" class="dark-mode-text">{{AGENDA_TITLE}}</h1>
+            <!-- SECTION 1: NEWS - LIGHT GREY BOX -->
+            <table cellpadding="0" cellspacing="0" border="0" role="presentation" width="100%">
+              <tr>
+                <td class="mobile-padding" style="padding: 24px 40px;">
+                  <table cellpadding="0" cellspacing="0" border="0" class="dark-mode-light-box" role="presentation" style="background-color: #E1E7EF; border-radius: 8px; width: 100%;" width="100%">
+                    <tr>
+                      <td style="padding: 24px;">
+                        <p style="margin: 0 0 8px 0; font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; font-size: 11px; font-weight: 700; color: #008181; text-transform: uppercase; letter-spacing: 1.5px;">News You Can Use</p>
 
-                          <!-- AGENDA ITEMS -->
-                          <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
-                            <tr>
-                              <td style="padding: 12px 0; border-top: 1px solid #A9C1CB; font-family: 'Gilroy', Trebuchet MS, sans-serif; color: #333333;">
-                                <span style="font-size: 14px; font-weight: 600; color: #008181;">01</span>
-                                <span style="font-size: 15px; font-weight: 500; color: #333333; padding-left: 16px;">{{NEWS_TITLE}}</span>
-                              </td>
-                            </tr>
-                            <tr>
-                              <td style="padding: 12px 0; border-top: 1px solid #A9C1CB; font-family: 'Gilroy', Trebuchet MS, sans-serif; color: #333333;">
-                                <span style="font-size: 14px; font-weight: 600; color: #008181;">02</span>
-                                <span style="font-size: 15px; font-weight: 500; color: #333333; padding-left: 16px;">{{TIP_TITLE}}</span>
-                              </td>
-                            </tr>
-                            <tr>
-                              <td style="padding: 12px 0 0 0; border-top: 1px solid #A9C1CB; font-family: 'Gilroy', Trebuchet MS, sans-serif; color: #333333;">
-                                <span style="font-size: 14px; font-weight: 600; color: #008181;">03</span>
-                                <span style="font-size: 15px; font-weight: 500; color: #333333; padding-left: 16px;">{{TREND_TITLE}}</span>
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
+                        <h2 class="dark-mode-text" style="margin: 0 0 8px 0; font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; font-size: 20px; font-weight: 700; color: #272d3f; line-height: 1.3;">{{NEWS_TITLE}}</h2>
 
-              <!-- SECTION 1: NEWS - LIGHT GREY BOX -->
-              <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
-                <tr>
-                  <td style="padding: 24px 40px;" class="mobile-padding">
-                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #E1E7EF; border-radius: 8px;">
-                      <tr>
-                        <td style="padding: 24px;">
-                          <p style="margin: 0 0 8px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 11px; font-weight: 700; color: #008181; text-transform: uppercase; letter-spacing: 1.5px;">News You Can Use</p>
+                        {{NEWS_SUBTITLE}}
 
-                          <h2 style="margin: 0 0 8px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 20px; font-weight: 700; color: #272d3f; line-height: 1.3;" class="dark-mode-text">{{NEWS_TITLE}}</h2>
+                        <img alt="News Image" src="{{NEWS_IMAGE}}" style="width: 100%; max-width: 432px; height: auto; display: block; border-radius: 4px; margin-bottom: 16px;" width="432">
 
-                          {{NEWS_SUBTITLE}}
+                        <div class="dark-mode-secondary" style="font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #444444;">{{NEWS_CONTENT}}</div>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
 
-                          <!-- NEWS IMAGE - Full width inside the color block -->
-                          <img src="{{NEWS_IMAGE}}" alt="News Image" width="432" style="width: 100%; max-width: 432px; height: auto; display: block; border-radius: 4px; margin-bottom: 16px;">
+            <!-- SECTION 2: TIP/INSIGHT - TEAL BOX -->
+            <table cellpadding="0" cellspacing="0" border="0" role="presentation" width="100%">
+              <tr>
+                <td class="mobile-padding" style="padding: 12px 40px;">
+                  <table cellpadding="0" cellspacing="0" border="0" class="dark-mode-teal-box" role="presentation" style="background-color: #A9C1CB; border-radius: 8px; width: 100%;" width="100%">
+                    <tr>
+                      <td style="padding: 24px;">
+                        <p class="dark-mode-text" style="margin: 0 0 8px 0; font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; font-size: 11px; font-weight: 700; color: #272d3f; text-transform: uppercase; letter-spacing: 1.5px;">BriteCo Insight</p>
 
-                          <div style="font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 15px; line-height: 1.6; color: #333333;">{{NEWS_CONTENT}}</div>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
+                        <h3 class="dark-mode-text" style="margin: 0 0 8px 0; font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; font-size: 20px; font-weight: 700; color: #272d3f; line-height: 1.3;">{{TIP_TITLE}}</h3>
 
-              <!-- SECTION 2: TIP/INSIGHT - TEAL BOX -->
-              <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
-                <tr>
-                  <td style="padding: 12px 40px;" class="mobile-padding">
-                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #A9C1CB; border-radius: 8px;">
-                      <tr>
-                        <td style="padding: 24px;">
-                          <p style="margin: 0 0 8px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 11px; font-weight: 700; color: #272d3f; text-transform: uppercase; letter-spacing: 1.5px;">BriteCo Insight</p>
+                        {{TIP_SUBTITLE}}
 
-                          <h3 style="margin: 0 0 8px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 20px; font-weight: 700; color: #272d3f; line-height: 1.3;" class="dark-mode-text">{{TIP_TITLE}}</h3>
+                        <img alt="Insight Image" src="{{TIP_IMAGE}}" style="width: 100%; max-width: 432px; height: auto; display: block; border-radius: 4px; margin-bottom: 16px;" width="432">
 
-                          {{TIP_SUBTITLE}}
+                        <div class="dark-mode-text-dark" style="font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #1f2937;">{{TIP_CONTENT}}</div>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
 
-                          <!-- TIP IMAGE - Full width inside the color block -->
-                          <img src="{{TIP_IMAGE}}" alt="Insight Image" width="432" style="width: 100%; max-width: 432px; height: auto; display: block; border-radius: 4px; margin-bottom: 16px;">
+            <!-- SECTION 3: TREND - DARK BLUE BOX -->
+            <table cellpadding="0" cellspacing="0" border="0" role="presentation" width="100%">
+              <tr>
+                <td class="mobile-padding" style="padding: 12px 40px 48px 40px;">
+                  <table cellpadding="0" cellspacing="0" border="0" role="presentation" style="background-color: #466F88; border-radius: 8px; width: 100%;" width="100%">
+                    <tr>
+                      <td style="padding: 24px;">
+                        <p style="margin: 0 0 8px 0; font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; font-size: 11px; font-weight: 700; color: #ffffff; text-transform: uppercase; letter-spacing: 1.5px;">Trend Alert</p>
 
-                          <div style="font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 15px; line-height: 1.6; color: #333333;">{{TIP_CONTENT}}</div>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
+                        <h3 style="margin: 0 0 8px 0; font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; font-size: 20px; font-weight: 700; color: #ffffff; line-height: 1.3;">{{TREND_TITLE}}</h3>
 
-              <!-- SECTION 3: TREND - DARK BLUE BOX -->
-              <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
-                <tr>
-                  <td style="padding: 12px 40px 48px 40px;" class="mobile-padding">
-                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #466F88; border-radius: 8px;">
-                      <tr>
-                        <td style="padding: 24px;">
-                          <p style="margin: 0 0 8px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 11px; font-weight: 700; color: #ffffff; text-transform: uppercase; letter-spacing: 1.5px;">Trend Alert</p>
+                        {{TREND_SUBTITLE}}
 
-                          <h3 style="margin: 0 0 8px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 20px; font-weight: 700; color: #ffffff; line-height: 1.3;">{{TREND_TITLE}}</h3>
+                        <img alt="Trend Image" src="{{TREND_IMAGE}}" style="width: 100%; max-width: 432px; height: auto; display: block; border-radius: 4px; margin-bottom: 16px;" width="432">
 
-                          {{TREND_SUBTITLE}}
+                        <div style="font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #ffffff;">{{TREND_CONTENT}}</div>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
 
-                          <!-- TREND IMAGE - Full width inside the color block -->
-                          <img src="{{TREND_IMAGE}}" alt="Trend Image" width="432" style="width: 100%; max-width: 432px; height: auto; display: block; border-radius: 4px; margin-bottom: 16px;">
+        <!-- FOOTER -->
+        <tr>
+          <td class="mobile-padding" style="background-color: #272d3f; padding: 40px; text-align: center; border-radius: 0 0 4px 4px;">
+            <h2 style="margin: 0 0 8px 0; font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; font-size: 26px; font-weight: 600; color: #ffffff;">Let's Connect</h2>
 
-                          <div style="font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 15px; line-height: 1.6; color: #ffffff;">{{TREND_CONTENT}}</div>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
+            <p style="margin: 0 0 20px 0; font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; font-size: 15px; font-weight: 500; color: #ffffff;">Make wedding planning stress-free and inspired.</p>
 
-            </td>
-          </tr>
-
-          <!-- FOOTER -->
-          <tr>
-            <td style="background-color: #272d3f; padding: 40px; text-align: center; border-radius: 0 0 4px 4px;" class="mobile-padding">
-              <h2 style="margin: 0 0 8px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 26px; font-weight: 600; color: #ffffff;">Let's Connect</h2>
-              <p style="margin: 0 0 20px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 15px; font-weight: 500; color: #ffffff;">Make wedding planning stress-free and inspired.</p>
-              <a href="{{DASHBOARD_URL}}" style="display: inline-block; background-color: #FE8916; color: #ffffff; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 14px; font-weight: 700; padding: 12px 24px; text-decoration: none; border-radius: 5px;">My Dashboard →</a>
-            </td>
-          </tr>
-
-        </table>
-      </td>
-    </tr>
-  </table>
-
+            <!--[if mso]>
+            <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{DASHBOARD_URL}}" style="height:44px;v-text-anchor:middle;width:160px;" arcsize="11%" stroke="f" fillcolor="#FE8916">
+              <w:anchorlock/>
+              <center style="color:#ffffff;font-family:Trebuchet MS,sans-serif;font-size:14px;font-weight:bold;">My Dashboard &#8594;</center>
+            </v:roundrect>
+            <![endif]-->
+            <!--[if !mso]><!-->
+            <a href="{{DASHBOARD_URL}}" style="display: inline-block; background-color: #FE8916; color: #ffffff; font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; font-size: 14px; font-weight: 700; padding: 12px 24px; text-decoration: none; border-radius: 5px; mso-hide: all;">My Dashboard &#8594;</a>
+            <!--<![endif]-->
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
 </body>
 </html>
 `;
@@ -4825,17 +4864,17 @@
             // Format content - backend already returns <p> wrapped content, add read more link on new line
             const formatNewsContent = (content) => {
                 // Content already has <p> tags with styling and margin from backend
-                return `${content}<p style="margin-top: 12px;"><a href="${newsUrl}" style="font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 14px; font-weight: 700; color: #FE8916; text-decoration: none;">Read more →</a></p>`;
+                return `${content}<p style="margin-top: 12px;"><a href="${newsUrl}" style="font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; font-size: 14px; font-weight: 700; color: #FE8916; text-decoration: none;">Read more →</a></p>`;
             };
 
             const formatTipContent = (content) => {
                 // Content already has <p> tags with styling and margin from backend
-                return `${content}<p style="margin-top: 12px;"><a href="${tipUrl}" style="font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 13px; font-weight: 700; color: #FE8916; text-decoration: none;">Read more →</a></p>`;
+                return `${content}<p style="margin-top: 12px;"><a href="${tipUrl}" style="font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; font-size: 13px; font-weight: 700; color: #FE8916; text-decoration: none;">Read more →</a></p>`;
             };
 
             const formatTrendContent = (content) => {
                 // Content already has <p> tags with styling and margin from backend
-                return `${content}<p style="margin-top: 12px;"><a href="${trendUrl}" style="font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 13px; font-weight: 700; color: #FE8916; text-decoration: none;">Read more →</a></p>`;
+                return `${content}<p style="margin-top: 12px;"><a href="${trendUrl}" style="font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; font-size: 13px; font-weight: 700; color: #FE8916; text-decoration: none;">Read more →</a></p>`;
             };
 
             // Generate meme HTML - text is already burned into the image by the server
@@ -4923,7 +4962,7 @@
             }
 
             try {
-                const html = generateNewsletterHTML();
+                const html = savedEditedHTML || generateNewsletterHTML();
 
                 const response = await fetch(`${API_BASE}/api/send-test-email`, {
                     method: 'POST',
@@ -4982,7 +5021,7 @@
                 }
 
                 console.log('[ONTRAPORT] Generating newsletter HTML...');
-                let html = generateNewsletterHTML();
+                let html = savedEditedHTML || generateNewsletterHTML();
 
                 // Fallback: replace any remaining base64 data URIs with placeholder URLs
                 // (template order: meme, news, tip, trend)
@@ -5115,43 +5154,33 @@
             if (!preview) return;
 
             // Make all paragraph and div text content editable
-            const textElements = preview.querySelectorAll('p, div[style*="font-size"]');
+            const textElements = preview.querySelectorAll('p, div[style*="font-size"], h2, h3, h4, h5');
             textElements.forEach(el => {
-                // Skip elements that are just containers
                 if (el.children.length > 0 && el.textContent.trim().length < 50) return;
-
                 el.setAttribute('contenteditable', 'true');
                 el.style.cursor = 'text';
                 el.style.transition = 'background-color 0.2s';
-
-                // Visual feedback on focus
                 el.addEventListener('focus', () => {
                     el.style.backgroundColor = '#fef3c7';
                     el.style.outline = '2px solid #f59e0b';
                 });
-
                 el.addEventListener('blur', () => {
                     el.style.backgroundColor = '';
                     el.style.outline = '';
-
-                    // Save changes back by regenerating HTML
-                    console.log('[EDIT] Content updated, regenerating HTML...');
                     updateNewsletterHTML();
                 });
             });
-
-            console.log('[EDIT] Enabled editing on', textElements.length, 'elements');
         }
 
-        // Update the stored HTML after edits
+        let savedEditedHTML = null;
+
         function updateNewsletterHTML() {
             const preview = document.getElementById('newsletterPreview');
             if (!preview) return;
-
             const updatedHTML = preview.innerHTML;
-            document.getElementById('htmlCode').textContent = updatedHTML;
-
-            console.log('[EDIT] HTML updated with edited content');
+            const htmlCode = document.getElementById('htmlCode');
+            if (htmlCode) htmlCode.textContent = updatedHTML;
+            savedEditedHTML = updatedHTML;
         }
 
         async function sendTestEmail() {
@@ -6496,13 +6525,11 @@
 
         async function loadSavedArticles() {
             try {
-                const resp = await fetch('/api/saved-articles');
-                const data = await resp.json();
-                if (data.success) {
-                    savedArticlesCache = data.articles || [];
-                }
+                const res = await fetch(`${API_BASE}/api/saved-articles`);
+                const data = await res.json();
+                if (data.success) savedArticlesCache = data.articles || [];
             } catch (e) {
-                console.log('[Saved Articles] Could not load:', e);
+                console.log('[SavedArticles] Load error:', e);
                 savedArticlesCache = [];
             }
         }
@@ -6523,21 +6550,18 @@
         function renderSavedArticlesList() {
             const container = document.getElementById('savedArticlesList');
             if (savedArticlesCache.length === 0) {
-                container.innerHTML = '<p style="color:#999; text-align:center; padding:20px;">No saved articles yet. Save articles from search results or add a URL below.</p>';
+                container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No saved articles yet. Save articles from search results or add a URL below.</p>';
                 return;
             }
-            container.innerHTML = savedArticlesCache.map((a, i) => `
+            container.innerHTML = savedArticlesCache.map((article, i) => `
                 <div class="saved-article-card">
                     <div class="sa-info">
-                        <div class="sa-title" title="${(a.title || 'Untitled').replace(/"/g, '&quot;')}">${a.title || 'Untitled'}</div>
-                        <div class="sa-meta">
-                            ${a.publisher ? a.publisher + ' &bull; ' : ''}
-                            Saved ${a.dateSaved ? new Date(a.dateSaved).toLocaleDateString() : 'recently'}
-                        </div>
+                        <div class="sa-title">${article.title || article.url}</div>
+                        <div class="sa-meta">${article.publisher || ''} ${article.dateSaved ? '· Saved ' + new Date(article.dateSaved).toLocaleDateString() : ''}</div>
                     </div>
                     <div class="sa-actions">
                         <button class="sa-use-btn" onclick="useSavedArticle(${i})">Use</button>
-                        <button class="sa-delete-btn" onclick="removeFromSavedArticles('${(a.url || '').replace(/'/g, "\\'")}')">Remove</button>
+                        <button class="sa-delete-btn" onclick="deleteSavedArticle('${article.url.replace(/'/g, "\\'")}')">×</button>
                     </div>
                 </div>
             `).join('');
@@ -6575,11 +6599,10 @@
 
             if (!resultsDiv) return;
 
-            // Check for duplicate
+            // Check for duplicate by comparing data-url attribute (raw string, not browser-resolved)
             const existingItems = resultsDiv.querySelectorAll('.research-result-item');
             for (const existing of existingItems) {
-                const link = existing.querySelector('a[href]');
-                if (link && link.href === article.url) {
+                if (existing.dataset.url && article.url && existing.dataset.url === article.url) {
                     alert('This article is already in the results.');
                     return;
                 }
@@ -6597,6 +6620,7 @@
             item.setAttribute('data-article-idx', savedArticleIdx);
             item.setAttribute('data-section', actualSection);
             item.setAttribute('data-preserved', 'true');
+            item.dataset.url = article.url || '';
             item.setAttribute('onclick', 'handleItemClick(this)');
             item.innerHTML = `
                 <div class="research-result-header">
@@ -6664,7 +6688,8 @@
         async function doSaveForLater(articleIdx) {
             const article = window._displayedArticles[articleIdx];
             if (!article) return;
-            if (savedArticlesCache.some(sa => sa.url === article.url)) return;
+            const alreadySaved = savedArticlesCache.some(sa => sa.url === article.url);
+            if (alreadySaved) return;
             await saveArticleToBank(article);
             const cards = document.querySelectorAll(`.research-result-item[data-article-idx="${articleIdx}"]`);
             cards.forEach(card => {
@@ -6678,7 +6703,7 @@
             const article = window._displayedArticles[articleIdx];
             if (!article) return;
             try {
-                const res = await fetch('/api/saved-articles', {
+                const res = await fetch(`${API_BASE}/api/saved-articles`, {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ url: article.url })
@@ -6703,12 +6728,14 @@
             const article = window._displayedArticles[articleIdx];
             if (!article) return;
             try {
-                await fetch('/api/not-good-fit', {
+                await fetch(`${API_BASE}/api/not-good-fit`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ article: { url: article.url, title: article.title || article.headline || '', publisher: article.publisher || '' } })
                 });
-            } catch (e) { console.error('[NotGoodFit] Error:', e); }
+            } catch (e) {
+                console.error('[NotGoodFit] Error:', e);
+            }
             showCardToast('Marked as not a good fit');
         }
 
@@ -6725,84 +6752,84 @@
 
         async function saveArticleToBank(article) {
             try {
-                const resp = await fetch('/api/saved-articles', {
+                const res = await fetch(`${API_BASE}/api/saved-articles`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ article })
+                    body: JSON.stringify({ article: {
+                        url: article.url,
+                        title: article.title || article.headline || article.url,
+                        snippet: article.snippet || '',
+                        publisher: article.publisher || ''
+                    }})
                 });
-                const data = await resp.json();
+                const data = await res.json();
                 if (data.success) {
                     savedArticlesCache = data.articles || [];
                 }
             } catch (e) {
-                console.error('[Saved Articles] Error saving:', e);
+                console.error('[SavedArticles] Save error:', e);
             }
         }
 
-        async function removeFromSavedArticles(url) {
+        async function deleteSavedArticle(url) {
             try {
-                const resp = await fetch('/api/saved-articles', {
+                const res = await fetch(`${API_BASE}/api/saved-articles`, {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ url })
                 });
-                const data = await resp.json();
+                const data = await res.json();
                 if (data.success) {
                     savedArticlesCache = data.articles || [];
-                    // Update dots buttons on page (reset color for unsaved)
-                    document.querySelectorAll('.dots-btn').forEach(btn => {
-                        btn.style.color = '';
-                    });
+                    renderSavedArticlesList();
                 }
-                renderSavedArticlesList();
             } catch (e) {
-                console.error('[Saved Articles] Error deleting:', e);
+                console.error('[SavedArticles] Delete error:', e);
             }
         }
 
         async function saveArticleByUrl() {
-            const input = document.getElementById('savedArticleUrlInput');
-            const errEl = document.getElementById('savedArticleError');
-            const url = input.value.trim();
+            const urlInput = document.getElementById('savedArticleUrlInput');
+            const errorDiv = document.getElementById('savedArticleError');
+            const url = urlInput.value.trim();
 
             if (!url) {
-                errEl.textContent = 'Please enter a URL.';
-                errEl.style.display = 'block';
+                errorDiv.textContent = 'Please enter a URL';
+                errorDiv.style.display = 'block';
                 return;
             }
-            if (!url.startsWith('http')) {
-                errEl.textContent = 'Please enter a valid URL starting with http.';
-                errEl.style.display = 'block';
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                errorDiv.textContent = 'Please enter a valid URL starting with http:// or https://';
+                errorDiv.style.display = 'block';
                 return;
             }
-
-            errEl.style.display = 'none';
-            input.disabled = true;
+            errorDiv.style.display = 'none';
 
             try {
-                // Fetch metadata
-                const metaResp = await fetch('/api/fetch-article-metadata', {
+                const metaRes = await fetch(`${API_BASE}/api/fetch-article-metadata`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ url })
                 });
-                const metaData = await metaResp.json();
+                const meta = await metaRes.json();
 
-                const article = {
-                    title: metaData.title || url,
-                    description: metaData.description || '',
-                    publisher: metaData.publisher || '',
-                    url: url
-                };
-
-                await saveArticleToBank(article);
-                input.value = '';
-                renderSavedArticlesList();
+                await saveArticleToBank({
+                    url: url,
+                    title: meta.title || url,
+                    snippet: meta.description || '',
+                    publisher: meta.publisher || new URL(url).hostname
+                });
             } catch (e) {
-                errEl.textContent = 'Failed to save article. Please try again.';
-                errEl.style.display = 'block';
+                await saveArticleToBank({
+                    url: url,
+                    title: url,
+                    snippet: '',
+                    publisher: new URL(url).hostname
+                });
             }
-            input.disabled = false;
+
+            urlInput.value = '';
+            renderSavedArticlesList();
         }
 
         // Load published newsletters
