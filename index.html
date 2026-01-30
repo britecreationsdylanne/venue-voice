@@ -4529,7 +4529,7 @@
             let html = generateNewsletterHTML();
             // Strip base64 images for hosted placeholder URLs
             let ci = 0;
-            const ciLabels = ['news-image', 'tip-image', 'trend-image', 'meme-image'];
+            const ciLabels = ['meme-image', 'news-image', 'tip-image', 'trend-image'];
             html = html.replace(/data:image\/[a-z]+;base64,[A-Za-z0-9+\/=]+/g, () => {
                 const label = ciLabels[ci] || 'image-' + (ci + 1);
                 ci++;
@@ -4970,35 +4970,29 @@
 
                 btnText.textContent = '🚀 Pushing to Ontraport...';
 
+                // If GCS upload succeeded, update generatedImages with hosted URLs
+                // so generateNewsletterHTML() uses them directly (avoids fragile regex ordering)
+                if (gcsUrls && Object.keys(gcsUrls).length > 0) {
+                    for (const section of Object.keys(gcsUrls)) {
+                        if (generatedImages[section]) {
+                            generatedImages[section].url = gcsUrls[section];
+                            console.log(`[ONTRAPORT] Updated generatedImages.${section} with GCS URL: ${gcsUrls[section]}`);
+                        }
+                    }
+                }
+
                 console.log('[ONTRAPORT] Generating newsletter HTML...');
                 let html = generateNewsletterHTML();
 
-                // Replace base64 data URIs with GCS URLs or placeholder URLs
-                if (gcsUrls && Object.keys(gcsUrls).length > 0) {
-                    // Replace each section's base64 image with its GCS URL
-                    const sectionOrder = ['news', 'tip', 'trend', 'meme'];
-                    let imgIdx = 0;
-                    html = html.replace(/data:image\/[a-z]+;base64,[A-Za-z0-9+\/=]+/g, () => {
-                        const section = sectionOrder[imgIdx];
-                        imgIdx++;
-                        if (section && gcsUrls[section]) {
-                            console.log(`[ONTRAPORT] Using GCS URL for ${section}: ${gcsUrls[section]}`);
-                            return gcsUrls[section];
-                        }
-                        return 'https://REPLACE-WITH-HOSTED-URL/image-' + imgIdx + '.png';
-                    });
-                    console.log('[ONTRAPORT] Replaced images with GCS URLs');
-                } else {
-                    // Fallback: replace with placeholder URLs
-                    let imgIdx = 0;
-                    const imgNames = ['news-image', 'tip-image', 'trend-image', 'meme-image'];
-                    html = html.replace(/data:image\/[a-z]+;base64,[A-Za-z0-9+\/=]+/g, () => {
-                        const name = imgNames[imgIdx] || 'image-' + (imgIdx + 1);
-                        imgIdx++;
-                        return 'https://REPLACE-WITH-HOSTED-URL/' + name + '.png';
-                    });
-                    console.log('[ONTRAPORT] Using placeholder URLs (GCS upload failed or no images)');
-                }
+                // Fallback: replace any remaining base64 data URIs with placeholder URLs
+                // (template order: meme, news, tip, trend)
+                const imgNames = ['meme-image', 'news-image', 'tip-image', 'trend-image'];
+                let imgIdx = 0;
+                html = html.replace(/data:image\/[a-z]+;base64,[A-Za-z0-9+\/=]+/g, () => {
+                    const name = imgNames[imgIdx] || 'image-' + (imgIdx + 1);
+                    imgIdx++;
+                    return 'https://REPLACE-WITH-HOSTED-URL/' + name + '.png';
+                });
 
                 console.log('[ONTRAPORT] Sending to backend...');
                 const response = await fetch(`${API_BASE}/api/push-to-ontraport`, {
@@ -5414,7 +5408,10 @@
             lastSearchQuery = query;
             lastSearchSource = 'perplexity';
 
+            // Preserve saved/custom articles before clearing for spinner
+            const preservedBeforeSearch = Array.from(resultsDiv.querySelectorAll('.research-result-item[data-preserved="true"]'));
             resultsDiv.innerHTML = '<div class="research-card-loading"><div class="spinner"></div><p>Searching with Perplexity AI & analyzing with GPT-5.2...</p></div>';
+            preservedBeforeSearch.forEach(item => resultsDiv.insertBefore(item, resultsDiv.firstChild));
 
             try {
                 const response = await fetch(`${API_BASE}/api/v2/search-perplexity`, {
@@ -5521,7 +5518,9 @@
             lastSearchQuery = query;
             lastSearchSource = 'explorer';
 
+            const preservedExplorer = Array.from(resultsDiv.querySelectorAll('.research-result-item[data-preserved="true"]'));
             resultsDiv.innerHTML = '<div class="research-card-loading"><div class="spinner"></div><p>Searching sources & analyzing story angles...</p></div>';
+            preservedExplorer.forEach(item => resultsDiv.insertBefore(item, resultsDiv.firstChild));
 
             try {
                 const response = await fetch(`${API_BASE}/api/v2/search-sources`, {
@@ -5697,8 +5696,11 @@
 
             // Update section label
             const labels = { news: 'NEWS', tip: 'TIP', trend: 'TREND' };
-            document.getElementById('researchSectionLabel').innerHTML =
-                `Researching for: <strong>${labels[section]}</strong> section. Search and select one article below.`;
+            const descriptions = { news: 'Venue and event industry news', tip: 'Tips and insights for venue owners', trend: 'Emerging trends in the events industry' };
+            const titleEl = document.getElementById('researchSectionTitle');
+            const descEl = document.getElementById('researchSectionDesc');
+            if (titleEl) titleEl.textContent = labels[section] || section.toUpperCase();
+            if (descEl) descEl.textContent = descriptions[section] || '';
 
             // Update search inputs with section-specific defaults
             const defaults = sectionSearchDefaults[section];
