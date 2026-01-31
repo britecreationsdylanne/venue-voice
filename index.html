@@ -43,11 +43,30 @@
             color: white;
             padding: 40px;
             text-align: center;
+            position: relative;
         }
 
         .header h1 {
             font-size: 32px;
             margin-bottom: 10px;
+        }
+
+        .start-over-btn {
+            position: absolute;
+            top: 16px;
+            right: 20px;
+            background: #FE8916;
+            color: white;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .start-over-btn:hover {
+            background: #e57a0e;
         }
 
         .header p {
@@ -450,10 +469,10 @@
         }
 
         .research-card-description {
-            font-size: 12px;
+            font-size: 13px;
             color: #6b7280;
-            line-height: 1.4;
-            margin: 0 0 12px 0;
+            line-height: 1.5;
+            margin: 0 0 16px 0;
             padding: 0;
         }
 
@@ -468,8 +487,9 @@
             color: white;
             padding: 4px 12px;
             border-radius: 20px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
+            text-transform: uppercase;
         }
 
         .research-card-badge.coming-soon {
@@ -480,7 +500,7 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
         }
 
         .research-card-filters select,
@@ -1190,6 +1210,7 @@
     <div class="container">
         <div class="header">
             <h1>Venue Voice Generator</h1>
+            <button class="start-over-btn" onclick="startOver()">↺ Start Over</button>
         </div>
 
         <div class="progress-container">
@@ -1422,19 +1443,15 @@
                     <div style="margin-bottom: 15px;">
                         <label style="display: block; font-weight: 600; margin-bottom: 10px; font-size: 14px;">Select recipients:</label>
 
-                        <!-- Team member checkboxes (NO John or Ben) -->
+                        <!-- Team member checkboxes -->
                         <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; padding: 12px; background: #f9fafb; border-radius: 6px;">
                             <label style="display: flex; align-items: center; cursor: pointer; font-size: 13px;">
-                                <input type="checkbox" class="docRecipientCheckbox" value="stef.lynn@brite.co" checked style="margin-right: 8px; width: 16px; height: 16px;">
-                                <span>Stef Lynn (stef.lynn@brite.co)</span>
+                                <input type="checkbox" class="docRecipientCheckbox" value="dylanne.crugnale@brite.co" checked style="margin-right: 8px; width: 16px; height: 16px;">
+                                <span>Dylanne Crugnale (dylanne.crugnale@brite.co)</span>
                             </label>
                             <label style="display: flex; align-items: center; cursor: pointer; font-size: 13px;">
                                 <input type="checkbox" class="docRecipientCheckbox" value="selena.fragassi@brite.co" checked style="margin-right: 8px; width: 16px; height: 16px;">
                                 <span>Selena Fragassi (selena.fragassi@brite.co)</span>
-                            </label>
-                            <label style="display: flex; align-items: center; cursor: pointer; font-size: 13px;">
-                                <input type="checkbox" class="docRecipientCheckbox" value="dylanne.crugnale@brite.co" checked style="margin-right: 8px; width: 16px; height: 16px;">
-                                <span>Dylanne Crugnale (dylanne.crugnale@brite.co)</span>
                             </label>
                         </div>
 
@@ -1625,7 +1642,13 @@
                 </div>
                 <button class="btn-secondary btn" onclick="regenerateImage('news')" style="margin-right: 10px;">🔄 Regenerate</button>
                 <button class="btn-secondary btn" onclick="exportImage('news')" style="margin-right: 10px;">📥 Export</button>
-                <button class="btn-secondary btn" onclick="resizeImage('news')">🔍 Resize</button>
+                <button class="btn-secondary btn" onclick="resizeImage('news')" style="margin-right: 10px;">🔍 Resize</button>
+                <input type="file" id="newsUpload" accept="image/*" style="display:none;" onchange="handleImageUpload('news', this)">
+                <button class="btn-secondary btn" onclick="document.getElementById('newsUpload').click()" style="background:#f59e0b;color:white;border-color:#f59e0b;">📤 Upload</button>
+                <div id="newsResizeControls" style="display:none;align-items:center;gap:10px;margin-top:12px;">
+                    <label style="font-size:13px;font-weight:600;white-space:nowrap;">Resize: <span id="newsResizeVal">100</span>%</label>
+                    <input type="range" id="newsResizeSlider" min="25" max="100" value="100" oninput="resizeUploadedImage('news', this.value)" style="flex:1;">
+                </div>
             </div>
 
             <!-- Tip Image -->
@@ -1646,7 +1669,13 @@
                 </div>
                 <button class="btn-secondary btn" onclick="regenerateImage('tip')" style="margin-right: 10px;">🔄 Regenerate</button>
                 <button class="btn-secondary btn" onclick="exportImage('tip')" style="margin-right: 10px;">📥 Export</button>
-                <button class="btn-secondary btn" onclick="resizeImage('tip')">🔍 Resize</button>
+                <button class="btn-secondary btn" onclick="resizeImage('tip')" style="margin-right: 10px;">🔍 Resize</button>
+                <input type="file" id="tipUpload" accept="image/*" style="display:none;" onchange="handleImageUpload('tip', this)">
+                <button class="btn-secondary btn" onclick="document.getElementById('tipUpload').click()" style="background:#f59e0b;color:white;border-color:#f59e0b;">📤 Upload</button>
+                <div id="tipResizeControls" style="display:none;align-items:center;gap:10px;margin-top:12px;">
+                    <label style="font-size:13px;font-weight:600;white-space:nowrap;">Resize: <span id="tipResizeVal">100</span>%</label>
+                    <input type="range" id="tipResizeSlider" min="25" max="100" value="100" oninput="resizeUploadedImage('tip', this.value)" style="flex:1;">
+                </div>
             </div>
 
             <!-- Trend Image -->
@@ -1667,7 +1696,13 @@
                 </div>
                 <button class="btn-secondary btn" onclick="regenerateImage('trend')" style="margin-right: 10px;">🔄 Regenerate</button>
                 <button class="btn-secondary btn" onclick="exportImage('trend')" style="margin-right: 10px;">📥 Export</button>
-                <button class="btn-secondary btn" onclick="resizeImage('trend')">🔍 Resize</button>
+                <button class="btn-secondary btn" onclick="resizeImage('trend')" style="margin-right: 10px;">🔍 Resize</button>
+                <input type="file" id="trendUpload" accept="image/*" style="display:none;" onchange="handleImageUpload('trend', this)">
+                <button class="btn-secondary btn" onclick="document.getElementById('trendUpload').click()" style="background:#f59e0b;color:white;border-color:#f59e0b;">📤 Upload</button>
+                <div id="trendResizeControls" style="display:none;align-items:center;gap:10px;margin-top:12px;">
+                    <label style="font-size:13px;font-weight:600;white-space:nowrap;">Resize: <span id="trendResizeVal">100</span>%</label>
+                    <input type="range" id="trendResizeSlider" min="25" max="100" value="100" oninput="resizeUploadedImage('trend', this.value)" style="flex:1;">
+                </div>
             </div>
 
             <div class="buttons">
@@ -1770,6 +1805,11 @@
                     </div>
                 </div>
 
+                <div style="margin: 20px 0; padding: 15px; background: #f9fafb; border-radius: 8px; border: 2px dashed #e5e7eb;">
+                    <h4 style="margin: 0 0 10px 0; font-size: 14px;">Or Upload Your Own:</h4>
+                    <input type="file" id="memeUpload" accept="image/*" style="display: none;" onchange="handleMemeUpload(event)">
+                    <button class="btn-secondary btn" onclick="document.getElementById('memeUpload').click()">📁 Upload Image</button>
+                </div>
             </div>
 
             <div class="buttons">
@@ -3047,7 +3087,8 @@
                         title: title,
                         month: monthCapitalized,
                         year: year,
-                        send_email: false,  // Don't send email during export
+                        folder_id: '1OvlOIelSnFFBgWtk6XmbwXtp4Ii29XPw',
+                        send_email: false,
                         recipients: []
                     })
                 });
@@ -3918,6 +3959,55 @@
         }
 
         // Resize image with quality options
+        // Upload custom image for a section
+        function handleImageUpload(section, input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const dataUrl = e.target.result;
+                if (!generatedImages[section]) generatedImages[section] = {};
+                generatedImages[section].url = dataUrl;
+
+                const previewDiv = document.getElementById(section + 'ImagePreview');
+                if (previewDiv) {
+                    previewDiv.innerHTML = `<img id="${section}UploadedImg" src="${dataUrl}" style="max-width:100%;border-radius:8px;" alt="${section} image">`;
+                }
+
+                const resizeDiv = document.getElementById(section + 'ResizeControls');
+                if (resizeDiv) {
+                    resizeDiv.style.display = 'flex';
+                    const slider = document.getElementById(section + 'ResizeSlider');
+                    if (slider) slider.value = 100;
+                    const valSpan = document.getElementById(section + 'ResizeVal');
+                    if (valSpan) valSpan.textContent = '100';
+                }
+            };
+            reader.readAsDataURL(file);
+            input.value = '';
+        }
+
+        function resizeUploadedImage(section, pct) {
+            const valSpan = document.getElementById(section + 'ResizeVal');
+            if (valSpan) valSpan.textContent = pct;
+            const imgEl = document.querySelector(`#${section}ImagePreview img`);
+            if (!imgEl) return;
+            const img = new Image();
+            img.onload = function() {
+                const scale = pct / 100;
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.round(img.naturalWidth * scale);
+                canvas.height = Math.round(img.naturalHeight * scale);
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                const resized = canvas.toDataURL('image/png');
+                if (!generatedImages[section]) generatedImages[section] = {};
+                generatedImages[section].url = resized;
+                imgEl.src = resized;
+            };
+            img.src = imgEl.src;
+        }
+
         async function resizeImage(imageType) {
             const imageData = generatedImages[imageType];
             if (!imageData || !imageData.url) {
@@ -6152,6 +6242,12 @@
         // END 4-CARD RESEARCH DASHBOARD FUNCTIONS
         // =============================================================================
 
+        function startOver() {
+            if (confirm('Start over? This will return to the first step.')) {
+                showStep(1);
+            }
+        }
+
         function showStep(stepNum) {
             // Auto-save draft at key transitions
             if ([5, 7, '7b', 10, 12, 13].includes(stepNum)) {
@@ -6673,6 +6769,10 @@
                 <div class="dots-menu-item notfit" onclick="event.stopPropagation(); doNotGoodFit(${articleIdx}); this.closest('.dots-menu').remove();">
                     <span class="icon">👎</span> Not a Good Fit
                 </div>
+                <div class="dots-menu-divider"></div>
+                <div class="dots-menu-item remove" onclick="event.stopPropagation(); doRemoveFromResults(${articleIdx}); this.closest('.dots-menu').remove();" style="color:#dc2626;">
+                    <span class="icon">✕</span> Remove from Results
+                </div>
             `;
             card.appendChild(menu);
             setTimeout(() => {
@@ -6737,6 +6837,19 @@
                 console.error('[NotGoodFit] Error:', e);
             }
             showCardToast('Marked as not a good fit');
+        }
+
+        function doRemoveFromResults(articleIdx) {
+            const article = window._displayedArticles[articleIdx];
+            if (!article) return;
+            const cards = document.querySelectorAll(`.research-result-item[data-article-idx="${articleIdx}"]`);
+            cards.forEach(card => {
+                if (card.classList.contains('selected')) {
+                    handleItemClick(card);
+                }
+                card.remove();
+            });
+            showCardToast('Removed from results');
         }
 
         function showCardToast(text) {
