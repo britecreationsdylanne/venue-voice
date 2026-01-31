@@ -1586,7 +1586,7 @@
                             <div style="font-weight: 600; color: #1e40af; margin-bottom: 5px;">Images Auto-Sized for Newsletter</div>
                             <div style="font-size: 14px; color: #64748b; line-height: 1.5;">
                                 Generated images will be automatically resized to the correct dimensions:
-                                <strong>News (480×260px)</strong>, <strong>Tip (432×130px)</strong>, <strong>Trend (432×130px)</strong>
+                                <strong>News (480×260px)</strong>, <strong>Tip (432×260px)</strong>, <strong>Trend (432×260px)</strong>
                             </div>
                         </div>
                     </div>
@@ -1905,7 +1905,7 @@
 
             <!-- Editing Instructions -->
             <div style="background: #e0f2fe; border: 2px solid #0284c7; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                <p style="margin: 0; font-size: 14px; color: #0c4a6e;"><strong>✏️ Live Editing:</strong> Click any text in the preview below to edit it directly. Changes are automatically saved!</p>
+                <p style="margin: 0; font-size: 14px; color: #0c4a6e;"><strong>✏️ Live Editing:</strong> Click any text in the preview below to edit it directly.</p>
             </div>
 
             <!-- Subject Line & Preheader Display -->
@@ -1927,6 +1927,11 @@
 
             <div id="htmlCodeView" style="display: none; background: #1e1e1e; color: #d4d4d4; padding: 20px; border-radius: 8px; margin: 20px 0; max-height: 500px; overflow-y: auto;">
                 <pre id="htmlCode" style="margin: 0; white-space: pre-wrap; word-wrap: break-word; font-family: 'Courier New', monospace; font-size: 12px;"></pre>
+            </div>
+
+            <div style="text-align: center; margin: 20px 0;">
+                <button class="btn" onclick="savePreviewEdits()" style="background: #0284c7; padding: 12px 28px; font-size: 15px;">💾 Save Changes to HTML</button>
+                <span id="saveStatus" style="margin-left: 10px; font-size: 14px; color: #166534; display: none;">✓ Changes saved!</span>
             </div>
 
             <div class="buttons">
@@ -3460,7 +3465,12 @@
                     body: JSON.stringify({
                         sections: sections,
                         prompts: prompts,
-                        month: selectedMonth
+                        month: selectedMonth,
+                        imageDimensions: {
+                            news: { width: 480, height: 260 },
+                            tip: { width: 432, height: 260 },
+                            trend: { width: 432, height: 260 }
+                        }
                     })
                 });
 
@@ -3845,6 +3855,7 @@
 
                     console.log(`[REGENERATE] Calling API to regenerate ${imageType} with custom prompt:`, customPrompt);
 
+                    const dimMap = { news: { width: 480, height: 260 }, tip: { width: 432, height: 260 }, trend: { width: 432, height: 260 } };
                     const response = await fetch(`${API_BASE}/api/generate-images`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -3858,7 +3869,8 @@
                                     season: section.season
                                 }
                             },
-                            prompts: { [imageType]: customPrompt }
+                            prompts: { [imageType]: customPrompt },
+                            imageDimensions: { [imageType]: dimMap[imageType] || { width: 432, height: 260 } }
                         })
                     });
 
@@ -4734,42 +4746,36 @@
     .mobile-hide { display: none !important; }
   }
 
-  /* Dark mode styles - Gmail, Apple Mail, Outlook.com */
+  /* Dark mode styles - Apple Mail */
   @media (prefers-color-scheme: dark) {
-    .dark-mode-bg { background-color: #1a1a1a !important; }
-    .dark-mode-card { background-color: #2d2d2d !important; }
-    .dark-mode-text { color: #ffffff !important; }
-    .dark-mode-text-dark { color: #ffffff !important; }
-    .dark-mode-secondary { color: #e0e0e0 !important; }
-    .dark-mode-border { border-color: #444444 !important; }
-    .dark-mode-light-box { background-color: #3d3d3d !important; }
-    .dark-mode-teal-box { background-color: #3a4a52 !important; }
+    .dark-bg { background-color: #1a1a1a !important; }
+    .dark-card { background-color: #2d2d2d !important; }
+    .dark-text { color: #ffffff !important; }
+    .dark-text-secondary { color: #e0e0e0 !important; }
+    .dark-box-light { background-color: #3d3d3d !important; }
+    .dark-box-teal { background-color: #3a4a52 !important; }
   }
 
   /* Outlook.com dark mode */
-  [data-ogsc] .dark-mode-bg { background-color: #1a1a1a !important; }
-  [data-ogsc] .dark-mode-card { background-color: #2d2d2d !important; }
-  [data-ogsc] .dark-mode-text { color: #ffffff !important; }
-  [data-ogsc] .dark-mode-text-dark { color: #ffffff !important; }
-  [data-ogsc] .dark-mode-secondary { color: #e0e0e0 !important; }
-  [data-ogsc] .dark-mode-border { border-color: #444444 !important; }
-  [data-ogsc] .dark-mode-light-box { background-color: #3d3d3d !important; }
-  [data-ogsc] .dark-mode-teal-box { background-color: #3a4a52 !important; }
+  [data-ogsc] .dark-bg { background-color: #1a1a1a !important; }
+  [data-ogsc] .dark-card { background-color: #2d2d2d !important; }
+  [data-ogsc] .dark-text { color: #ffffff !important; }
+  [data-ogsc] .dark-text-secondary { color: #e0e0e0 !important; }
+  [data-ogsc] .dark-box-light { background-color: #3d3d3d !important; }
+  [data-ogsc] .dark-box-teal { background-color: #3a4a52 !important; }
 
-  /* Gmail dark mode (u + specificity) */
-  u + .body .dark-mode-bg { background-color: #1a1a1a !important; }
-  u + .body .dark-mode-card { background-color: #2d2d2d !important; }
-  u + .body .dark-mode-text { color: #ffffff !important; }
-  u + .body .dark-mode-text-dark { color: #ffffff !important; }
-  u + .body .dark-mode-secondary { color: #e0e0e0 !important; }
-  u + .body .dark-mode-border { border-color: #444444 !important; }
-  u + .body .dark-mode-light-box { background-color: #3d3d3d !important; }
-  u + .body .dark-mode-teal-box { background-color: #3a4a52 !important; }
+  /* Gmail Android dark mode */
+  u + .body .dark-bg { background-color: #1a1a1a !important; }
+  u + .body .dark-card { background-color: #2d2d2d !important; }
+  u + .body .dark-text { color: #ffffff !important; }
+  u + .body .dark-text-secondary { color: #e0e0e0 !important; }
+  u + .body .dark-box-light { background-color: #3d3d3d !important; }
+  u + .body .dark-box-teal { background-color: #3a4a52 !important; }
 </style>
 </head>
 <body class="body" style="margin: 0; padding: 0; width: 100%; background-color: #f5f5f5;">
 <!-- WRAPPER -->
-<table cellpadding="0" cellspacing="0" border="0" class="dark-mode-bg" role="presentation" style="background-color: #f5f5f5; width: 100%;" width="100%">
+<table cellpadding="0" cellspacing="0" border="0" class="dark-bg" role="presentation" style="background-color: #f5f5f5; width: 100%;" width="100%">
   <tr>
     <td align="center" style="padding: 40px 20px;">
       <!-- CONTAINER -->
@@ -4791,7 +4797,7 @@
                   </v:roundrect>
                   <![endif]-->
                   <!--[if !mso]><!-->
-                  <a href="{{DASHBOARD_URL}}" style="display: inline-block; background-color: #FE8916; color: #ffffff; font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; font-size: 12px; font-weight: 700; padding: 10px 18px; text-decoration: none; border-radius: 5px; mso-hide: all;">YOUR DASHBOARD</a>
+                  <a href="{{DASHBOARD_URL}}" style="display: inline-block; background-color: #FE8916; color: #ffffff; font-family: Trebuchet MS, Arial, sans-serif; font-size: 12px; font-weight: 700; padding: 10px 18px; text-decoration: none; border-radius: 5px; mso-hide: all;">YOUR DASHBOARD</a>
                   <!--<![endif]-->
                 </td>
               </tr>
@@ -4799,47 +4805,65 @@
           </td>
         </tr>
 
+        <!-- HERO TITLE BLOCK - TEAL -->
+        <tr>
+          <td class="mobile-padding" style="background-color: #008181; padding: 32px 40px; text-align: center;">
+            <p style="margin: 0 0 4px 0; font-family: Trebuchet MS, Arial, sans-serif; font-size: 11px; font-weight: 700; color: #A9C1CB; text-transform: uppercase; letter-spacing: 1.5px;">{{MONTH_YEAR}}</p>
+            <h1 style="margin: 0; font-family: Trebuchet MS, Arial, sans-serif; font-size: 42px; font-weight: 700; color: #ffffff; line-height: 1.1;">Venue Voice</h1>
+          </td>
+        </tr>
+
         <!-- MAIN CONTENT - WHITE -->
         <tr>
-          <td class="dark-mode-card" style="background-color: #ffffff;">
+          <td class="dark-card" style="background-color: #ffffff;">
 
-            <!-- HERO/MEME IMAGE -->
+            <!-- MEME IMAGE -->
             <table cellpadding="0" cellspacing="0" border="0" role="presentation" width="100%">
               <tr>
                 <td class="mobile-padding" style="padding: 40px 40px 0 40px;">
-                  <img alt="Monthly Meme" src="{{MEME_IMAGE}}" style="width: 100%; max-width: 520px; height: auto; display: block; border-radius: 4px;" width="520">
+                  <img alt="Monthly Meme" src="{{MEME_IMAGE}}" style="width: 100%; max-width: 520px; height: auto; display: block; border-radius: 8px;" width="520">
                 </td>
               </tr>
             </table>
 
-            <!-- AGENDA PANEL - BORDERED BOX -->
+            <!-- AGENDA - IN THIS ISSUE -->
             <table cellpadding="0" cellspacing="0" border="0" role="presentation" width="100%">
               <tr>
                 <td class="mobile-padding" style="padding: 40px 40px 0 40px;">
-                  <table cellpadding="0" cellspacing="0" border="0" class="dark-mode-card dark-mode-border" role="presentation" style="background-color: #FFFFFF; border-radius: 8px; border: 2px solid #A9C1CB; width: 100%;" width="100%">
-                    <tr>
-                      <td style="padding: 28px 32px;">
-                        <!-- AGENDA TITLE -->
-                        <h1 class="dark-mode-text" style="margin: 0 0 20px 0; font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; font-size: 28px; font-weight: 600; color: #272d3f; text-align: center; line-height: 36px;">{{AGENDA_TITLE}}</h1>
+                  <h2 class="dark-text" style="margin: 0 0 20px 0; font-family: Trebuchet MS, Arial, sans-serif; font-size: 22px; font-weight: 700; color: #272d3f; text-align: center;">In This Issue</h2>
 
-                        <!-- AGENDA ITEMS -->
-                        <table cellpadding="0" cellspacing="0" border="0" role="presentation" width="100%">
+                  <table cellpadding="0" cellspacing="0" border="0" role="presentation" width="100%">
+                    <tr>
+                      <td style="padding-bottom: 8px;">
+                        <table cellpadding="0" cellspacing="0" border="0" class="dark-box-light" role="presentation" width="100%">
                           <tr>
-                            <td class="dark-mode-secondary" style="padding: 12px 0; border-top: 1px solid #A9C1CB; font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; color: #333333;">
-                              <span style="font-size: 14px; font-weight: 600; color: #008181;">01</span>
-                              <span class="dark-mode-secondary" style="font-size: 15px; font-weight: 500; color: #333333; padding-left: 16px;">{{NEWS_TITLE}}</span>
+                            <td style="background-color: #f0f4f7; border-radius: 6px; padding: 14px 18px; font-family: Trebuchet MS, Arial, sans-serif;">
+                              <span style="font-size: 15px; font-weight: 700; color: #008181;">01</span>
+                              <span class="dark-text-secondary" style="font-size: 15px; font-weight: 500; color: #272d3f; padding-left: 14px;">{{NEWS_TITLE}}</span>
                             </td>
                           </tr>
+                        </table>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding-bottom: 8px;">
+                        <table cellpadding="0" cellspacing="0" border="0" class="dark-box-light" role="presentation" width="100%">
                           <tr>
-                            <td class="dark-mode-secondary" style="padding: 12px 0; border-top: 1px solid #A9C1CB; font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; color: #333333;">
-                              <span style="font-size: 14px; font-weight: 600; color: #008181;">02</span>
-                              <span class="dark-mode-secondary" style="font-size: 15px; font-weight: 500; color: #333333; padding-left: 16px;">{{TIP_TITLE}}</span>
+                            <td style="background-color: #f0f4f7; border-radius: 6px; padding: 14px 18px; font-family: Trebuchet MS, Arial, sans-serif;">
+                              <span style="font-size: 15px; font-weight: 700; color: #008181;">02</span>
+                              <span class="dark-text-secondary" style="font-size: 15px; font-weight: 500; color: #272d3f; padding-left: 14px;">{{TIP_TITLE}}</span>
                             </td>
                           </tr>
+                        </table>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <table cellpadding="0" cellspacing="0" border="0" class="dark-box-light" role="presentation" width="100%">
                           <tr>
-                            <td class="dark-mode-secondary" style="padding: 12px 0 0 0; border-top: 1px solid #A9C1CB; font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; color: #333333;">
-                              <span style="font-size: 14px; font-weight: 600; color: #008181;">03</span>
-                              <span class="dark-mode-secondary" style="font-size: 15px; font-weight: 500; color: #333333; padding-left: 16px;">{{TREND_TITLE}}</span>
+                            <td style="background-color: #f0f4f7; border-radius: 6px; padding: 14px 18px; font-family: Trebuchet MS, Arial, sans-serif;">
+                              <span style="font-size: 15px; font-weight: 700; color: #008181;">03</span>
+                              <span class="dark-text-secondary" style="font-size: 15px; font-weight: 500; color: #272d3f; padding-left: 14px;">{{TREND_TITLE}}</span>
                             </td>
                           </tr>
                         </table>
@@ -4854,18 +4878,33 @@
             <table cellpadding="0" cellspacing="0" border="0" role="presentation" width="100%">
               <tr>
                 <td class="mobile-padding" style="padding: 24px 40px;">
-                  <table cellpadding="0" cellspacing="0" border="0" class="dark-mode-light-box" role="presentation" style="background-color: #E1E7EF; border-radius: 8px; width: 100%;" width="100%">
+                  <table cellpadding="0" cellspacing="0" border="0" class="dark-box-light" role="presentation" style="background-color: #E1E7EF; border-radius: 8px; width: 100%;" width="100%">
                     <tr>
                       <td style="padding: 24px;">
-                        <p style="margin: 0 0 8px 0; font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; font-size: 11px; font-weight: 700; color: #008181; text-transform: uppercase; letter-spacing: 1.5px;">News You Can Use</p>
+                        <p style="margin: 0 0 8px 0; font-family: Trebuchet MS, Arial, sans-serif; font-size: 11px; font-weight: 700; color: #008181; text-transform: uppercase; letter-spacing: 1.5px;">News You Can Use</p>
 
-                        <h2 class="dark-mode-text" style="margin: 0 0 8px 0; font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; font-size: 20px; font-weight: 700; color: #272d3f; line-height: 1.3;">{{NEWS_TITLE}}</h2>
-
-                        {{NEWS_SUBTITLE}}
+                        <h2 class="dark-text" style="margin: 0 0 8px 0; font-family: Trebuchet MS, Arial, sans-serif; font-size: 22px; font-weight: 700; color: #272d3f; line-height: 1.3;">{{NEWS_TITLE}}</h2>
 
                         <img alt="News Image" src="{{NEWS_IMAGE}}" style="width: 100%; max-width: 432px; height: auto; display: block; border-radius: 4px; margin-bottom: 16px;" width="432">
 
-                        <div class="dark-mode-secondary" style="font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #444444;">{{NEWS_CONTENT}}</div>
+                        <div class="dark-text-secondary" style="font-family: Trebuchet MS, Arial, sans-serif; font-size: 15px; line-height: 24px; color: #444444;">{{NEWS_CONTENT}}</div>
+
+                        <!-- CTA Button - Orange -->
+                        <table cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin-top: 16px;">
+                          <tr>
+                            <td>
+                              <!--[if mso]>
+                              <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{NEWS_URL}}" style="height:40px;v-text-anchor:middle;width:150px;" arcsize="60%" stroke="f" fillcolor="#FE8916">
+                                <w:anchorlock/>
+                                <center style="color:#ffffff;font-family:Trebuchet MS,sans-serif;font-size:14px;font-weight:bold;">Read more &#8594;</center>
+                              </v:roundrect>
+                              <![endif]-->
+                              <!--[if !mso]><!-->
+                              <a href="{{NEWS_URL}}" style="display: inline-block; background-color: #FE8916; color: #ffffff; font-family: Trebuchet MS, Arial, sans-serif; font-size: 14px; font-weight: 700; padding: 10px 24px; text-decoration: none; border-radius: 24px; mso-hide: all;">Read more &#8594;</a>
+                              <!--<![endif]-->
+                            </td>
+                          </tr>
+                        </table>
                       </td>
                     </tr>
                   </table>
@@ -4873,22 +4912,39 @@
               </tr>
             </table>
 
-            <!-- SECTION 2: TIP/INSIGHT - TEAL BOX -->
+            <!-- SECTION 2: INSIGHT - TEAL BOX -->
             <table cellpadding="0" cellspacing="0" border="0" role="presentation" width="100%">
               <tr>
                 <td class="mobile-padding" style="padding: 12px 40px;">
-                  <table cellpadding="0" cellspacing="0" border="0" class="dark-mode-teal-box" role="presentation" style="background-color: #A9C1CB; border-radius: 8px; width: 100%;" width="100%">
+                  <table cellpadding="0" cellspacing="0" border="0" class="dark-box-teal" role="presentation" style="background-color: #A9C1CB; border-radius: 8px; width: 100%;" width="100%">
                     <tr>
                       <td style="padding: 24px;">
-                        <p class="dark-mode-text" style="margin: 0 0 8px 0; font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; font-size: 11px; font-weight: 700; color: #272d3f; text-transform: uppercase; letter-spacing: 1.5px;">BriteCo Insight</p>
+                        <p style="margin: 0 0 8px 0; font-family: Trebuchet MS, Arial, sans-serif; font-size: 11px; font-weight: 700; color: #008181; text-transform: uppercase; letter-spacing: 1.5px;">BriteCo Insight</p>
 
-                        <h3 class="dark-mode-text" style="margin: 0 0 8px 0; font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; font-size: 20px; font-weight: 700; color: #272d3f; line-height: 1.3;">{{TIP_TITLE}}</h3>
+                        <h3 class="dark-text" style="margin: 0 0 8px 0; font-family: Trebuchet MS, Arial, sans-serif; font-size: 22px; font-weight: 700; color: #272d3f; line-height: 1.3;">{{TIP_TITLE}}</h3>
 
                         {{TIP_SUBTITLE}}
 
                         <img alt="Insight Image" src="{{TIP_IMAGE}}" style="width: 100%; max-width: 432px; height: auto; display: block; border-radius: 4px; margin-bottom: 16px;" width="432">
 
-                        <div class="dark-mode-text-dark" style="font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #1f2937;">{{TIP_CONTENT}}</div>
+                        <div class="dark-text-secondary" style="font-family: Trebuchet MS, Arial, sans-serif; font-size: 15px; line-height: 24px; color: #1f2937;">{{TIP_CONTENT}}</div>
+
+                        <!-- CTA Button - Navy -->
+                        <table cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin-top: 16px;">
+                          <tr>
+                            <td>
+                              <!--[if mso]>
+                              <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{TIP_URL}}" style="height:40px;v-text-anchor:middle;width:150px;" arcsize="60%" stroke="f" fillcolor="#272d3f">
+                                <w:anchorlock/>
+                                <center style="color:#ffffff;font-family:Trebuchet MS,sans-serif;font-size:14px;font-weight:bold;">Read more &#8594;</center>
+                              </v:roundrect>
+                              <![endif]-->
+                              <!--[if !mso]><!-->
+                              <a href="{{TIP_URL}}" style="display: inline-block; background-color: #272d3f; color: #ffffff; font-family: Trebuchet MS, Arial, sans-serif; font-size: 14px; font-weight: 700; padding: 10px 24px; text-decoration: none; border-radius: 24px; mso-hide: all;">Read more &#8594;</a>
+                              <!--<![endif]-->
+                            </td>
+                          </tr>
+                        </table>
                       </td>
                     </tr>
                   </table>
@@ -4896,22 +4952,39 @@
               </tr>
             </table>
 
-            <!-- SECTION 3: TREND - DARK BLUE BOX -->
+            <!-- SECTION 3: TREND - SLATE BOX -->
             <table cellpadding="0" cellspacing="0" border="0" role="presentation" width="100%">
               <tr>
                 <td class="mobile-padding" style="padding: 12px 40px 48px 40px;">
                   <table cellpadding="0" cellspacing="0" border="0" role="presentation" style="background-color: #466F88; border-radius: 8px; width: 100%;" width="100%">
                     <tr>
                       <td style="padding: 24px;">
-                        <p style="margin: 0 0 8px 0; font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; font-size: 11px; font-weight: 700; color: #ffffff; text-transform: uppercase; letter-spacing: 1.5px;">Trend Alert</p>
+                        <p style="margin: 0 0 8px 0; font-family: Trebuchet MS, Arial, sans-serif; font-size: 11px; font-weight: 700; color: #A9C1CB; text-transform: uppercase; letter-spacing: 1.5px;">Trend Alert</p>
 
-                        <h3 style="margin: 0 0 8px 0; font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; font-size: 20px; font-weight: 700; color: #ffffff; line-height: 1.3;">{{TREND_TITLE}}</h3>
+                        <h3 style="margin: 0 0 8px 0; font-family: Trebuchet MS, Arial, sans-serif; font-size: 22px; font-weight: 700; color: #ffffff; line-height: 1.3;">{{TREND_TITLE}}</h3>
 
                         {{TREND_SUBTITLE}}
 
                         <img alt="Trend Image" src="{{TREND_IMAGE}}" style="width: 100%; max-width: 432px; height: auto; display: block; border-radius: 4px; margin-bottom: 16px;" width="432">
 
-                        <div style="font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #ffffff;">{{TREND_CONTENT}}</div>
+                        <div style="font-family: Trebuchet MS, Arial, sans-serif; font-size: 15px; line-height: 24px; color: #ffffff;">{{TREND_CONTENT}}</div>
+
+                        <!-- CTA Button - White -->
+                        <table cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin-top: 16px;">
+                          <tr>
+                            <td>
+                              <!--[if mso]>
+                              <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{TREND_URL}}" style="height:40px;v-text-anchor:middle;width:150px;" arcsize="60%" stroke="f" fillcolor="#ffffff">
+                                <w:anchorlock/>
+                                <center style="color:#466F88;font-family:Trebuchet MS,sans-serif;font-size:14px;font-weight:bold;">Read more &#8594;</center>
+                              </v:roundrect>
+                              <![endif]-->
+                              <!--[if !mso]><!-->
+                              <a href="{{TREND_URL}}" style="display: inline-block; background-color: #ffffff; color: #466F88; font-family: Trebuchet MS, Arial, sans-serif; font-size: 14px; font-weight: 700; padding: 10px 24px; text-decoration: none; border-radius: 24px; mso-hide: all;">Read more &#8594;</a>
+                              <!--<![endif]-->
+                            </td>
+                          </tr>
+                        </table>
                       </td>
                     </tr>
                   </table>
@@ -4924,18 +4997,18 @@
         <!-- FOOTER -->
         <tr>
           <td class="mobile-padding" style="background-color: #272d3f; padding: 40px; text-align: center; border-radius: 0 0 4px 4px;">
-            <h2 style="margin: 0 0 8px 0; font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; font-size: 26px; font-weight: 600; color: #ffffff;">Let's Connect</h2>
+            <h2 style="margin: 0 0 8px 0; font-family: Trebuchet MS, Arial, sans-serif; font-size: 26px; font-weight: 600; color: #ffffff;">Let's Connect</h2>
 
-            <p style="margin: 0 0 20px 0; font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; font-size: 15px; font-weight: 500; color: #ffffff;">Make wedding planning stress-free and inspired.</p>
+            <p style="margin: 0 0 20px 0; font-family: Trebuchet MS, Arial, sans-serif; font-size: 15px; font-weight: 500; color: #ffffff;">Make wedding planning stress-free and inspired.</p>
 
             <!--[if mso]>
-            <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{DASHBOARD_URL}}" style="height:44px;v-text-anchor:middle;width:160px;" arcsize="11%" stroke="f" fillcolor="#FE8916">
+            <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{DASHBOARD_URL}}" style="height:44px;v-text-anchor:middle;width:160px;" arcsize="50%" stroke="f" fillcolor="#FE8916">
               <w:anchorlock/>
               <center style="color:#ffffff;font-family:Trebuchet MS,sans-serif;font-size:14px;font-weight:bold;">My Dashboard &#8594;</center>
             </v:roundrect>
             <![endif]-->
             <!--[if !mso]><!-->
-            <a href="{{DASHBOARD_URL}}" style="display: inline-block; background-color: #FE8916; color: #ffffff; font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; font-size: 14px; font-weight: 700; padding: 12px 24px; text-decoration: none; border-radius: 5px; mso-hide: all;">My Dashboard &#8594;</a>
+            <a href="{{DASHBOARD_URL}}" style="display: inline-block; background-color: #FE8916; color: #ffffff; font-family: Trebuchet MS, Arial, sans-serif; font-size: 14px; font-weight: 700; padding: 12px 24px; text-decoration: none; border-radius: 24px; mso-hide: all;">My Dashboard &#8594;</a>
             <!--<![endif]-->
           </td>
         </tr>
@@ -4947,56 +5020,50 @@
 </html>
 `;
 
-            //  Template replacement placeholders
+            // Template replacement values
             const logoUrl = 'https://i.ontraport.com/194428.046960d3d5419045b9bf5943f00547e7.PNG';
             const dashboardUrl = 'https://insurance.brite.co/events/venue_locations/[Referral Code]/dashboard';
 
-            // Format content - backend already returns <p> wrapped content, add read more link on new line
-            const formatNewsContent = (content) => {
-                // Content already has <p> tags with styling and margin from backend
-                return `${content}<p style="margin-top: 12px;"><a href="${newsUrl}" style="font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; font-size: 14px; font-weight: 700; color: #FE8916; text-decoration: none;">Read more →</a></p>`;
-            };
+            // Generate current month/year for hero
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+            const now = new Date();
+            const monthYear = (monthNames[now.getMonth()] + ' ' + now.getFullYear()).toUpperCase();
 
-            const formatTipContent = (content) => {
-                // Content already has <p> tags with styling and margin from backend
-                return `${content}<p style="margin-top: 12px;"><a href="${tipUrl}" style="font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; font-size: 13px; font-weight: 700; color: #FE8916; text-decoration: none;">Read more →</a></p>`;
-            };
-
-            const formatTrendContent = (content) => {
-                // Content already has <p> tags with styling and margin from backend
-                return `${content}<p style="margin-top: 12px;"><a href="${trendUrl}" style="font-family: 'Gilroy', Trebuchet MS, Arial, sans-serif; font-size: 13px; font-weight: 700; color: #FE8916; text-decoration: none;">Read more →</a></p>`;
-            };
-
-            // Generate meme HTML - text is already burned into the image by the server
+            // Generate meme URL - text is already burned into the image by the server
             const generateMemeHTML = () => {
                 const meme = generatedImages.meme;
                 if (!meme) {
                     return memeUrl || 'https://placehold.co/480x280/272d3f/31D7CA?text=Monthly+Meme';
                 }
-
-                // The server already burned the text into the image, so just return the URL
-                // This ensures email clients display the meme correctly
                 return meme.url || memeUrl;
+            };
+
+            // Format subtitle HTML
+            const formatSubtitle = (subtitle, color) => {
+                if (!subtitle) return '';
+                return '<p style="margin: 0 0 12px 0; font-family: Trebuchet MS, Arial, sans-serif; font-size: 15px; font-style: italic; color: ' + color + ';">' + subtitle + '</p>';
             };
 
             // Apply replacements to template
             return template
                 .replace(/{{LOGO_URL}}/g, logoUrl)
                 .replace(/{{DASHBOARD_URL}}/g, dashboardUrl)
+                .replace(/{{MONTH_YEAR}}/g, monthYear)
                 .replace(/{{MEME_IMAGE}}/g, generateMemeHTML())
-                .replace(/{{AGENDA_TITLE}}/g, "In This Month's Venue Voice")
                 .replace(/{{NEWS_TITLE}}/g, newsTitle)
                 .replace(/{{TIP_TITLE}}/g, tipTitle)
                 .replace(/{{TREND_TITLE}}/g, trendTitle)
                 .replace(/{{NEWS_IMAGE}}/g, newsImage || 'https://placehold.co/480x260/008181/ffffff?text=News+Image')
-                .replace(/{{NEWS_SUBTITLE}}/g, '')
-                .replace(/{{NEWS_CONTENT}}/g, formatNewsContent(newsContent))
-                .replace(/{{TIP_SUBTITLE}}/g, tipSubtitle)
-                .replace(/{{TIP_IMAGE}}/g, tipImage || 'https://placehold.co/432x130/008181/ffffff?text=Tip+Image')
-                .replace(/{{TIP_CONTENT}}/g, formatTipContent(tipContent))
-                .replace(/{{TREND_SUBTITLE}}/g, trendSubtitle)
-                .replace(/{{TREND_IMAGE}}/g, trendImage || 'https://placehold.co/432x130/7DA3AF/ffffff?text=Trend+Image')
-                .replace(/{{TREND_CONTENT}}/g, formatTrendContent(trendContent));
+                .replace(/{{NEWS_CONTENT}}/g, newsContent)
+                .replace(/{{NEWS_URL}}/g, newsUrl)
+                .replace(/{{TIP_SUBTITLE}}/g, formatSubtitle(tipSubtitle, '#555555'))
+                .replace(/{{TIP_IMAGE}}/g, tipImage || 'https://placehold.co/432x260/008181/ffffff?text=Tip+Image')
+                .replace(/{{TIP_CONTENT}}/g, tipContent)
+                .replace(/{{TIP_URL}}/g, tipUrl)
+                .replace(/{{TREND_SUBTITLE}}/g, formatSubtitle(trendSubtitle, '#d1d5db'))
+                .replace(/{{TREND_IMAGE}}/g, trendImage || 'https://placehold.co/432x260/7DA3AF/ffffff?text=Trend+Image')
+                .replace(/{{TREND_CONTENT}}/g, trendContent)
+                .replace(/{{TREND_URL}}/g, trendUrl);
         }
 
         function generateNewsletterHTML() {
@@ -5217,6 +5284,13 @@
 
             document.getElementById('newsletterPreview').innerHTML = html;
             showStep(13); // Preview step
+        }
+
+        // Save preview edits and show confirmation
+        function savePreviewEdits() {
+            const status = document.getElementById('saveStatus');
+            status.style.display = 'inline';
+            setTimeout(() => { status.style.display = 'none'; }, 2000);
         }
 
         // Save edited subject line back to state
