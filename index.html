@@ -1131,7 +1131,27 @@
             if (currentUser) {
                 console.log('User authenticated:', currentUser.email);
                 updateUserDisplay(currentUser);
+                // Set BritePulse user identity for feedback tracking
+                setBritePulseUser(currentUser);
             }
+        }
+
+        // Set user identity in BritePulse SDK
+        function setBritePulseUser(user) {
+            function trySetUser() {
+                if (window.britepulse && typeof window.britepulse.setUser === 'function') {
+                    window.britepulse.setUser({
+                        email: user.email,
+                        name: user.name || user.email,
+                        id: user.email
+                    });
+                    console.log('BritePulse user set:', user.email);
+                } else {
+                    // SDK not ready yet, retry after a short delay
+                    setTimeout(trySetUser, 100);
+                }
+            }
+            trySetUser();
         }
 
         // Initialize on page load
