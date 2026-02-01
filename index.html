@@ -1139,11 +1139,12 @@
         // Set user identity in BritePulse SDK
         function setBritePulseUser(user) {
             function trySetUser() {
-                if (window.britepulse && typeof window.britepulse.setUser === 'function') {
-                    window.britepulse.setUser({
+                const instance = window.BritePulse?.getInstance();
+                if (instance) {
+                    instance.setUser({
+                        id: user.email,
                         email: user.email,
-                        name: user.name || user.email,
-                        id: user.email
+                        name: user.name || user.email
                     });
                     console.log('BritePulse user set:', user.email);
                 } else {
