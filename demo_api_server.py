@@ -1590,13 +1590,13 @@ def generate_images():
 
                     # Determine target size based on section
                     if section_name == 'news':
-                        # News: 480px wide, aspect ratio for new template = 480x260
+                        # News: 480px wide, 3:2 landscape
                         target_width = 480
-                        target_height = 260
+                        target_height = 320
                     else:
-                        # Tip/Trend: 432px wide, 130px tall (landscape banner)
+                        # Tip/Trend: 432px wide, 3:2 landscape
                         target_width = 432
-                        target_height = 130
+                        target_height = 290
 
                     print(f"  [{section_name.upper()}] Resizing from {pil_image.size} to {target_width}x{target_height}...")
 
