@@ -4954,9 +4954,6 @@
 <meta name="color-scheme" content="light dark">
 <meta name="supported-color-schemes" content="light dark">
 <title>Venue Voice Newsletter</title>
-<!--[if !mso]><!-->
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&display=swap" rel="stylesheet">
-<!--<![endif]-->
 <!--[if mso]>
 <noscript>
   <xml>
@@ -4970,6 +4967,7 @@
 </style>
 <![endif]-->
 <style type="text/css">
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&display=swap');
   :root { color-scheme: light dark; supported-color-schemes: light dark; }
 
   body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
@@ -5307,17 +5305,25 @@
                 return meme.url || memeUrl;
             };
 
-            // Format subtitle HTML - strip ALL markdown/quote artifacts
+            // Format subtitle HTML - strip ALL markdown/quote artifacts AND HTML tags
             const formatSubtitle = (subtitle) => {
                 if (!subtitle) return '';
                 let clean = subtitle
+                    // Strip ALL HTML tags first (AI may wrap in <p> tags)
+                    .replace(/<[^>]*>/g, '')
                     // Remove all asterisks and underscores (markdown bold/italic markers)
                     .replace(/[*_]/g, '')
                     // Remove all types of quotation marks
-                    .replace(/["\u201C\u201D\u201E\u201F\u2033\u2036""'']/g, '')
+                    .replace(/["\u201C\u201D\u201E\u201F\u2033\u2036\u201A\u201B""'']/g, '')
                     .trim();
                 if (!clean) return '';
-                return '<p class="dark-text-secondary" style="margin: 0 0 12px 0; font-family: Montserrat, Helvetica, Arial, sans-serif; font-size: 16px; font-style: italic; line-height: 26px; color: #272d3f;">' + clean + '</p>';
+                return '<div class="dark-text-secondary" style="margin: 0 0 4px 0; font-family: Montserrat, Helvetica, Arial, sans-serif; font-size: 15px; font-style: italic; line-height: 1.7; color: #555555;">' + clean + '</div>';
+            };
+
+            // Normalize content HTML - ensure all <p> tags use consistent styling
+            const normalizeContent = (html) => {
+                if (!html) return '';
+                return html.replace(/<p\b[^>]*>/gi, '<p style="margin: 0 0 16px 0; font-family: Montserrat, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.7; color: #555555;">');
             };
 
             // Apply replacements to template
@@ -5330,15 +5336,15 @@
                 .replace(/{{TIP_TITLE}}/g, tipTitle)
                 .replace(/{{TREND_TITLE}}/g, trendTitle)
                 .replace(/{{NEWS_IMAGE}}/g, newsImage || 'https://placehold.co/480x260/008181/ffffff?text=News+Image')
-                .replace(/{{NEWS_CONTENT}}/g, newsContent)
+                .replace(/{{NEWS_CONTENT}}/g, normalizeContent(newsContent))
                 .replace(/{{NEWS_URL}}/g, newsUrl)
                 .replace(/{{TIP_SUBTITLE}}/g, formatSubtitle(tipSubtitle))
                 .replace(/{{TIP_IMAGE}}/g, tipImage || 'https://placehold.co/432x260/008181/ffffff?text=Tip+Image')
-                .replace(/{{TIP_CONTENT}}/g, tipContent)
+                .replace(/{{TIP_CONTENT}}/g, normalizeContent(tipContent))
                 .replace(/{{TIP_URL}}/g, tipUrl)
                 .replace(/{{TREND_SUBTITLE}}/g, formatSubtitle(trendSubtitle))
                 .replace(/{{TREND_IMAGE}}/g, trendImage || 'https://placehold.co/432x260/7DA3AF/ffffff?text=Trend+Image')
-                .replace(/{{TREND_CONTENT}}/g, trendContent)
+                .replace(/{{TREND_CONTENT}}/g, normalizeContent(trendContent))
                 .replace(/{{TREND_URL}}/g, trendUrl);
         }
 
