@@ -5044,7 +5044,7 @@
                   <table cellpadding="0" cellspacing="0" border="0" class="dark-box-teal" role="presentation" style="background-color: #A9C1CB; border-radius: 8px; width: 100%;" width="100%">
                     <tr>
                       <td style="padding: 24px;">
-                        <p style="margin: 0 0 8px 0; font-family: Trebuchet MS, Arial, sans-serif; font-size: 11px; font-weight: 700; color: #008181; text-transform: uppercase; letter-spacing: 1.5px;">BriteCo Insight</p>
+                        <p style="margin: 0 0 8px 0; font-family: Trebuchet MS, Arial, sans-serif; font-size: 11px; font-weight: 700; color: #272d3f; text-transform: uppercase; letter-spacing: 1.5px;">BriteCo Insight</p>
 
                         <h3 class="dark-text" style="margin: 0 0 8px 0; font-family: Trebuchet MS, Arial, sans-serif; font-size: 22px; font-weight: 700; color: #272d3f; line-height: 1.3;">{{TIP_TITLE}}</h3>
 
@@ -5163,10 +5163,12 @@
                 return meme.url || memeUrl;
             };
 
-            // Format subtitle HTML
+            // Format subtitle HTML - strip markdown asterisks
             const formatSubtitle = (subtitle, color) => {
                 if (!subtitle) return '';
-                return '<p style="margin: 0 0 12px 0; font-family: Trebuchet MS, Arial, sans-serif; font-size: 15px; font-style: italic; color: ' + color + ';">' + subtitle + '</p>';
+                const clean = subtitle.replace(/^\*+|\*+$/g, '').replace(/^"+|"+$/g, '').trim();
+                if (!clean) return '';
+                return '<p style="margin: 0 0 12px 0; font-family: Trebuchet MS, Arial, sans-serif; font-size: 15px; font-style: italic; color: ' + color + ';">"' + clean + '"</p>';
             };
 
             // Apply replacements to template
@@ -5181,11 +5183,11 @@
                 .replace(/{{NEWS_IMAGE}}/g, newsImage || 'https://placehold.co/480x260/008181/ffffff?text=News+Image')
                 .replace(/{{NEWS_CONTENT}}/g, newsContent)
                 .replace(/{{NEWS_URL}}/g, newsUrl)
-                .replace(/{{TIP_SUBTITLE}}/g, formatSubtitle(tipSubtitle, '#555555'))
+                .replace(/{{TIP_SUBTITLE}}/g, formatSubtitle(tipSubtitle, '#272d3f'))
                 .replace(/{{TIP_IMAGE}}/g, tipImage || 'https://placehold.co/432x260/008181/ffffff?text=Tip+Image')
                 .replace(/{{TIP_CONTENT}}/g, tipContent)
                 .replace(/{{TIP_URL}}/g, tipUrl)
-                .replace(/{{TREND_SUBTITLE}}/g, formatSubtitle(trendSubtitle, '#d1d5db'))
+                .replace(/{{TREND_SUBTITLE}}/g, formatSubtitle(trendSubtitle, '#ffffff'))
                 .replace(/{{TREND_IMAGE}}/g, trendImage || 'https://placehold.co/432x260/7DA3AF/ffffff?text=Trend+Image')
                 .replace(/{{TREND_CONTENT}}/g, trendContent)
                 .replace(/{{TREND_URL}}/g, trendUrl);
