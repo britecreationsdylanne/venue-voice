@@ -959,9 +959,9 @@ Write the TIP body paragraph now. Output ONLY the paragraph text, no title or fo
                 tip_text = tip_result['content'].strip()
 
                 # Build HTML - subtitle separate, content without asterisks
-                sections['tip'] = f'''<p style="margin: 0 0 14px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 14px; color: #555555; line-height: 1.6;" class="dark-mode-secondary">{tip_text}</p>'''
+                sections['tip'] = f'''<p style="margin: 0 0 16px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 15px; color: #555555; line-height: 1.7;" class="dark-mode-secondary">{tip_text}</p>'''
                 sections['tip_title'] = tip_title
-                sections['tip_subtitle'] = f'''<p style="margin: 0 0 12px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 13px; font-style: italic; color: #008181; line-height: 1.4;">{tip_subtitle}</p>'''
+                sections['tip_subtitle'] = tip_subtitle
 
             # Write TREND section from research (TREND ALERT)
             if research.get('trend'):
@@ -1035,9 +1035,9 @@ Write the TREND body paragraph now. Output ONLY the paragraph text, no title or 
                 trend_text = trend_result['content'].strip()
 
                 # Build HTML - subtitle separate, content without asterisks
-                sections['trend'] = f'''<p style="margin: 0 0 14px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 14px; color: #ffffff; line-height: 1.6;">{trend_text}</p>'''
+                sections['trend'] = f'''<p style="margin: 0 0 16px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 15px; color: #555555; line-height: 1.7;" class="dark-mode-secondary">{trend_text}</p>'''
                 sections['trend_title'] = trend_title
-                sections['trend_subtitle'] = f'''<p style="margin: 0 0 12px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 13px; font-style: italic; color: #272d3f; line-height: 1.4;">{trend_subtitle}</p>'''
+                sections['trend_subtitle'] = trend_subtitle
 
             print(f"[API] Content written successfully with Opus 4.5")
 
@@ -1170,7 +1170,7 @@ Write the TREND body paragraph now. Output ONLY the paragraph text, no title or 
                     if len(words) > 12:
                         text = ' '.join(words[:12]) + '.'
                     # Add inline styling for tip content with proper spacing
-                    tip_content = f'<p style="margin: 0 0 14px 0; font-family: \'Gilroy\', Trebuchet MS, sans-serif; font-size: 14px; color: #555555; line-height: 1.6;" class="dark-mode-secondary">{text}</p>'
+                    tip_content = f'<p style="margin: 0 0 16px 0; font-family: \'Gilroy\', Trebuchet MS, sans-serif; font-size: 15px; color: #555555; line-height: 1.7;" class="dark-mode-secondary">{text}</p>'
 
             sections['tip'] = tip_content
             sections['tip_title'] = tip_title
@@ -1221,7 +1221,7 @@ Write the TREND body paragraph now. Output ONLY the paragraph text, no title or 
                     if len(words) > 12:
                         text = ' '.join(words[:12]) + '.'
                     # Add inline styling for trend content with proper spacing, white text for dark background
-                    trend_content = f'<p style="margin: 0 0 14px 0; font-family: \'Gilroy\', Trebuchet MS, sans-serif; font-size: 14px; color: #ffffff; line-height: 1.6;">{text}</p>'
+                    trend_content = f'<p style="margin: 0 0 16px 0; font-family: \'Gilroy\', Trebuchet MS, sans-serif; font-size: 15px; color: #555555; line-height: 1.7;" class="dark-mode-secondary">{text}</p>'
 
             sections['trend'] = trend_content
             sections['trend_title'] = trend_title

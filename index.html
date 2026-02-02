@@ -5305,11 +5305,11 @@
                 return meme.url || memeUrl;
             };
 
-            // Format subtitle HTML - strip ALL markdown/quote artifacts AND HTML tags
-            const formatSubtitle = (subtitle) => {
+            // Format subtitle HTML - strip ALL markdown/quote artifacts and any stale <p> wrappers
+            const formatSubtitle = (subtitle, color = '#008181') => {
                 if (!subtitle) return '';
                 let clean = subtitle
-                    // Strip ALL HTML tags first (AI may wrap in <p> tags)
+                    // Strip any HTML tags (prevents nested <p> from backend)
                     .replace(/<[^>]*>/g, '')
                     // Remove all asterisks and underscores (markdown bold/italic markers)
                     .replace(/[*_]/g, '')
@@ -5317,13 +5317,13 @@
                     .replace(/["\u201C\u201D\u201E\u201F\u2033\u2036\u201A\u201B""'']/g, '')
                     .trim();
                 if (!clean) return '';
-                return '<div class="dark-text-secondary" style="margin: 0 0 4px 0; font-family: Montserrat, Helvetica, Arial, sans-serif; font-size: 15px; font-style: italic; line-height: 1.7; color: #555555;">' + clean + '</div>';
+                return `<p class="dark-text-secondary" style="margin: 0 0 12px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 13px; font-style: italic; color: ${color}; line-height: 1.4;">${clean}</p>`;
             };
 
             // Normalize content HTML - ensure all <p> tags use consistent styling
             const normalizeContent = (html) => {
                 if (!html) return '';
-                return html.replace(/<p\b[^>]*>/gi, '<p style="margin: 0 0 16px 0; font-family: Montserrat, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.7; color: #555555;">');
+                return html.replace(/<p\b[^>]*>/gi, '<p style="margin: 0 0 16px 0; font-family: \'Gilroy\', Trebuchet MS, sans-serif; font-size: 15px; color: #555555; line-height: 1.7;">');
             };
 
             // Apply replacements to template
@@ -5338,11 +5338,11 @@
                 .replace(/{{NEWS_IMAGE}}/g, newsImage || 'https://placehold.co/480x260/008181/ffffff?text=News+Image')
                 .replace(/{{NEWS_CONTENT}}/g, normalizeContent(newsContent))
                 .replace(/{{NEWS_URL}}/g, newsUrl)
-                .replace(/{{TIP_SUBTITLE}}/g, formatSubtitle(tipSubtitle))
+                .replace(/{{TIP_SUBTITLE}}/g, formatSubtitle(tipSubtitle, '#008181'))
                 .replace(/{{TIP_IMAGE}}/g, tipImage || 'https://placehold.co/432x260/008181/ffffff?text=Tip+Image')
                 .replace(/{{TIP_CONTENT}}/g, normalizeContent(tipContent))
                 .replace(/{{TIP_URL}}/g, tipUrl)
-                .replace(/{{TREND_SUBTITLE}}/g, formatSubtitle(trendSubtitle))
+                .replace(/{{TREND_SUBTITLE}}/g, formatSubtitle(trendSubtitle, '#272d3f'))
                 .replace(/{{TREND_IMAGE}}/g, trendImage || 'https://placehold.co/432x260/7DA3AF/ffffff?text=Trend+Image')
                 .replace(/{{TREND_CONTENT}}/g, normalizeContent(trendContent))
                 .replace(/{{TREND_URL}}/g, trendUrl);
