@@ -5083,7 +5083,7 @@
             <table cellpadding="0" cellspacing="0" border="0" role="presentation" width="100%">
               <tr>
                 <td class="mobile-padding" style="padding: 24px 20px 0 20px;">
-                  <h2 class="dark-text" style="margin: 0 0 20px 0; font-family: Montserrat, Georgia, serif; font-size: 22px; font-weight: 700; font-style: italic; color: #272d3f; text-align: center;">In This Issue</h2>
+                  <h2 class="dark-text" style="margin: 0 0 20px 0; font-family: Montserrat, Helvetica, Arial, sans-serif; font-size: 22px; font-weight: 700; color: #272d3f; text-align: center;">In This Issue</h2>
 
                   <table cellpadding="0" cellspacing="0" border="0" role="presentation" width="100%">
                     <tr>
@@ -5143,7 +5143,7 @@
                           </tr>
                         </table>
 
-                        <h2 class="dark-text" style="margin: 0 0 12px 0; font-family: Montserrat, Georgia, serif; font-size: 24px; font-weight: 700; font-style: italic; color: #272d3f; line-height: 1.3;">{{NEWS_TITLE}}</h2>
+                        <h2 class="dark-text" style="margin: 0 0 12px 0; font-family: Montserrat, Helvetica, Arial, sans-serif; font-size: 24px; font-weight: 700; color: #272d3f; line-height: 1.3;">{{NEWS_TITLE}}</h2>
 
                         <img alt="" src="{{NEWS_IMAGE}}" style="width: 100%; max-width: 512px; height: auto; display: block; border-radius: 4px; margin-bottom: 16px;" width="512">
 
@@ -5188,7 +5188,7 @@
                           </tr>
                         </table>
 
-                        <h2 class="dark-text" style="margin: 0 0 4px 0; font-family: Montserrat, Georgia, serif; font-size: 24px; font-weight: 700; font-style: italic; color: #272d3f; line-height: 1.3;">{{TIP_TITLE}}</h2>{{TIP_SUBTITLE}}<img alt="" src="{{TIP_IMAGE}}" style="width: 100%; max-width: 512px; height: auto; display: block; border-radius: 4px; margin-bottom: 16px;" width="512">
+                        <h2 class="dark-text" style="margin: 0 0 4px 0; font-family: Montserrat, Helvetica, Arial, sans-serif; font-size: 24px; font-weight: 700; color: #272d3f; line-height: 1.3;">{{TIP_TITLE}}</h2>{{TIP_SUBTITLE}}<img alt="" src="{{TIP_IMAGE}}" style="width: 100%; max-width: 512px; height: auto; display: block; border-radius: 4px; margin-bottom: 16px;" width="512">
 
                         <div class="dark-text-secondary" style="font-family: Montserrat, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 26px; color: #272d3f;">{{TIP_CONTENT}}</div>
 
@@ -5231,7 +5231,7 @@
                           </tr>
                         </table>
 
-                        <h2 class="dark-text" style="margin: 0 0 4px 0; font-family: Montserrat, Georgia, serif; font-size: 24px; font-weight: 700; font-style: italic; color: #272d3f; line-height: 1.3;">{{TREND_TITLE}}</h2>{{TREND_SUBTITLE}}<img alt="" src="{{TREND_IMAGE}}" style="width: 100%; max-width: 512px; height: auto; display: block; border-radius: 4px; margin-bottom: 16px;" width="512">
+                        <h2 class="dark-text" style="margin: 0 0 4px 0; font-family: Montserrat, Helvetica, Arial, sans-serif; font-size: 24px; font-weight: 700; color: #272d3f; line-height: 1.3;">{{TREND_TITLE}}</h2>{{TREND_SUBTITLE}}<img alt="" src="{{TREND_IMAGE}}" style="width: 100%; max-width: 512px; height: auto; display: block; border-radius: 4px; margin-bottom: 16px;" width="512">
 
                         <div class="dark-text-secondary" style="font-family: Montserrat, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 26px; color: #272d3f;">{{TREND_CONTENT}}</div>
 
@@ -5263,7 +5263,7 @@
         <!-- FOOTER -->
         <tr>
           <td class="mobile-padding" style="background-color: #272d3f; padding: 40px 20px; text-align: center; border-radius: 0 0 4px 4px;">
-            <h2 style="margin: 0 0 8px 0; font-family: Montserrat, Georgia, serif; font-size: 26px; font-weight: 600; font-style: italic; color: #ffffff;">Let's Connect</h2>
+            <h2 style="margin: 0 0 8px 0; font-family: Montserrat, Helvetica, Arial, sans-serif; font-size: 26px; font-weight: 700; color: #ffffff;">Let's Connect</h2>
 
             <p style="margin: 0 0 20px 0; font-family: Montserrat, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 500; color: #ffffff;">Make wedding planning stress-free and inspired.</p>
 
@@ -5317,13 +5317,13 @@
                     .replace(/["\u201C\u201D\u201E\u201F\u2033\u2036\u201A\u201B""'']/g, '')
                     .trim();
                 if (!clean) return '';
-                return `<p class="dark-text-secondary" style="margin: 0 0 12px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 13px; font-style: italic; color: ${color}; line-height: 1.4;">${clean}</p>`;
+                return `<p class="dark-text-secondary" style="margin: 0 0 12px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 15px; font-style: italic; color: ${color}; line-height: 1.5;">${clean}</p>`;
             };
 
             // Normalize content HTML - ensure all <p> tags use consistent styling with dark mode class
             const normalizeContent = (html) => {
                 if (!html) return '';
-                return html.replace(/<p\b[^>]*>/gi, '<p class="dark-text-secondary" style="margin: 0 0 16px 0; font-family: \'Gilroy\', Trebuchet MS, sans-serif; font-size: 15px; color: #555555; line-height: 1.7;">');
+                return html.replace(/<p\b[^>]*>/gi, '<p class="dark-text-secondary" style="margin: 0 0 16px 0; font-family: \'Gilroy\', Trebuchet MS, sans-serif; font-size: 16px; color: #555555; line-height: 1.7;">');
             };
 
             // Apply replacements to template
