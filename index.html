@@ -5320,10 +5320,10 @@
                 return `<p class="dark-text-secondary" style="margin: 0 0 12px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 13px; font-style: italic; color: ${color}; line-height: 1.4;">${clean}</p>`;
             };
 
-            // Normalize content HTML - ensure all <p> tags use consistent styling
+            // Normalize content HTML - ensure all <p> tags use consistent styling with dark mode class
             const normalizeContent = (html) => {
                 if (!html) return '';
-                return html.replace(/<p\b[^>]*>/gi, '<p style="margin: 0 0 16px 0; font-family: \'Gilroy\', Trebuchet MS, sans-serif; font-size: 15px; color: #555555; line-height: 1.7;">');
+                return html.replace(/<p\b[^>]*>/gi, '<p class="dark-text-secondary" style="margin: 0 0 16px 0; font-family: \'Gilroy\', Trebuchet MS, sans-serif; font-size: 15px; color: #555555; line-height: 1.7;">');
             };
 
             // Apply replacements to template
