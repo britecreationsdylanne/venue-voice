@@ -883,7 +883,7 @@ Write the NEWS section now. Output the three subsections with bold labels (*The 
                 for p in paragraphs:
                     # Handle single newlines within paragraphs
                     p = p.replace('\n', ' ')
-                    formatted_paragraphs.append(f'<p style="margin: 0 0 16px 0; font-family: \'Gilroy\', Trebuchet MS, sans-serif; font-size: 16px; color: #555555; line-height: 1.7;" class="dark-text-secondary">{p}</p>')
+                    formatted_paragraphs.append(f'<p style="margin: 0 0 16px 0; font-family: \'Gilroy\', Trebuchet MS, sans-serif; font-size: 17px; color: #555555; line-height: 1.7;" class="dark-text-secondary">{p}</p>')
 
                 sections['news'] = '\n'.join(formatted_paragraphs)
 
@@ -959,7 +959,7 @@ Write the TIP body paragraph now. Output ONLY the paragraph text, no title or fo
                 tip_text = tip_result['content'].strip()
 
                 # Build HTML - subtitle separate, content without asterisks
-                sections['tip'] = f'''<p style="margin: 0 0 16px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 16px; color: #555555; line-height: 1.7;" class="dark-text-secondary">{tip_text}</p>'''
+                sections['tip'] = f'''<p style="margin: 0 0 16px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 17px; color: #555555; line-height: 1.7;" class="dark-text-secondary">{tip_text}</p>'''
                 sections['tip_title'] = tip_title
                 sections['tip_subtitle'] = tip_subtitle
 
@@ -1035,7 +1035,7 @@ Write the TREND body paragraph now. Output ONLY the paragraph text, no title or 
                 trend_text = trend_result['content'].strip()
 
                 # Build HTML - subtitle separate, content without asterisks
-                sections['trend'] = f'''<p style="margin: 0 0 16px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 16px; color: #555555; line-height: 1.7;" class="dark-text-secondary">{trend_text}</p>'''
+                sections['trend'] = f'''<p style="margin: 0 0 16px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 17px; color: #555555; line-height: 1.7;" class="dark-text-secondary">{trend_text}</p>'''
                 sections['trend_title'] = trend_title
                 sections['trend_subtitle'] = trend_subtitle
 
@@ -1120,7 +1120,7 @@ Write the TREND body paragraph now. Output ONLY the paragraph text, no title or 
                     if len(words) > 35:
                         text = ' '.join(words[:35]) + '.'
                     # Add inline styling for news content with proper bottom margin
-                    news_content = f'<p style="margin: 0 0 16px 0; font-family: \'Gilroy\', Trebuchet MS, sans-serif; font-size: 16px; color: #555555; line-height: 1.7;" class="dark-text-secondary">{text}</p>'
+                    news_content = f'<p style="margin: 0 0 16px 0; font-family: \'Gilroy\', Trebuchet MS, sans-serif; font-size: 17px; color: #555555; line-height: 1.7;" class="dark-text-secondary">{text}</p>'
 
             sections['news'] = news_content
 
@@ -1170,7 +1170,7 @@ Write the TREND body paragraph now. Output ONLY the paragraph text, no title or 
                     if len(words) > 12:
                         text = ' '.join(words[:12]) + '.'
                     # Add inline styling for tip content with proper spacing
-                    tip_content = f'<p style="margin: 0 0 16px 0; font-family: \'Gilroy\', Trebuchet MS, sans-serif; font-size: 16px; color: #555555; line-height: 1.7;" class="dark-text-secondary">{text}</p>'
+                    tip_content = f'<p style="margin: 0 0 16px 0; font-family: \'Gilroy\', Trebuchet MS, sans-serif; font-size: 17px; color: #555555; line-height: 1.7;" class="dark-text-secondary">{text}</p>'
 
             sections['tip'] = tip_content
             sections['tip_title'] = tip_title
@@ -1221,7 +1221,7 @@ Write the TREND body paragraph now. Output ONLY the paragraph text, no title or 
                     if len(words) > 12:
                         text = ' '.join(words[:12]) + '.'
                     # Add inline styling for trend content with proper spacing, white text for dark background
-                    trend_content = f'<p style="margin: 0 0 16px 0; font-family: \'Gilroy\', Trebuchet MS, sans-serif; font-size: 16px; color: #555555; line-height: 1.7;" class="dark-text-secondary">{text}</p>'
+                    trend_content = f'<p style="margin: 0 0 16px 0; font-family: \'Gilroy\', Trebuchet MS, sans-serif; font-size: 17px; color: #555555; line-height: 1.7;" class="dark-text-secondary">{text}</p>'
 
             sections['trend'] = trend_content
             sections['trend_title'] = trend_title

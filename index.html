@@ -5317,13 +5317,13 @@
                     .replace(/["\u201C\u201D\u201E\u201F\u2033\u2036\u201A\u201B""'']/g, '')
                     .trim();
                 if (!clean) return '';
-                return `<p class="dark-text-secondary" style="margin: 0 0 12px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 15px; font-style: italic; color: ${color}; line-height: 1.5;">${clean}</p>`;
+                return `<p class="dark-text-secondary" style="margin: 0 0 12px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 19px; font-style: italic; color: ${color}; line-height: 1.5;">${clean}</p>`;
             };
 
             // Normalize content HTML - ensure all <p> tags use consistent styling with dark mode class
             const normalizeContent = (html) => {
                 if (!html) return '';
-                return html.replace(/<p\b[^>]*>/gi, '<p class="dark-text-secondary" style="margin: 0 0 16px 0; font-family: \'Gilroy\', Trebuchet MS, sans-serif; font-size: 16px; color: #555555; line-height: 1.7;">');
+                return html.replace(/<p\b[^>]*>/gi, '<p class="dark-text-secondary" style="margin: 0 0 16px 0; font-family: \'Gilroy\', Trebuchet MS, sans-serif; font-size: 17px; color: #555555; line-height: 1.7;">');
             };
 
             // Apply replacements to template
