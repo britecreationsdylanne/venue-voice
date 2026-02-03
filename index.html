@@ -2550,6 +2550,7 @@
 
         function selectNews(index, element) {
             selectedNews = newsTopics[index];
+            generatedNewsTitle = selectedNews?.title || null;
             document.querySelectorAll('#newsTopics .topic-card').forEach(card => card.classList.remove('selected'));
             element.classList.add('selected');
             document.getElementById('newsNextBtn').disabled = false;
@@ -2683,6 +2684,7 @@
         let generatedNewsContent = null;
         let generatedTipContent = null;
         let generatedTrendContent = null;
+        let generatedNewsTitle = null;  // Selected/generated news title
         let generatedTipTitle = null;  // Short AI-generated title
         let generatedTrendTitle = null;  // Short AI-generated title
         let generatedTipSubtitle = null;  // Subtitle for tip section
@@ -5342,7 +5344,7 @@
                 .replace(/{{TIP_IMAGE}}/g, tipImage || 'https://placehold.co/432x260/008181/ffffff?text=Tip+Image')
                 .replace(/{{TIP_CONTENT}}/g, normalizeContent(tipContent))
                 .replace(/{{TIP_URL}}/g, tipUrl)
-                .replace(/{{TREND_SUBTITLE}}/g, formatSubtitle(trendSubtitle, '#272d3f'))
+                .replace(/{{TREND_SUBTITLE}}/g, formatSubtitle(trendSubtitle, '#008181'))
                 .replace(/{{TREND_IMAGE}}/g, trendImage || 'https://placehold.co/432x260/7DA3AF/ffffff?text=Trend+Image')
                 .replace(/{{TREND_CONTENT}}/g, normalizeContent(trendContent))
                 .replace(/{{TREND_URL}}/g, trendUrl);
@@ -5355,7 +5357,7 @@
 
             // Prepare news data
             const newsData = {
-                title: selectedNews?.title || 'News Update',
+                title: selectedNews?.title || generatedNewsTitle || 'News Update',
                 content: document.getElementById('newsContentBox')?.innerHTML || generatedNewsContent || '',
                 image: generatedImages.news?.url || '',
                 url: selectedNews?.source_url || selectedNews?.url || '#'
@@ -6393,6 +6395,7 @@
             // Store in the correct section and show checkmark on tab
             if (currentResearchSection === 'news') {
                 selectedNews = selectedObj;
+                generatedNewsTitle = selectedObj.title || null;
                 document.getElementById('newsTabCheck').style.display = 'inline';
                 console.log('[Research] Selected for NEWS:', selectedNews.title);
             } else if (currentResearchSection === 'tip') {
@@ -6586,6 +6589,7 @@
 
             if (section === 'news') {
                 selectedNews = selectedObj;
+                generatedNewsTitle = selectedObj.title || null;
                 document.querySelectorAll('#allResultsForNews .topic-card').forEach(c => c.classList.remove('selected'));
                 document.getElementById('newsSelectNextBtn').disabled = false;
             } else if (section === 'tip') {
@@ -6685,7 +6689,7 @@
                 const d = data.draft;
                 // Temporarily store current state
                 const origMonth = selectedMonth, origNews = generatedNewsContent, origTip = generatedTipContent, origTrend = generatedTrendContent;
-                const origTipSub = generatedTipSubtitle, origTrendSub = generatedTrendSubtitle, origTipTitle = generatedTipTitle, origTrendTitle = generatedTrendTitle;
+                const origNewsTitle = generatedNewsTitle, origTipSub = generatedTipSubtitle, origTrendSub = generatedTrendSubtitle, origTipTitle = generatedTipTitle, origTrendTitle = generatedTrendTitle;
                 const origImages = generatedImages;
                 // Set state from published draft
                 selectedMonth = d.month || '';
@@ -6693,6 +6697,7 @@
                 generatedNewsContent = gc.news || null;
                 generatedTipContent = gc.tip || null;
                 generatedTrendContent = gc.trend || null;
+                generatedNewsTitle = gc.newsTitle || null;
                 generatedTipSubtitle = gc.tipSubtitle || null;
                 generatedTrendSubtitle = gc.trendSubtitle || null;
                 generatedTipTitle = gc.tipTitle || null;
@@ -6704,7 +6709,7 @@
                 document.getElementById('newsletterModal').style.display = 'block';
                 // Restore original state
                 selectedMonth = origMonth; generatedNewsContent = origNews; generatedTipContent = origTip; generatedTrendContent = origTrend;
-                generatedTipSubtitle = origTipSub; generatedTrendSubtitle = origTrendSub; generatedTipTitle = origTipTitle; generatedTrendTitle = origTrendTitle;
+                generatedNewsTitle = origNewsTitle; generatedTipSubtitle = origTipSub; generatedTrendSubtitle = origTrendSub; generatedTipTitle = origTipTitle; generatedTrendTitle = origTrendTitle;
                 generatedImages = origImages;
             } catch (e) {
                 console.error('Error viewing newsletter:', e);
@@ -6737,6 +6742,7 @@
                             trend: generatedTrendContent,
                             tipSubtitle: generatedTipSubtitle,
                             trendSubtitle: generatedTrendSubtitle,
+                            newsTitle: generatedNewsTitle,
                             tipTitle: generatedTipTitle,
                             trendTitle: generatedTrendTitle
                         },
@@ -6811,6 +6817,7 @@
                 generatedTrendContent = gc.trend || null;
                 generatedTipSubtitle = gc.tipSubtitle || null;
                 generatedTrendSubtitle = gc.trendSubtitle || null;
+                generatedNewsTitle = gc.newsTitle || null;
                 generatedTipTitle = gc.tipTitle || null;
                 generatedTrendTitle = gc.trendTitle || null;
                 generatedImages = d.generatedImages || { meme: null, news: null, tip: null, trend: null };
