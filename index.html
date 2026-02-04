@@ -2187,7 +2187,7 @@
 
             <div style="text-align: center; margin: 20px 0;">
                 <button class="btn" onclick="savePreviewEdits()" style="background: #0284c7; padding: 12px 28px; font-size: 15px;">💾 Save Changes to HTML</button>
-                <button class="btn" id="undoEditBtn" onclick="undoPreviewEdits()" style="background: #dc2626; padding: 12px 28px; font-size: 15px; display: none;">↩ Undo</button>
+                <button class="btn" id="undoEditBtn" onclick="undoPreviewEdits()" style="background: #dc2626; padding: 12px 28px; font-size: 15px;" disabled>↩ Undo</button>
                 <span id="saveStatus" style="margin-left: 10px; font-size: 14px; color: #166534; display: none;">✓ Changes saved!</span>
             </div>
 
@@ -5754,31 +5754,29 @@
         function savePreviewEdits() {
             const preview = document.getElementById('newsletterPreview');
             if (!preview) return;
-            previousEditedHTML = savedEditedHTML || preview.innerHTML;
             savedEditedHTML = preview.innerHTML;
             const htmlCode = document.getElementById('htmlCode');
             if (htmlCode) htmlCode.textContent = savedEditedHTML;
-            const undoBtn = document.getElementById('undoEditBtn');
-            if (undoBtn) undoBtn.style.display = 'inline-block';
             const status = document.getElementById('saveStatus');
+            status.textContent = '\u2713 Changes saved!';
             status.style.display = 'inline';
             setTimeout(() => { status.style.display = 'none'; }, 3000);
         }
 
         function undoPreviewEdits() {
-            if (!previousEditedHTML) return;
-            savedEditedHTML = previousEditedHTML;
-            previousEditedHTML = null;
+            if (undoHistory.length === 0) return;
+            const previous = undoHistory.pop();
             const preview = document.getElementById('newsletterPreview');
-            if (preview) preview.innerHTML = savedEditedHTML;
+            if (preview) preview.innerHTML = previous;
+            savedEditedHTML = previous;
             const htmlCode = document.getElementById('htmlCode');
-            if (htmlCode) htmlCode.textContent = savedEditedHTML;
-            const undoBtn = document.getElementById('undoEditBtn');
-            if (undoBtn) undoBtn.style.display = 'none';
+            if (htmlCode) htmlCode.textContent = previous;
+            enableNewsletterEditing();
+            updateUndoButton();
             const status = document.getElementById('saveStatus');
             status.textContent = '\u2713 Changes undone!';
             status.style.display = 'inline';
-            setTimeout(() => { status.style.display = 'none'; status.textContent = '\u2713 Changes saved!'; }, 3000);
+            setTimeout(() => { status.style.display = 'none'; }, 3000);
         }
 
         // Save edited subject line back to state
@@ -5799,13 +5797,30 @@
             }
         }
 
-        // Make newsletter content editable after it's rendered
-        function enableNewsletterEditing() {
-            // Add contenteditable to text elements in the preview
+        let savedEditedHTML = null;
+        let undoHistory = [];
+        const MAX_UNDO = 30;
+
+        function pushUndoSnapshot() {
             const preview = document.getElementById('newsletterPreview');
             if (!preview) return;
+            const current = preview.innerHTML;
+            if (undoHistory.length === 0 || undoHistory[undoHistory.length - 1] !== current) {
+                undoHistory.push(current);
+                if (undoHistory.length > MAX_UNDO) undoHistory.shift();
+            }
+            updateUndoButton();
+        }
 
-            // Make all paragraph and div text content editable
+        function updateUndoButton() {
+            const undoBtn = document.getElementById('undoEditBtn');
+            if (undoBtn) undoBtn.disabled = undoHistory.length === 0;
+        }
+
+        // Make newsletter content editable after it's rendered
+        function enableNewsletterEditing() {
+            const preview = document.getElementById('newsletterPreview');
+            if (!preview) return;
             const textElements = preview.querySelectorAll('p, div[style*="font-size"], h2, h3, h4, h5');
             textElements.forEach(el => {
                 if (el.children.length > 0 && el.textContent.trim().length < 50) return;
@@ -5813,6 +5828,7 @@
                 el.style.cursor = 'text';
                 el.style.transition = 'background-color 0.2s';
                 el.addEventListener('focus', () => {
+                    pushUndoSnapshot();
                     el.style.backgroundColor = '#fef3c7';
                     el.style.outline = '2px solid #f59e0b';
                 });
@@ -5822,10 +5838,9 @@
                     updateNewsletterHTML();
                 });
             });
+            undoHistory = [];
+            updateUndoButton();
         }
-
-        let savedEditedHTML = null;
-        let previousEditedHTML = null;
 
         function updateNewsletterHTML() {
             const preview = document.getElementById('newsletterPreview');
