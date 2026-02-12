@@ -1534,9 +1534,55 @@
                 <p style="margin: 8px 0 0 28px; font-size: 14px; color: #666;">Add a custom section with your own content and/or image</p>
             </div>
 
+            <!-- Export to Google Docs & Email Section -->
+            <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #e5e7eb;">
+                <h3 style="margin: 0 0 10px 0; color: #008181;">Export to Google Docs & Email</h3>
+                <p style="font-size: 14px; color: #666; margin-bottom: 20px;">Hit export and once complete, you can auto email the exported link to your team.</p>
+
+                <!-- Primary Export Button -->
+                <button class="btn" onclick="exportToGoogleDocs()" id="exportDocsBtn" style="background: #4285f4;">
+                    <span id="exportDocsBtnText">Export to Google Docs</span>
+                </button>
+
+                <!-- Export Result (shows after export) -->
+                <div id="exportDocsResult" style="display: none; margin-top: 20px; padding: 15px; border-radius: 6px;"></div>
+
+                <!-- Email Section (hidden until export succeeds) -->
+                <div id="emailAfterExportSection" style="display: none; margin-top: 20px; border-top: 2px solid #e5e7eb; padding-top: 20px;">
+                    <h4 style="margin: 0 0 15px 0; color: #374151;">Email the Google Doc Link</h4>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-weight: 600; margin-bottom: 10px; font-size: 14px;">Select recipients:</label>
+
+                        <!-- Team member checkboxes -->
+                        <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; padding: 12px; background: #f9fafb; border-radius: 6px;">
+                            <label style="display: flex; align-items: center; cursor: pointer; font-size: 13px;">
+                                <input type="checkbox" class="docRecipientCheckbox" value="dylanne.crugnale@brite.co" checked style="margin-right: 8px; width: 16px; height: 16px;">
+                                <span>Dylanne Crugnale (dylanne.crugnale@brite.co)</span>
+                            </label>
+                            <label style="display: flex; align-items: center; cursor: pointer; font-size: 13px;">
+                                <input type="checkbox" class="docRecipientCheckbox" value="selena.fragassi@brite.co" checked style="margin-right: 8px; width: 16px; height: 16px;">
+                                <span>Selena Fragassi (selena.fragassi@brite.co)</span>
+                            </label>
+                        </div>
+
+                        <!-- Additional emails input -->
+                        <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 14px;">Additional emails (comma-separated):</label>
+                        <input type="text" id="docAdditionalEmails" placeholder="email1@example.com, email2@example.com" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 4px; font-size: 14px; margin-bottom: 15px;">
+
+                        <!-- Send Email Button -->
+                        <button class="btn" onclick="sendExportEmail()" id="sendExportEmailBtn" style="background: #059669;">
+                            <span id="sendExportEmailBtnText">Send Email</span>
+                        </button>
+
+                        <div id="emailSendResult" style="display: none; margin-top: 15px; padding: 12px; border-radius: 6px;"></div>
+                    </div>
+                </div>
+            </div>
+
             <div class="buttons">
                 <button class="btn-secondary btn" onclick="showStep('2-research')">← Back</button>
-                <button class="btn" id="step5NextBtn" onclick="checkBrandGuidelines()">Check Brand Guidelines →</button>
+                <button class="btn" id="step5NextBtn" onclick="populateFinalCopy(); showStep('7b');">Continue to Final Copy →</button>
             </div>
         </div>
 
@@ -1588,6 +1634,7 @@
                 </div>
                 <textarea id="specialSectionImagePrompt" rows="2" placeholder="Describe the image you want to generate..." style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 13px; font-family: inherit; resize: vertical; box-sizing: border-box; margin-bottom: 8px;"></textarea>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button class="btn" onclick="enhanceImagePrompt()" style="background: #6366f1; padding: 8px 16px; font-size: 13px;">Enhance Prompt</button>
                     <button class="btn" onclick="generateSpecialImage()" style="background: #008181; padding: 8px 16px; font-size: 13px;">Generate Image</button>
                     <label class="btn btn-secondary" style="padding: 8px 16px; font-size: 13px; cursor: pointer;">
                         Upload Image
@@ -1621,81 +1668,6 @@
         </div>
 
         <!-- Step 6: Brand Guidelines Check -->
-        <div class="step" id="step6">
-            <div class="loading">
-                <div class="spinner"></div>
-                <h3>Checking Brand Guidelines...</h3>
-                <p style="color: #666;">AI is reviewing content for tone, style, and brand consistency</p>
-            </div>
-        </div>
-
-        <!-- Step 7: Brand Guidelines Results -->
-        <div class="step" id="step7">
-            <h2>✅ Brand Guidelines Check</h2>
-            <p>Your content has been reviewed for brand consistency.</p>
-
-            <div id="brandCheckResults" style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                <!-- Results will be displayed here -->
-            </div>
-
-            <!-- Export to Google Docs & Email Section -->
-            <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #e5e7eb;">
-                <h3 style="margin: 0 0 10px 0; color: #008181;">Export to Google Docs & Email</h3>
-                <p style="font-size: 14px; color: #666; margin-bottom: 20px;">Hit export and once complete, you can auto email the exported link to your team.</p>
-
-                <!-- Primary Export Button -->
-                <button class="btn" onclick="exportToGoogleDocs()" id="exportDocsBtn" style="background: #4285f4;">
-                    <span id="exportDocsBtnText">Export to Google Docs</span>
-                </button>
-
-                <!-- Export Result (shows after export) -->
-                <div id="exportDocsResult" style="display: none; margin-top: 20px; padding: 15px; border-radius: 6px;"></div>
-
-                <!-- Email Section (hidden until export succeeds) -->
-                <div id="emailAfterExportSection" style="display: none; margin-top: 20px; border-top: 2px solid #e5e7eb; padding-top: 20px;">
-                    <h4 style="margin: 0 0 15px 0; color: #374151;">Email the Google Doc Link</h4>
-
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; font-weight: 600; margin-bottom: 10px; font-size: 14px;">Select recipients:</label>
-
-                        <!-- Team member checkboxes -->
-                        <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; padding: 12px; background: #f9fafb; border-radius: 6px;">
-                            <label style="display: flex; align-items: center; cursor: pointer; font-size: 13px;">
-                                <input type="checkbox" class="docRecipientCheckbox" value="dylanne.crugnale@brite.co" checked style="margin-right: 8px; width: 16px; height: 16px;">
-                                <span>Dylanne Crugnale (dylanne.crugnale@brite.co)</span>
-                            </label>
-                            <label style="display: flex; align-items: center; cursor: pointer; font-size: 13px;">
-                                <input type="checkbox" class="docRecipientCheckbox" value="selena.fragassi@brite.co" checked style="margin-right: 8px; width: 16px; height: 16px;">
-                                <span>Selena Fragassi (selena.fragassi@brite.co)</span>
-                            </label>
-                        </div>
-
-                        <!-- Additional emails input -->
-                        <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 14px;">Additional emails (comma-separated):</label>
-                        <input type="text" id="docAdditionalEmails" placeholder="email1@example.com, email2@example.com" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 4px; font-size: 14px; margin-bottom: 15px;">
-
-                        <!-- Send Email Button -->
-                        <button class="btn" onclick="sendExportEmail()" id="sendExportEmailBtn" style="background: #059669;">
-                            <span id="sendExportEmailBtnText">Send Email</span>
-                        </button>
-
-                        <div id="emailSendResult" style="display: none; margin-top: 15px; padding: 12px; border-radius: 6px;"></div>
-                    </div>
-                </div>
-            </div>
-
-            <div style="margin-top: 20px; padding: 15px; background: #f0fdf4; border: 2px solid #22c55e; border-radius: 8px; text-align: center;">
-                <button class="btn" onclick="saveDraft(); this.textContent='✓ Draft Saved!'; setTimeout(() => { this.textContent='💾 Save Draft'; }, 2000);" style="background: #22c55e; padding: 10px 30px;">💾 Save Draft</button>
-                <p style="margin: 8px 0 0 0; font-size: 13px; color: #666;">Save your progress to resume later</p>
-            </div>
-
-            <div class="buttons">
-                <button class="btn-secondary btn" onclick="showStep(5)">← Back to Edit</button>
-                <button class="btn-secondary btn" onclick="exportBrandCheckResults()">📋 Export Results</button>
-                <button class="btn" onclick="populateFinalCopy(); showStep('7b');">Continue to Final Copy →</button>
-            </div>
-        </div>
-
         <!-- Step 7b: Final Copy -->
         <div class="step" id="step7b">
             <h2>📝 Final Copy</h2>
@@ -1746,7 +1718,7 @@
             </div>
 
             <div class="buttons">
-                <button class="btn btn-secondary" onclick="showStep(7)">← Back to Brand Check</button>
+                <button class="btn btn-secondary" onclick="showStep(5)">← Back to Review</button>
                 <button class="btn" onclick="saveFinalCopyToState(); generateImages();">Continue to Image Prompts →</button>
             </div>
         </div>
@@ -1837,7 +1809,7 @@
                 </div>
 
                 <div class="buttons">
-                    <button class="btn-secondary btn" onclick="showStep(7)">← Back</button>
+                    <button class="btn-secondary btn" onclick="showStep('7b')">← Back</button>
                     <button class="btn-secondary btn" onclick="generateImages(true)" style="background: #f59e0b; color: white; border-color: #f59e0b;">🔄 Regenerate Prompts</button>
                     <button class="btn" onclick="generateImagesFromPrompts()">Generate Images →</button>
                 </div>
@@ -3350,6 +3322,14 @@
                         body: trendContent
                     }
                 };
+
+                // Include special section if enabled
+                if (specialSection.enabled && specialSection.body) {
+                    content.special_section = {
+                        title: specialSection.title || 'Special Section',
+                        body: specialSection.body
+                    };
+                }
 
                 // Format month for title
                 const monthCapitalized = selectedMonth ? selectedMonth.charAt(0).toUpperCase() + selectedMonth.slice(1) : '';
@@ -5466,6 +5446,7 @@
             };
 
             // Build special section HTML
+            const ssPosition = specialSection?.position || 'after-trend';
             const ssColors = getColorSchemeStyles(specialSection?.colorScheme || 'white');
             const specialSectionHtml = specialSection?.enabled ? `
             <!-- SPECIAL SECTION: ${specialSection.title || 'Custom'} -->
@@ -5498,8 +5479,6 @@
                 </td>
               </tr>
             </table>` : '';
-
-            const ssPosition = specialSection?.position || 'after-trend';
 
             // Apply replacements to template
             return template
@@ -6919,6 +6898,23 @@
             finally { btn.disabled = false; btn.textContent = 'AI Rewrite'; }
         }
 
+        async function enhanceImagePrompt() {
+            const promptEl = document.getElementById('specialSectionImagePrompt');
+            const rawPrompt = promptEl?.value || '';
+            if (!rawPrompt) { alert('Please enter an image description first'); return; }
+            const btn = event.target;
+            btn.disabled = true; btn.textContent = 'Enhancing...';
+            try {
+                const resp = await fetch(`${API_BASE}/api/enhance-image-prompt`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: rawPrompt })
+                });
+                const data = await resp.json();
+                if (data.success && data.enhanced) promptEl.value = data.enhanced;
+            } catch (e) { console.error('Prompt enhance failed:', e); }
+            finally { btn.disabled = false; btn.textContent = 'Enhance Prompt'; }
+        }
+
         async function generateSpecialImage() {
             const prompt = document.getElementById('specialSectionImagePrompt')?.value || '';
             if (!prompt) { alert('Please enter an image prompt'); return; }
@@ -6967,7 +6963,7 @@
 
         function showStep(stepNum) {
             // Auto-save draft at key transitions
-            if ([5, '5b', 7, '7b', 10, 12, 13].includes(stepNum)) {
+            if ([5, '5b', '7b', 10, 12, 13].includes(stepNum)) {
                 saveDraft();
             }
 
@@ -7025,8 +7021,6 @@
                 3: 'Researching',
                 4: 'Writing',
                 5: 'Review Content',
-                6: 'Brand Check',
-                7: 'Check Results',
                 '7b': 'Final Copy',
                 8: 'Edit Prompts',
                 9: 'Generating Images',

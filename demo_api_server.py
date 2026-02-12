@@ -1539,11 +1539,127 @@ Return ONLY 5 preheaders, numbered 1-5, one per line. No other text."""
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/api/rewrite-section', methods=['POST'])
+def rewrite_section():
+    """Rewrite or generate text for a newsletter section using Claude"""
+    try:
+        data = request.json
+        content = data.get('content', '')
+        tone = data.get('tone', 'professional')
+        section = data.get('section', 'special_section')
+
+        if not content:
+            return jsonify({'success': False, 'error': 'No content provided'}), 400
+
+        print(f"\n[API] Rewriting section content with Claude...")
+
+        if not claude_client:
+            return jsonify({'success': False, 'error': 'Claude client not available'}), 500
+
+        system_prompt = f"""You are a professional newsletter copywriter for the wedding venue industry.
+Rewrite or generate the following content in a {tone} tone.
+Keep it concise, engaging, and under 100 words.
+Return ONLY the rewritten text — no labels, no markdown, no extra commentary."""
+
+        result = claude_client.generate_content(
+            prompt=content,
+            system_prompt=system_prompt,
+            temperature=0.7,
+            max_tokens=500
+        )
+
+        rewritten = result.get('content', '').strip()
+        print(f"[API] Rewrite complete ({len(rewritten)} chars)")
+
+        return jsonify({
+            'success': True,
+            'rewritten': rewritten,
+            'model': result.get('model', ''),
+            'tokens': result.get('tokens', 0)
+        })
+
+    except Exception as e:
+        print(f"[API ERROR] Rewrite failed: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/enhance-image-prompt', methods=['POST'])
+def enhance_image_prompt():
+    """Use AI to rewrite a user's image description into an optimized image generation prompt"""
+    try:
+        data = request.json
+        prompt = data.get('prompt', '')
+
+        if not prompt:
+            return jsonify({'success': False, 'error': 'No prompt provided'}), 400
+
+        if not claude_client:
+            return jsonify({'success': False, 'error': 'Claude client not available'}), 500
+
+        print(f"\n[API] Enhancing image prompt with Claude...")
+
+        system_prompt = """You are an expert at writing prompts for AI image generation.
+Take the user's rough description and rewrite it into a highly specific, detailed image generation prompt.
+
+Rules:
+- Specify style (e.g. photorealistic, watercolor, editorial photography, flat illustration)
+- Add lighting details (soft natural light, golden hour, studio lighting)
+- Add composition cues (close-up, wide angle, overhead, centered)
+- Add color palette hints when relevant
+- Keep it under 80 words
+- Do NOT include text-in-image instructions (AI image generators struggle with text)
+- Make it wedding/event industry appropriate
+- Return ONLY the enhanced prompt text, nothing else"""
+
+        result = claude_client.generate_content(
+            prompt=f"Enhance this image prompt: {prompt}",
+            system_prompt=system_prompt,
+            temperature=0.7,
+            max_tokens=200
+        )
+
+        enhanced = result.get('content', '').strip()
+        print(f"[API] Enhanced prompt: {enhanced[:100]}...")
+
+        return jsonify({
+            'success': True,
+            'enhanced': enhanced,
+            'original': prompt
+        })
+
+    except Exception as e:
+        print(f"[API ERROR] Prompt enhance failed: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @app.route('/api/generate-images', methods=['POST'])
 def generate_images():
     """Generate images for newsletter sections using provided or auto-generated prompts"""
     try:
         data = request.json
+
+        # Handle single-image request from special section (sends {prompt, section})
+        single_prompt = data.get('prompt')
+        single_section = data.get('section')
+        if single_prompt and single_section:
+            print(f"\n[API] Single image request for section: {single_section}")
+            safe_print(f"  Prompt: {single_prompt}")
+            image_result = gemini_client.generate_image(
+                prompt=single_prompt,
+                model="gemini-3-pro-image-preview",
+                aspect_ratio="16:9",
+                image_size="1K"
+            )
+            image_data = image_result.get('image_data', '')
+            if image_data:
+                return jsonify({'success': True, 'image_data': image_data})
+            else:
+                return jsonify({'success': False, 'error': 'Image generation returned no data'}), 500
+
         sections = data.get('sections', {})
         prompts = data.get('prompts', {})  # Pre-generated or user-edited prompts
 
@@ -2745,6 +2861,17 @@ def export_to_docs():
                     add_text(trend['body'])
             else:
                 add_text(str(trend))
+
+        if content.get('special_section'):
+            ss = content['special_section']
+            ss_title = ss.get('title', 'Special Section') if isinstance(ss, dict) else 'Special Section'
+            add_text(ss_title, bold=True)
+            if isinstance(ss, dict):
+                ss_body = ss.get('body') or ss.get('content', '')
+                if ss_body:
+                    add_text(ss_body)
+            else:
+                add_text(str(ss))
 
         # Execute batch update
         if requests_list:

@@ -501,24 +501,28 @@ that would affect a wedding venue business.
     def search_wedding_tips(self, month: str, exclude_urls: list = None) -> list:
         """Search for wedding venue management tips - returns 15 results"""
         query = """
-You are curating the "Wedding Venue Tips" section of a newsletter for wedding venue owners/operators.
+You are curating the "Venue Tips" section of a newsletter for wedding venue owners/operators.
 
 IMPORTANT: Use the web_search tool to find sources on the open web.
 
 Task:
-Search the web for practical, actionable tips relevant to wedding venue operations.
+Search the web for practical, actionable tips relevant to wedding venue operations and management.
 
-Topic focus:
-- sales techniques, lead handling, conversion strategies
-- pricing models, packages, add-ons, upsells
-- bar/catering operations, menu planning, beverage trends
-- staffing, training, team management
-- timeline logistics, day-of coordination
-- risk management, contract clauses, insurance
-- guest flow, accessibility, parking, noise management
-- vendor coordination, preferred vendor lists
-- marketing/SEO, social media content, reviews
-- technology/tools for venue management
+Topic focus (VENUE-SPECIFIC — articles must be relevant to someone who OWNS or OPERATES a venue):
+- venue sales techniques, lead handling, inquiry-to-booking conversion
+- venue pricing models, rental packages, add-ons, upsell strategies
+- bar/catering operations at venues, menu planning, beverage programs
+- venue staffing, training event staff, team management
+- day-of venue logistics, event flow, setup/teardown efficiency
+- venue risk management, liability, contract clauses, event insurance
+- guest flow at venues, accessibility, parking, noise ordinance compliance
+- building and managing a preferred vendor list
+- venue-specific marketing, SEO for venues, Google Business Profile, review management
+- venue management software, booking tools, CRM for venues
+- venue maintenance, renovation ROI, seasonal property upkeep
+
+IMPORTANT FILTER: Only return articles specifically about VENUE operations, management, or marketing.
+Exclude generic wedding planning articles aimed at couples or wedding planners.
 
 Recency:
 Prioritize content published in the last 90 days when possible.
@@ -534,7 +538,7 @@ Each item must include:
 
 Section-specific guidance:
 Look for actionable advice, best practices, how-to guides, and strategic tips
-that venue operators can implement to improve their business.
+that venue operators can implement to improve their business operations and bookings.
 """
         return self.search_web_responses_api(query, max_results=15, exclude_urls=exclude_urls)
 
@@ -544,18 +548,22 @@ that venue operators can implement to improve their business.
 You are curating the "Wedding Trends" section of a newsletter for wedding venue owners/operators.
 
 Task:
-Search the web for {season} 2025/2026 wedding trends that venue operators should know about.
+Search the web for {season} 2025/2026 wedding trends that directly impact venue setup, operations, or offerings.
 
-Trend focus:
-- decor trends, ceremony/reception styles
-- color palettes, floral arrangements
-- entertainment preferences, music trends
-- food/beverage trends, catering styles
-- venue aesthetics, setup requirements
-- photography/videography styles
-- design elements that impact venue setup/configuration
-- lighting, furniture, rental needs
-- guest experience expectations
+Trend focus (VENUE-IMPACT — trends that affect what venues need to provide or prepare):
+- decor trends that impact venue setup, installation, or configuration
+- color palettes and design aesthetics venues should showcase
+- ceremony/reception layout and flow trends
+- food/beverage service trends (plated vs. buffet, craft cocktails, dietary needs)
+- entertainment and music trends that affect venue acoustics or layout
+- lighting trends, furniture rental needs, staging requirements
+- photography/videography styles that affect venue spaces (photo ops, backdrops)
+- guest experience expectations venues need to accommodate
+- sustainability and eco-friendly practices venues can implement
+- technology requests (live streaming setups, social media stations)
+
+IMPORTANT FILTER: Only return articles about trends that a venue operator can ACT on.
+Exclude generic bridal fashion, invitation design, or planning advice articles.
 
 Recency:
 Prioritize content published in the last 90 days when possible.
@@ -571,7 +579,8 @@ Each item must include:
 
 Section-specific guidance:
 Look for trend forecasts, style guides, design inspiration, and industry predictions
-that help venues understand what couples will be requesting for {season} weddings.
+that help venues understand what couples will be requesting for {season} weddings
+and how to prepare their spaces and services accordingly.
 """
         return self.search_web_responses_api(query, max_results=15, exclude_urls=exclude_urls)
 
