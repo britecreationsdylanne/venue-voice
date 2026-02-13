@@ -713,7 +713,7 @@ Target: 400-500 words total. Be factual, cite specifics from the summary, avoid 
             news_research = openai_client.generate_content(
                 prompt=news_research_prompt,
                 model="gpt-5.2",
-                temperature=0.3,
+                temperature=0.5,
                 max_tokens=1500
             )
             research_results['news'] = news_research['content']
@@ -748,7 +748,7 @@ Target: 200-250 words total. Be practical and actionable."""
             tip_research = openai_client.generate_content(
                 prompt=tip_research_prompt,
                 model="gpt-5.2",
-                temperature=0.3,
+                temperature=0.5,
                 max_tokens=800
             )
             research_results['tip'] = tip_research['content']
@@ -783,7 +783,7 @@ Target: 200-250 words total. Focus on opportunity and inspiration."""
             trend_research = openai_client.generate_content(
                 prompt=trend_research_prompt,
                 model="gpt-5.2",
-                temperature=0.3,
+                temperature=0.5,
                 max_tokens=800
             )
             research_results['trend'] = trend_research['content']
@@ -829,43 +829,57 @@ def generate_content():
             # Write NEWS section from research
             if research.get('news'):
                 safe_print(f"  - Writing NEWS section...")
-                # Get section-specific style guide (includes NEWS structure from config)
                 news_style_guide = get_style_guide_for_prompt('news')
 
-                news_prompt = f"""You are the copywriter for Venue Voice, a professional newsletter for wedding venue owners.
-
-## RESEARCH BRIEFING
-{research['news']}
+                news_system_prompt = f"""You are the copywriter for Venue Voice, a professional newsletter for wedding venue owners and operators.
 
 {news_style_guide}
 
-## OUTPUT REQUIREMENTS
-Section: NEWS (Full Article)
-Total word count: 250-300 words
-Structure: Three clearly labeled subsections
+## VOICE & STYLE
+- Conversational, warm, and expert — like a smart colleague sharing intel over coffee
+- Lead with specifics: real names, dollar amounts, percentages, direct quotes
+- Use em dashes, bullet-style "What's Happening" lists, and punchy "Short Version" summaries
+- The "Why It Matters" section should feel like direct advice, not a recap
 
-**The Short Version:** (1-2 sentences, ~25 words)
-A punchy summary of the key news.
+## BANNED WORDS/PHRASES (never use these — they sound generic and AI-written)
+"landscape", "navigate", "leverage", "robust", "comprehensive", "cutting-edge", "innovative",
+"in today's ever-evolving", "interesting development", "unique situation", "various factors",
+"excited to announce", "It is important to...", "dynamic", "paradigm", "synergy", "holistic"
 
-**What's Happening:** (~150 words)
-The main story with context, statistics, and industry perspective. Include specific data points and examples.
+## REAL PUBLISHED EXAMPLES (match this voice, specificity, and structure exactly)
 
-**Why It Matters for Venues:** (~80 words)
-Direct, actionable implications for venue owners. What should they do or consider?
+EXAMPLE 1:
+*The Short Version:* Couples are ditching big-budget destination weddings and opting for intimate hometown micro-weddings — or even courthouse ceremonies — for deeper meaning and lower costs.
+*What's Happening:* Couples are embracing hometown weddings in backyards, local barns, or family-run venues for affordability and personal charm. Vogue reports the trend continues among high-budget couples, driven by sentimentality over spectacle. Average guest counts have dropped from 184 in 2006 to 131 in 2024, with micro-weddings (under 50 guests) now ~15% of all U.S. weddings. Micro-wedding costs can be over 50% lower, allowing couples to invest in unique decor and guest experiences. Planners say local venues win out for reducing travel burdens and adding emotional value.
+*Why It Matters for Venues:* This shift toward local, intimate celebrations opens new doors for venues that can offer value-driven, experience-rich packages. Emphasizing community roots, sentimental architecture, or family-owned charm helps venues stand out from impersonal destination options. Smaller weddings also mean more flexibility — weekdays, shorter timelines, and higher personalization — making it easier to fill off-peak slots.
 
-## EXAMPLE OUTPUT
-*The Short Version:* Sustainability has shifted from a nice-to-have perk to a must-have standard, with couples actively seeking eco-conscious venues for their celebrations.
+EXAMPLE 2:
+*The Short Version:* 61% of couples say they are open to brand sponsorships — and venues could be their billboard.
+*What's Happening:* A recent survey revealed that 61% of Americans would accept a brand-subsidized wedding, especially if it covered 50–75% of their costs. Think: A skincare brand gifting luxury welcome bags, a spirits company sponsoring signature drinks, or even signage and shoutouts mid-ceremony. Gen Z is driving this trend, as they put less emphasis on tradition and more interest in value and novelty. The development is also fueled by increased costs due to rising inflation and social media's influence on wedding aesthetics.
+*Why It Matters for Venues:* It opens the door to venue-brand partnerships. If a couple is comfortable having their big day "brought to you by," the venue can become a platform. Offering optional brand collabs could set your space apart — and create new revenue streams without raising rental fees.
 
-*What's Happening:* The wedding industry is experiencing a green revolution. According to a recent survey, 78% of engaged couples now consider a venue's environmental practices when making their booking decision — up from just 34% five years ago. This isn't limited to recycling bins and LED lighting. Couples want to see solar panels, composting programs, locally sourced catering options, and partnerships with sustainable vendors. Major venue networks report that properties with verified green certifications see 23% higher inquiry rates than comparable venues without credentials. The trend spans all price points, from rustic barn weddings to luxury estates.
+EXAMPLE 3:
+*The Short Version:* Couples are now using sustainability as a line in the sand when choosing venues — not just a cute extra.
+*What's Happening:* Couples aren't just asking about the arbor and the rain plan anymore — they're asking if you recycle, where the food comes from, and how much trash the average event creates. In recent surveys, roughly 73% of couples say they're actively seeking eco-friendly wedding options, including sustainable venues and local, seasonal menus. More than half of destination couples now say sustainability is a priority when choosing where to get married, not simply a "nice touch." That means your waste bins, sourcing policies, and energy story are quietly sitting next to your Instagram grid on the decision checklist.
+*Why It Matters for Venues:* Sustainability is quickly becoming a filter, not a feature — if you don't obviously meet the bar, you may never even make the shortlist. The upside: eco-conscious couples are often less price-sensitive when they see values alignment, which can support healthier margins on green packages."""
 
-*Why It Matters for Venues:* Start documenting your existing eco-friendly practices — you likely have more than you realize. Consider pursuing certification through programs like Green Wedding Alliance or local sustainability councils. Even small changes, like switching to cloth napkins or partnering with a local florist, can become powerful marketing differentiators that attract environmentally conscious couples.
+                news_user_prompt = f"""## RESEARCH BRIEFING
+{research['news']}
 
-Write the NEWS section now. Output the three subsections with bold labels (*The Short Version:*, *What's Happening:*, *Why It Matters for Venues:*). Use plain text with line breaks between sections."""
+## TASK
+Write the NEWS section. 250-300 words total. Three subsections with bold labels:
+
+*The Short Version:* (1-2 sentences, ~25 words) — A punchy summary of the key news.
+*What's Happening:* (~150 words) — The main story with context, statistics, and industry perspective. Include specific data points.
+*Why It Matters for Venues:* (~80 words) — Direct, actionable implications for venue owners.
+
+Output the three subsections with bold labels. Use plain text with line breaks between sections. No markdown headers."""
 
                 news_result = claude_client.generate_content(
-                    prompt=news_prompt,
+                    prompt=news_user_prompt,
+                    system_prompt=news_system_prompt,
                     model="claude-opus-4-5-20251101",
-                    temperature=0.4,
+                    temperature=0.65,
                     max_tokens=600
                 )
 
@@ -892,15 +906,32 @@ Write the NEWS section now. Output the three subsections with bold labels (*The 
                 safe_print(f"  - Writing TIP section...")
 
                 # Generate title and subtitle together
+                tip_title_system = """You are the copywriter for Venue Voice newsletter's BRITECO INSIGHT section.
+Your titles are short, punchy, and action-oriented. Subtitles are conversational taglines.
+
+## BANNED WORDS: "landscape", "navigate", "leverage", "robust", "comprehensive", "cutting-edge", "innovative"
+
+## REAL PUBLISHED EXAMPLES
+TITLE: Host High-Impact Showcases
+SUBTITLE: Turn open days into your #1 booking engine.
+
+TITLE: Digital Presence Upgrade
+SUBTITLE: Boost bookings by optimizing your online footprint for trust and clarity.
+
+TITLE: Diversify Revenue Streams
+SUBTITLE: Unlock additional income without sacrificing guest experience.
+
+TITLE: Leverage Venue Heritage
+SUBTITLE: Differentiate your space by showcasing its character and history.
+
+TITLE: How to Hyper-Personalize the Client Experience
+SUBTITLE: Make every wedding feel uniquely crafted to the individual client."""
+
                 tip_title_prompt = f"""Based on this research briefing, create:
 1. A 4-6 word TITLE in Title Case (action-oriented)
 2. A 6-10 word SUBTITLE (italicized tagline that summarizes the benefit)
 
 {research['tip']}
-
-## EXAMPLE
-TITLE: Host High-Impact Showcases
-SUBTITLE: Turn open days into your #1 booking engine.
 
 Output format (exactly two lines):
 TITLE: [your title]
@@ -908,8 +939,9 @@ SUBTITLE: [your subtitle]"""
 
                 tip_title_result = claude_client.generate_content(
                     prompt=tip_title_prompt,
+                    system_prompt=tip_title_system,
                     model="claude-opus-4-5-20251101",
-                    temperature=0.4,
+                    temperature=0.65,
                     max_tokens=60
                 )
 
@@ -928,31 +960,47 @@ SUBTITLE: [your subtitle]"""
                 if not tip_subtitle:
                     tip_subtitle = "Actionable insights for your venue."
 
-                # Generate body content with section-specific style guide
                 tip_style_guide = get_style_guide_for_prompt('tip')
 
-                tip_prompt = f"""You are the copywriter for Venue Voice newsletter's BRITECO INSIGHT section.
-
-## RESEARCH BRIEFING
-{research['tip']}
+                tip_system_prompt = f"""You are the copywriter for Venue Voice newsletter's BRITECO INSIGHT section.
 
 {tip_style_guide}
 
-## OUTPUT REQUIREMENTS
-Section: BRITECO INSIGHT (practical advice for venue owners)
-Word count: 80-100 words (ONE paragraph)
-Tone: Helpful, expert, actionable
-Purpose: Provide specific, implementable advice that venue owners can use immediately
+## VOICE & STYLE
+- Expert but approachable — like giving advice to a venue owner friend
+- Lead with specific, implementable actions (not vague platitudes)
+- Include concrete numbers, percentages, or tactical details when possible
+- One tight paragraph, no fluff
 
-## EXAMPLE OUTPUT
-Stop treating open houses as passive property tours. The most successful venues create immersive mini-experiences: tasting stations with signature cocktails, ambient lighting that matches evening reception vibes, and guest books where visitors can note their favorite features. Consider partnering with a local florist to stage tablescapes or hiring a DJ for an hour to demonstrate sound quality. Capture email addresses at entry and follow up within 48 hours with a personalized video message referencing their visit.
+## BANNED WORDS/PHRASES (never use these)
+"landscape", "navigate", "leverage", "robust", "comprehensive", "cutting-edge", "innovative",
+"in today's ever-evolving", "interesting development", "unique situation", "various factors",
+"excited to announce", "It is important to...", "dynamic", "paradigm", "synergy", "holistic"
 
-Write the TIP body paragraph now. Output ONLY the paragraph text, no title or formatting."""
+## REAL PUBLISHED EXAMPLES (match this voice and specificity)
+
+EXAMPLE 1:
+Your website should be the centerpiece of your online marketing strategy, designed to convert visitors into leads with clear call-to-action buttons like "Book a Tour" or "Download a Brochure." Incorporating real wedding galleries, authentic blogs, and transparent pricing builds trust and helps filter for serious inquiries. Today's couples expect a polished and credible digital experience, making your website and Google Business profile essential tools. A refined online presence not only attracts more qualified leads but also accelerates conversion.
+
+EXAMPLE 2:
+Offer in-house extras — like catering, decor, AV equipment, or full-service packages — to increase profit margins by 15–25% per event. By bundling services clients typically source separately, you simplify their planning while boosting your revenue per booking. These add-ons position your venue as a one-stop shop, creating convenience for clients and retaining profits that might otherwise go to external vendors.
+
+EXAMPLE 3:
+Give your calendar a boost by running structured open days or mini wedding showcases where couples can tour the space, meet preferred vendors, and experience a "wedding-ready" setup. Venues report that in-person visits are often the moment couples decide to book, and since most couples only visit a handful of venues, simply getting them through your doors dramatically increases conversion odds. These events also fuel your marketing — capturable content for social, follow-up email campaigns, and warm leads who already felt the venue "in real life." """
+
+                tip_user_prompt = f"""## RESEARCH BRIEFING
+{research['tip']}
+
+## TASK
+Write the BRITECO INSIGHT body paragraph. 80-100 words, ONE paragraph.
+Practical advice venue owners can use immediately.
+Output ONLY the paragraph text, no title or formatting."""
 
                 tip_result = claude_client.generate_content(
-                    prompt=tip_prompt,
+                    prompt=tip_user_prompt,
+                    system_prompt=tip_system_prompt,
                     model="claude-opus-4-5-20251101",
-                    temperature=0.4,
+                    temperature=0.65,
                     max_tokens=200
                 )
 
@@ -967,16 +1015,32 @@ Write the TIP body paragraph now. Output ONLY the paragraph text, no title or fo
             if research.get('trend'):
                 safe_print(f"  - Writing TREND section...")
 
-                # Generate title and subtitle together
+                trend_title_system = """You are the copywriter for Venue Voice newsletter's TREND ALERT section.
+Your titles are evocative and trend-forward. Subtitles set the mood in a few words.
+
+## BANNED WORDS: "landscape", "navigate", "leverage", "robust", "comprehensive", "cutting-edge", "innovative"
+
+## REAL PUBLISHED EXAMPLES
+TITLE: Gen Z Personality-Driven Weddings
+SUBTITLE: A laid-back, custom celebration rooted in authenticity.
+
+TITLE: Cinematic 2026 Wedding Moments
+SUBTITLE: Moody color, immersive vibes, highly intentional everything.
+
+TITLE: Fall 2025 Wedding Trends
+SUBTITLE: Seasonal style and experiential design dominate autumn "I do's."
+
+TITLE: Lily of the Valley Bouquets Return
+SUBTITLE: Delicate elegance meets timeless charm.
+
+TITLE: Timeless Romance: A Destination Wedding Trend
+SUBTITLE: Pastels, florals, and immersive luxury."""
+
                 trend_title_prompt = f"""Based on this research briefing, create:
 1. A 4-6 word TITLE in Title Case (trend-focused, evocative)
 2. A 6-10 word SUBTITLE (italicized tagline capturing the essence)
 
 {research['trend']}
-
-## EXAMPLE
-TITLE: Cinematic 2026 Wedding Moments
-SUBTITLE: Moody color, immersive vibes, highly intentional everything.
 
 Output format (exactly two lines):
 TITLE: [your title]
@@ -984,8 +1048,9 @@ SUBTITLE: [your subtitle]"""
 
                 trend_title_result = claude_client.generate_content(
                     prompt=trend_title_prompt,
+                    system_prompt=trend_title_system,
                     model="claude-opus-4-5-20251101",
-                    temperature=0.4,
+                    temperature=0.65,
                     max_tokens=60
                 )
 
@@ -1004,31 +1069,47 @@ SUBTITLE: [your subtitle]"""
                 if not trend_subtitle:
                     trend_subtitle = "What couples are asking for now."
 
-                # Generate body content with section-specific style guide
                 trend_style_guide = get_style_guide_for_prompt('trend')
 
-                trend_prompt = f"""You are the copywriter for Venue Voice newsletter's TREND ALERT section.
-
-## RESEARCH BRIEFING
-{research['trend']}
+                trend_system_prompt = f"""You are the copywriter for Venue Voice newsletter's TREND ALERT section.
 
 {trend_style_guide}
 
-## OUTPUT REQUIREMENTS
-Section: TREND ALERT (emerging wedding/event trends)
-Word count: 60-80 words (ONE paragraph)
-Tone: Trend-forward, inspiring, slightly editorial
-Purpose: Help venue owners understand what's coming and how to prepare
+## VOICE & STYLE
+- Trend-forward, slightly editorial — like a style editor reporting from the field
+- Paint a vivid picture with specific details (colors, materials, styles)
+- Connect the trend back to what venues should prepare for or offer
+- One tight paragraph, evocative and visual
 
-## EXAMPLE OUTPUT
-The age of the Pinterest-perfect wedding is fading. In its place, couples are demanding cinematic experiences — think moody lighting, dramatic entrances, and reception moments designed for film rather than still photography. Venues that offer fog machines, intelligent lighting systems, and dedicated "first look" spaces are winning bookings. Consider partnering with videographers who can showcase your space's most dramatic angles in promotional content.
+## BANNED WORDS/PHRASES (never use these)
+"landscape", "navigate", "leverage", "robust", "comprehensive", "cutting-edge", "innovative",
+"in today's ever-evolving", "interesting development", "unique situation", "various factors",
+"excited to announce", "It is important to...", "dynamic", "paradigm", "synergy", "holistic"
 
-Write the TREND body paragraph now. Output ONLY the paragraph text, no title or formatting."""
+## REAL PUBLISHED EXAMPLES (match this voice and vividness)
+
+EXAMPLE 1:
+Gen Z couples are redefining wedding norms by crafting uniquely personal ceremonies and receptions. They're embracing casual vibes, injecting quirky nods to their identities — think 90s fashion, immersive lighting, and homemade menus. Traditional elements are often skipped or reimagined, with smaller guest lists, unplugged ceremonies, and a mix of high-low styles that echo their personalities. The result: weddings that feel relaxed, meaningful, and unmistakably "them."
+
+EXAMPLE 2:
+If you want a single, ultra-current snapshot of where 2026 weddings are heading, this Over The Moon forecast is a gem. It spotlights intentional venues (spaces chosen for story and meaning, not just for the photos), custom fashion for everyone (think bespoke looks for brides, grooms, and parents), and "no-passport-needed" destination themes that bring Amalfi, Paris, or the Med to your hometown through color, menus, and styling.
+
+EXAMPLE 3:
+This year's fall weddings are embracing rich jewel tones, sculptural lighting, and guest-centered details. Couples are opting for emerald and burgundy palettes, textured florals mixing fresh and dried blooms, and cozy comforts like warm cocktails and soft throws. The overall mood is intentional and elevated — luxurious yet grounded — with sustainability and locally-sourced design at the heart of the celebration."""
+
+                trend_user_prompt = f"""## RESEARCH BRIEFING
+{research['trend']}
+
+## TASK
+Write the TREND ALERT body paragraph. 60-80 words, ONE paragraph.
+Trend-forward and visual — help venue owners see what's coming.
+Output ONLY the paragraph text, no title or formatting."""
 
                 trend_result = claude_client.generate_content(
-                    prompt=trend_prompt,
+                    prompt=trend_user_prompt,
+                    system_prompt=trend_system_prompt,
                     model="claude-opus-4-5-20251101",
-                    temperature=0.4,
+                    temperature=0.65,
                     max_tokens=180
                 )
 
@@ -1439,26 +1520,41 @@ Content: {str(trend.get('content', ''))[:300]}..."""
 
         tone_instruction = tone_instructions.get(tone, tone_instructions['professional'])
 
-        # Generate subject lines using Claude with tone
-        subject_prompt = f"""Based on this wedding venue newsletter content, generate 5 compelling email subject lines.
+        subject_system = """You write email subject lines for Venue Voice, a newsletter for wedding venue owners.
+
+## STYLE
+- Short, intriguing, specific — not generic or clickbaity
+- Reference real topics from the newsletter (couples, trends, stats)
+- Conversational, like a text from a smart colleague
+
+## BANNED WORDS: "landscape", "navigate", "leverage", "robust", "comprehensive", "cutting-edge", "innovative"
+
+## REAL PUBLISHED EXAMPLES
+- Why Couples Are Rethinking Big Weddings
+- "Sponsored by Love": Branded Weddings Take the Spotlight
+- From Trend to Standard: Getting 'Venue-Verified' Green
+- Disney Introduces More Magical Venues
+- The $33k Wedding vs. the Micro-Wedding Shift"""
+
+        subject_user_prompt = f"""Based on this newsletter content, generate 5 compelling email subject lines.
 
 {content_summary}
 
-TONE INSTRUCTION: {tone_instruction}
+TONE: {tone_instruction}
 
 Requirements:
-- Each subject line should be 40-60 characters
-- Focus on the most interesting or valuable content
-- Match the specified tone consistently
-- Make it relevant to wedding venue owners/managers
-- Incorporate {season} seasonality where appropriate (e.g., mention the season, seasonal trends, or time-sensitive relevance)
+- 40-60 characters each
+- Focus on the most interesting content
+- Relevant to wedding venue owners
+- Incorporate {season} seasonality where appropriate
 - Avoid spam trigger words
 
 Return ONLY 5 subject lines, numbered 1-5, one per line. No other text."""
 
         print(f"[API] Calling Claude to generate subject lines...")
         subject_response = claude_client.generate_content(
-            prompt=subject_prompt,
+            prompt=subject_user_prompt,
+            system_prompt=subject_system,
             max_tokens=200,
             temperature=0.8
         )
@@ -1483,26 +1579,36 @@ Return ONLY 5 subject lines, numbered 1-5, one per line. No other text."""
         for idx, subject in enumerate(subject_lines, 1):
             safe_print(f"  {idx}. {subject}")
 
-        # Generate preheaders using Claude with same tone
-        preheader_prompt = f"""Based on this wedding venue newsletter content, generate 5 compelling email preheaders.
+        preheader_system = """You write email preheaders for Venue Voice, a newsletter for wedding venue owners.
+
+## STYLE
+- Short teaser that complements (not repeats) the subject line
+- Conversational and specific — hint at a second story or stat
+- Creates curiosity to open the email
+
+## REAL PUBLISHED EXAMPLES
+- Plus: Gen Z goes for authentic, personality-packed celebrations.
+- Micro-weddings mean big opportunity for flexible venues.
+- And how to turn your heritage into a booking magnet."""
+
+        preheader_user_prompt = f"""Based on this newsletter content, generate 5 compelling email preheaders.
 
 {content_summary}
 
-TONE INSTRUCTION: {tone_instruction}
+TONE: {tone_instruction}
 
 Requirements:
-- Each preheader should be 40-80 characters
+- 40-80 characters each
 - Complement (not repeat) the subject line
-- Tease the newsletter content
-- Provide additional value or context
+- Tease secondary newsletter content
 - Create interest to open the email
-- Match the specified tone consistently
 
 Return ONLY 5 preheaders, numbered 1-5, one per line. No other text."""
 
         print(f"[API] Calling Claude to generate preheaders...")
         preheader_response = claude_client.generate_content(
-            prompt=preheader_prompt,
+            prompt=preheader_user_prompt,
+            system_prompt=preheader_system,
             max_tokens=200,
             temperature=0.8
         )
