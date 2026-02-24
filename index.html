@@ -1664,7 +1664,7 @@
 
             <div class="buttons">
                 <button class="btn btn-secondary" onclick="showStep(5)">← Back</button>
-                <button class="btn" onclick="saveSpecialSection(); showStep('7b');">Review Final Copy →</button>
+                <button class="btn" onclick="saveSpecialSection(); populateFinalCopy(); showStep('7b');">Review Final Copy →</button>
             </div>
         </div>
 
@@ -7200,6 +7200,8 @@
                 const savedStep = d.currentStep || 'step1';
                 const stepId = savedStep.replace('step', '');
                 showStep(stepId || 1);
+                // Populate final copy fields with restored content
+                populateFinalCopy();
                 alert('Draft loaded! You can continue where you left off.');
             } catch (e) {
                 console.error('[Draft] Load failed:', e);
