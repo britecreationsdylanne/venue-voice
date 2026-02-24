@@ -7096,14 +7096,20 @@
                         year: new Date().getFullYear(),
                         currentStep: document.querySelector('.step.active')?.id || '',
                         generatedContent: {
-                            news: generatedNewsContent,
-                            tip: generatedTipContent,
-                            trend: generatedTrendContent,
+                            // Prefer latest edited content over original generated content
+                            news: document.getElementById('fc-news')?.innerHTML?.trim() || document.getElementById('newsContentBox')?.innerHTML?.trim() || generatedNewsContent,
+                            tip: document.getElementById('fc-tip')?.innerHTML?.trim() || document.getElementById('tipContentBox')?.innerHTML?.trim() || generatedTipContent,
+                            trend: document.getElementById('fc-trend')?.innerHTML?.trim() || document.getElementById('trendContentBox')?.innerHTML?.trim() || generatedTrendContent,
                             tipSubtitle: generatedTipSubtitle,
                             trendSubtitle: generatedTrendSubtitle,
                             newsTitle: generatedNewsTitle,
                             tipTitle: generatedTipTitle,
                             trendTitle: generatedTrendTitle
+                        },
+                        selectedArticles: {
+                            news: selectedNews,
+                            tip: selectedTip,
+                            trend: selectedTrend
                         },
                         generatedImages: generatedImages,
                         specialSection: specialSection,
@@ -7182,6 +7188,13 @@
                 generatedTrendTitle = gc.trendTitle || null;
                 generatedImages = d.generatedImages || { meme: null, news: null, tip: null, trend: null };
 
+                // Restore selected articles so step 5 displays correctly
+                if (d.selectedArticles) {
+                    selectedNews = d.selectedArticles.news || null;
+                    selectedTip = d.selectedArticles.tip || null;
+                    selectedTrend = d.selectedArticles.trend || null;
+                }
+
                 // Restore special section
                 if (d.specialSection) {
                     specialSection = { ...specialSection, ...d.specialSection };
@@ -7195,6 +7208,11 @@
                 if (subjectEl && d.subjectLine) subjectEl.value = d.subjectLine;
                 const preheaderEl = document.getElementById('finalPreheader');
                 if (preheaderEl && d.preheader) preheaderEl.value = d.preheader;
+
+                // Rebuild step 5 content boxes so back navigation shows content without regenerating
+                if (generatedNewsContent || generatedTipContent || generatedTrendContent) {
+                    displayGeneratedContent();
+                }
 
                 // Navigate to the saved step
                 const savedStep = d.currentStep || 'step1';
@@ -7332,13 +7350,20 @@
         function saveFinalCopyToState() {
             try {
                 const getHtml = id => (document.getElementById(id)?.innerHTML || '').trim();
+                const newsHtml = getHtml('fc-news');
+                const tipHtml = getHtml('fc-tip');
+                const trendHtml = getHtml('fc-trend');
                 // Write Final Copy edits back to the content boxes used by generateNewsletterHTML
                 const newsBox = document.getElementById('newsContentBox');
-                if (newsBox) newsBox.innerHTML = getHtml('fc-news');
+                if (newsBox) newsBox.innerHTML = newsHtml;
                 const tipBox = document.getElementById('tipContentBox');
-                if (tipBox) tipBox.innerHTML = getHtml('fc-tip');
+                if (tipBox) tipBox.innerHTML = tipHtml;
                 const trendBox = document.getElementById('trendContentBox');
-                if (trendBox) trendBox.innerHTML = getHtml('fc-trend');
+                if (trendBox) trendBox.innerHTML = trendHtml;
+                // Also sync to global variables so saveDraft() captures the latest edits
+                if (newsHtml) generatedNewsContent = newsHtml;
+                if (tipHtml) generatedTipContent = tipHtml;
+                if (trendHtml) generatedTrendContent = trendHtml;
 
                 const ssHtml = getHtml('fc-specialSection');
                 if (ssHtml && specialSection.enabled) specialSection.body = ssHtml;
