@@ -6819,7 +6819,7 @@
                 nextBtn.onclick = () => showStep('5b');
             } else {
                 nextBtn.textContent = 'Review Final Copy →';
-                nextBtn.onclick = () => showStep('7b');
+                nextBtn.onclick = () => { populateFinalCopy(); showStep('7b'); };
             }
         }
 
