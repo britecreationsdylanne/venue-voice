@@ -6986,6 +6986,16 @@
             updateProgress(stepNum);
             window.scrollTo(0, 0);
 
+            // Step 8: show prompts immediately if already generated (skip loading spinner)
+            if (stepNum == 8 || stepNum === '8') {
+                if (promptsAlreadyGenerated) {
+                    const loadingEl = document.getElementById('promptGenerationLoading');
+                    const editingEl = document.getElementById('promptEditing');
+                    if (loadingEl) loadingEl.style.display = 'none';
+                    if (editingEl) editingEl.style.display = 'block';
+                }
+            }
+
             if (stepNum === '5b') {
                 restoreSpecialSectionUI();
             }
