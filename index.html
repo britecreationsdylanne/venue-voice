@@ -2921,7 +2921,7 @@
             // NEWS SECTION - Compact display
             html += '<div style="margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 15px;">';
             html += '<h3 style="margin: 0 0 5px 0; color: #008181;">📰 News You Can Use</h3>';
-            html += `<h4 style="margin: 0 0 8px 0; color: #1f2937; font-size: 16px;">${selectedNews.title}</h4>`;
+            html += `<h4 style="margin: 0 0 8px 0; color: #1f2937; font-size: 16px;">${selectedNews?.title || generatedNewsTitle || 'Industry News'}</h4>`;
             html += `<div id="newsContentBox" contenteditable="true" style="outline: none; color: #555; font-size: 14px; line-height: 1.6;">${newsContent}</div>`;
             html += `<button class="btn-secondary btn" style="font-size: 12px; padding: 6px 12px; margin-top: 8px;" onclick="editSection('news')">✏️ Edit</button>`;
             html += `</div>`;
