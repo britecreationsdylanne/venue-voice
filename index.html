@@ -7253,10 +7253,11 @@
                     displayGeneratedContent();
                 }
 
-                // Determine which step to navigate to
+                // Determine which step to navigate to — always land on the most recently completed step
                 const savedStep = d.currentStep || 'step1';
                 let stepId = savedStep.replace('step', '');
                 const stepNum = parseInt(stepId);
+                const hasContent = !!(generatedNewsContent || generatedTipContent || generatedTrendContent);
 
                 // Infer regeneration flags from saved step (covers older drafts without explicit imagePrompts data)
                 if (!isNaN(stepNum)) {
@@ -7266,14 +7267,16 @@
                     if (stepNum >= 12) memeImageGenerated = true;
                 }
 
-                // Only redirect actual loading/transitional/removed steps — otherwise restore exact step
-                const hasContent = !!(generatedNewsContent || generatedTipContent || generatedTrendContent);
-                if (stepId === '3' || stepId === '4') stepId = hasContent ? '5' : '2'; // research/writing loading screens
-                if (stepId === '6' || stepId === '7') stepId = '5';                    // brand check removed
-                if (stepId === '9') stepId = promptsAlreadyGenerated ? '8' : '7b';     // prompt generation loading → prompts or back to final copy
-                if (stepId === '8' && !promptsAlreadyGenerated) stepId = '7b';         // step 8 but no prompts → back to final copy
-                if (stepId === '10_4' || stepId === '10_5') stepId = '10';             // meme loading → meme results
-                if (stepId === '14') stepId = '13';                                    // test email loading → preview
+                // Collapse loading/removed steps first
+                if (stepId === '3' || stepId === '4') stepId = hasContent ? '5' : '2';
+                if (stepId === '6' || stepId === '7') stepId = '5';
+                if (stepId === '9' || stepId === '10_4' || stepId === '10_5') stepId = '10';
+                if (stepId === '14') stepId = '13';
+
+                // Cascade: fall back to most recently completed step if requirements not met
+                if (['10', '10_4', '10_5', '11', '12', '13', '15'].includes(stepId) && !imagesAlreadyGenerated) stepId = '8';
+                if (['8', '9', '10', '11', '12', '13', '15'].includes(stepId) && !promptsAlreadyGenerated) stepId = '7b';
+                if (['5', '5b', '7b', '8', '9', '10', '11', '12', '13', '15'].includes(stepId) && !hasContent) stepId = '2';
 
                 showStep(stepId || 1);
                 populateFinalCopy();
