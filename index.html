@@ -3520,15 +3520,15 @@
                 console.log('[FRONTEND DEBUG] Extracted trend content:', trendText?.substring(0, 300));
 
                 const sections = {
-                    news: { title: selectedNews.title, content: newsText, month: selectedMonth },
-                    tip: { title: selectedTip.title, content: tipText, month: selectedMonth },
-                    trend: { title: selectedTrend.title, content: trendText, month: selectedMonth }
+                    news: { title: selectedNews?.title, content: newsText, month: selectedMonth },
+                    tip: { title: selectedTip?.title, content: tipText, month: selectedMonth },
+                    trend: { title: selectedTrend?.title, content: trendText, month: selectedMonth }
                 };
 
                 console.log('[FRONTEND DEBUG] ===== SECTIONS BEING SENT TO API =====');
-                console.log('[FRONTEND DEBUG] News title:', selectedNews.title);
-                console.log('[FRONTEND DEBUG] Tip title:', selectedTip.title);
-                console.log('[FRONTEND DEBUG] Trend title:', selectedTrend.title);
+                console.log('[FRONTEND DEBUG] News title:', selectedNews?.title);
+                console.log('[FRONTEND DEBUG] Tip title:', selectedTip?.title);
+                console.log('[FRONTEND DEBUG] Trend title:', selectedTrend?.title);
                 console.log('[FRONTEND DEBUG] Full sections object:', JSON.stringify(sections, null, 2));
 
                 // Call API to generate prompts
@@ -3563,9 +3563,9 @@
                 console.log('[FRONTEND DEBUG] Set trendImagePromptText to:', data.prompts.trend);
 
                 // Show article titles
-                document.getElementById('newsPromptArticle').textContent = `For: ${selectedNews.title}`;
-                document.getElementById('tipPromptArticle').textContent = `For: ${selectedTip.title}`;
-                document.getElementById('trendPromptArticle').textContent = `For: ${selectedTrend.title}`;
+                document.getElementById('newsPromptArticle').textContent = `For: ${selectedNews?.title}`;
+                document.getElementById('tipPromptArticle').textContent = `For: ${selectedTip?.title}`;
+                document.getElementById('trendPromptArticle').textContent = `For: ${selectedTrend?.title}`;
 
                 // Mark prompts as generated
                 promptsAlreadyGenerated = true;
@@ -3710,9 +3710,9 @@
                 const trendText = extractContentText(generatedTrendContent);
 
                 const sections = {
-                    news: { title: selectedNews.title, content: newsText, month: selectedMonth },
-                    tip: { title: selectedTip.title, content: tipText, month: selectedMonth },
-                    trend: { title: selectedTrend.title, content: trendText, month: selectedMonth }
+                    news: { title: selectedNews?.title, content: newsText, month: selectedMonth },
+                    tip: { title: selectedTip?.title, content: tipText, month: selectedMonth },
+                    trend: { title: selectedTrend?.title, content: trendText, month: selectedMonth }
                 };
 
                 // Call API to generate images
@@ -5999,15 +5999,15 @@
                 const newsletterContent = {
                     month: selectedMonth,
                     news: {
-                        title: selectedNews.title,
+                        title: selectedNews?.title,
                         content: generatedNewsContent
                     },
                     tip: {
-                        title: selectedTip.title,
+                        title: selectedTip?.title,
                         content: generatedTipContent
                     },
                     trend: {
-                        title: selectedTrend.title,
+                        title: selectedTrend?.title,
                         content: generatedTrendContent
                     }
                 };
@@ -6602,15 +6602,15 @@
                 selectedNews = selectedObj;
                 generatedNewsTitle = selectedObj.title || null;
                 document.getElementById('newsTabCheck').style.display = 'inline';
-                console.log('[Research] Selected for NEWS:', selectedNews.title);
+                console.log('[Research] Selected for NEWS:', selectedNews?.title);
             } else if (currentResearchSection === 'tip') {
                 selectedTip = selectedObj;
                 document.getElementById('tipTabCheck').style.display = 'inline';
-                console.log('[Research] Selected for TIP:', selectedTip.title);
+                console.log('[Research] Selected for TIP:', selectedTip?.title);
             } else if (currentResearchSection === 'trend') {
                 selectedTrend = selectedObj;
                 document.getElementById('trendTabCheck').style.display = 'inline';
-                console.log('[Research] Selected for TREND:', selectedTrend.title);
+                console.log('[Research] Selected for TREND:', selectedTrend?.title);
             }
 
             // Track selection (fire-and-forget)
