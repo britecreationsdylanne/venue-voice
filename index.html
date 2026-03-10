@@ -7243,16 +7243,26 @@
                     displayGeneratedContent();
                 }
 
-                // Determine which step to navigate to — redirect all transitional/loading/removed steps
+                // Determine which step to navigate to
                 const savedStep = d.currentStep || 'step1';
                 let stepId = savedStep.replace('step', '');
+                const stepNum = parseInt(stepId);
+
+                // Infer regeneration flags from saved step (covers older drafts without explicit imagePrompts data)
+                if (!isNaN(stepNum)) {
+                    if (stepNum >= 8)  promptsAlreadyGenerated = true;
+                    if (stepNum >= 10) imagesAlreadyGenerated = true;
+                    if (stepNum >= 11) memeConceptGenerated = true;
+                    if (stepNum >= 12) memeImageGenerated = true;
+                }
+
+                // Only redirect actual loading/transitional/removed steps — otherwise restore exact step
                 const hasContent = !!(generatedNewsContent || generatedTipContent || generatedTrendContent);
-                if (stepId === '3' || stepId === '4') stepId = hasContent ? '5' : '2'; // research/writing loading
+                if (stepId === '3' || stepId === '4') stepId = hasContent ? '5' : '2'; // research/writing loading screens
                 if (stepId === '6' || stepId === '7') stepId = '5';                    // brand check removed
-                if (stepId === '9') stepId = promptsAlreadyGenerated ? '8' : '7b';     // image prompt generation loading
-                if (stepId === '10' && !imagesAlreadyGenerated) stepId = '8';          // image gen loading (step 10 is also results)
-                if (stepId === '10_4' || stepId === '10_5') stepId = '10';             // meme loading
-                if (stepId === '14') stepId = '13';                                    // test email loading
+                if (stepId === '9') stepId = '8';                                      // prompt generation loading → prompts
+                if (stepId === '10_4' || stepId === '10_5') stepId = '10';             // meme loading → meme results
+                if (stepId === '14') stepId = '13';                                    // test email loading → preview
 
                 showStep(stepId || 1);
                 populateFinalCopy();
