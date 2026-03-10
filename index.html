@@ -7270,7 +7270,8 @@
                 const hasContent = !!(generatedNewsContent || generatedTipContent || generatedTrendContent);
                 if (stepId === '3' || stepId === '4') stepId = hasContent ? '5' : '2'; // research/writing loading screens
                 if (stepId === '6' || stepId === '7') stepId = '5';                    // brand check removed
-                if (stepId === '9') stepId = '8';                                      // prompt generation loading → prompts
+                if (stepId === '9') stepId = promptsAlreadyGenerated ? '8' : '7b';     // prompt generation loading → prompts or back to final copy
+                if (stepId === '8' && !promptsAlreadyGenerated) stepId = '7b';         // step 8 but no prompts → back to final copy
                 if (stepId === '10_4' || stepId === '10_5') stepId = '10';             // meme loading → meme results
                 if (stepId === '14') stepId = '13';                                    // test email loading → preview
 
