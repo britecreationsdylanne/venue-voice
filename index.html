@@ -2785,6 +2785,7 @@
         let imagesAlreadyGenerated = false;
         let memeConceptGenerated = false;
         let memeImageGenerated = false;
+        let isLoadingDraft = false;
 
         // Store meme concept data to preserve on back navigation
         let memeConceptData = {
@@ -6975,8 +6976,8 @@
         }
 
         function showStep(stepNum) {
-            // Auto-save draft at key transitions
-            if ([5, '5b', '7b', 10, 12, 13].includes(stepNum)) {
+            // Auto-save draft at key transitions (skip during draft load to prevent overwrites)
+            if (!isLoadingDraft && [5, '5b', '7b', 10, 12, 13].includes(stepNum)) {
                 saveDraft();
             }
 
@@ -7124,6 +7125,7 @@
                             trend: selectedTrend
                         },
                         generatedImages: generatedImages,
+                        imagePrompts: (typeof basePrompts !== 'undefined') ? basePrompts : {},
                         specialSection: specialSection,
                         subjectLine: document.getElementById('finalSubjectLine')?.value || '',
                         preheader: document.getElementById('finalPreheader')?.value || '',
@@ -7183,9 +7185,10 @@
 
         async function loadDraft(filename) {
             try {
+                isLoadingDraft = true;
                 const response = await fetch(`${API_BASE}/api/load-draft?file=${encodeURIComponent(filename)}`);
                 const data = await response.json();
-                if (!data.success || !data.draft) { alert('Failed to load draft'); return; }
+                if (!data.success || !data.draft) { isLoadingDraft = false; alert('Failed to load draft'); return; }
                 const d = data.draft;
 
                 selectedMonth = d.month || '';
@@ -7199,6 +7202,20 @@
                 generatedTipTitle = gc.tipTitle || null;
                 generatedTrendTitle = gc.trendTitle || null;
                 generatedImages = d.generatedImages || { meme: null, news: null, tip: null, trend: null };
+
+                // Restore regeneration-prevention flags so nothing auto-regenerates
+                if (d.imagePrompts && Object.keys(d.imagePrompts).length > 0) {
+                    basePrompts = d.imagePrompts;
+                    promptsAlreadyGenerated = true;
+                }
+                if (generatedImages && (generatedImages.news || generatedImages.tip || generatedImages.trend)) {
+                    imagesAlreadyGenerated = true;
+                    displayImages();
+                }
+                if (generatedImages && generatedImages.meme) {
+                    memeConceptGenerated = true;
+                    memeImageGenerated = true;
+                }
 
                 // Restore selected articles so step 5 displays correctly
                 if (d.selectedArticles) {
@@ -7226,14 +7243,23 @@
                     displayGeneratedContent();
                 }
 
-                // Navigate to the saved step
+                // Determine which step to navigate to — redirect all transitional/loading/removed steps
                 const savedStep = d.currentStep || 'step1';
-                const stepId = savedStep.replace('step', '');
+                let stepId = savedStep.replace('step', '');
+                const hasContent = !!(generatedNewsContent || generatedTipContent || generatedTrendContent);
+                if (stepId === '3' || stepId === '4') stepId = hasContent ? '5' : '2'; // research/writing loading
+                if (stepId === '6' || stepId === '7') stepId = '5';                    // brand check removed
+                if (stepId === '9') stepId = promptsAlreadyGenerated ? '8' : '7b';     // image prompt generation loading
+                if (stepId === '10' && !imagesAlreadyGenerated) stepId = '8';          // image gen loading (step 10 is also results)
+                if (stepId === '10_4' || stepId === '10_5') stepId = '10';             // meme loading
+                if (stepId === '14') stepId = '13';                                    // test email loading
+
                 showStep(stepId || 1);
-                // Populate final copy fields with restored content
                 populateFinalCopy();
+                isLoadingDraft = false;
                 alert('Draft loaded! You can continue where you left off.');
             } catch (e) {
+                isLoadingDraft = false;
                 console.error('[Draft] Load failed:', e);
                 alert('Failed to load draft: ' + e.message);
             }
