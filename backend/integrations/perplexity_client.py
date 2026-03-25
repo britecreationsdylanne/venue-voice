@@ -63,6 +63,12 @@ class PerplexityClient:
 
             geo_context = f" Focus on {geography}." if geography else ""
 
+            # Add date cutoff to query for more precise recency filtering
+            from datetime import datetime, timedelta
+            days_map = {'7d': 7, '15d': 15, '30d': 30, '90d': 90}
+            max_days = days_map.get(time_window, 30)
+            cutoff_date = (datetime.now() - timedelta(days=max_days)).strftime('%Y-%m-%d')
+
             system_prompt = f"""You are a research assistant helping wedding venue owners find relevant industry news and insights.
 
 Search for {time_context} articles and news.{geo_context}
@@ -89,10 +95,21 @@ Return your findings as a JSON array with this structure:
 }}
 
 Important:
-- Only include results with REAL, verifiable URLs
+- Only include results with REAL, verifiable URLs from the {time_context}
 - Focus on actionable insights for wedding venue businesses
 - Include specific data points and statistics when available
+- Prefer open-access trade publications and press releases over paywalled mainstream media
+- AVOID these paywalled sources: wsj.com, bloomberg.com, nytimes.com, ft.com, businessinsider.com, washingtonpost.com, economist.com, barrons.com, thetimes.co.uk, telegraph.co.uk
 - Return exactly {max_results} results"""
+
+            # Build recency filter for Perplexity API
+            recency_map = {
+                '7d': 'week',
+                '15d': 'month',
+                '30d': 'month',
+                '90d': 'month'
+            }
+            recency_filter = recency_map.get(time_window, 'month')
 
             # Make API request
             headers = {
@@ -101,13 +118,14 @@ Important:
             }
 
             payload = {
-                "model": "sonar",  # sonar has web search built-in
+                "model": "sonar-pro",  # sonar-pro has deeper search and better recency
                 "messages": [
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": query}
+                    {"role": "user", "content": f"after:{cutoff_date} {query}"}
                 ],
                 "temperature": 0.2,
-                "max_tokens": 2000
+                "max_tokens": 2000,
+                "search_recency_filter": recency_filter
             }
 
             print(f"[Perplexity] Searching: {query[:100]}...")

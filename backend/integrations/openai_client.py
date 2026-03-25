@@ -370,32 +370,45 @@ No extra keys. No commentary outside JSON."""
                 published_date = str(item.get("published_date", "")).strip() if item.get("published_date") else None
                 summary = str(item.get("summary", "")).strip()
 
-                # If model gave a real URL, use it. Otherwise recover from web_sources
-                if url_raw.startswith("http://") or url_raw.startswith("https://"):
-                    url = url_raw
-                else:
-                    # Attempt to recover URL from web_search sources
-                    url = ""
-                    if not use_sources_directly and title:
-                        # Try fuzzy matching by title
+                # Always try to match against verified web_sources first
+                # Model-generated URLs can be hallucinated, so prefer real source URLs
+                url = ""
+                if not use_sources_directly and title and web_sources:
+                    # Try fuzzy matching by title against verified web sources
+                    best_source, best_score = best_source_for_title(title, [s for sidx, s in enumerate(web_sources) if sidx not in used_source_indices])
+                    if best_score >= 0.3 and best_source:
+                        url = str(best_source.get("url", "")).strip()
+                        # Also update publisher from source if not provided
+                        if not publisher and best_source.get("publisher"):
+                            publisher = str(best_source.get("publisher", "")).strip()
+                        # Mark this source as used
                         for sidx, s in enumerate(web_sources):
-                            if sidx in used_source_indices:
-                                continue
-                            best_source, best_score = best_source_for_title(title, [s])
-                            # Require at least 30% similarity (lowered from 40% to improve result coverage)
-                            if best_score >= 0.3:
-                                url = str(s.get("url", "")).strip()
-                                # Also update publisher from source if not provided
-                                if not publisher and s.get("publisher"):
-                                    publisher = str(s.get("publisher", "")).strip()
+                            if s is best_source:
                                 used_source_indices.add(sidx)
                                 break
 
-                    # NOTE: Removed index-based fallback that caused off-by-one URL/summary mismatch
-                    # If fuzzy matching didn't find a URL, skip this result rather than mismatching
+                # If no verified source matched, check if model URL exists in web_sources
+                if not url and url_raw.startswith(("http://", "https://")):
+                    # Only trust model URL if it matches a real web source URL
+                    raw_normalized = normalize_url(url_raw)
+                    for sidx, s in enumerate(web_sources):
+                        if sidx in used_source_indices:
+                            continue
+                        source_url = str(s.get("url", "")).strip()
+                        if normalize_url(source_url) == raw_normalized:
+                            url = source_url  # Use the verified source URL
+                            used_source_indices.add(sidx)
+                            break
+                    # If model URL not in web_sources, only use it when we have no web_sources at all
                     if not url:
-                        print(f"[OpenAI Responses API] Skipping result with no URL match: {title[:50]}...")
-                        continue
+                        if not web_sources:
+                            url = url_raw
+                        else:
+                            print(f"[OpenAI Responses API] Model URL not in verified sources, skipping: {url_raw[:80]}...")
+
+                if not url:
+                    print(f"[OpenAI Responses API] Skipping result with no URL match: {title[:50]}...")
+                    continue
 
                 if not url or not title:
                     continue

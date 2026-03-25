@@ -12,7 +12,7 @@ import requests
 import secrets
 import pytz
 import base64
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import wraps
 from flask import Flask, request, jsonify, send_from_directory, Response, redirect, session, url_for
 from flask_cors import CORS
@@ -3427,6 +3427,49 @@ def save_newsletter_archive():
 # NEW 4-CARD SEARCH SYSTEM
 # =============================================================================
 
+PAYWALL_DOMAINS = [
+    'wsj.com', 'bloomberg.com', 'nytimes.com', 'ft.com', 'businessinsider.com',
+    'washingtonpost.com', 'economist.com', 'barrons.com', 'thetimes.co.uk',
+    'telegraph.co.uk', 'latimes.com', 'bostonglobe.com'
+]
+
+
+def filter_paywalled(results: list) -> list:
+    """Remove results from known paywalled domains."""
+    from urllib.parse import urlparse
+    filtered = []
+    for r in results:
+        url = r.get('url', '')
+        try:
+            domain = urlparse(url).netloc.lower().replace('www.', '')
+            if not any(domain == pw or domain.endswith('.' + pw) for pw in PAYWALL_DOMAINS):
+                filtered.append(r)
+        except Exception:
+            filtered.append(r)
+    return filtered
+
+
+def filter_by_recency(results: list, time_window: str = '30d') -> list:
+    """Filter out articles older than the requested time window.
+    Articles with no parseable date are kept (benefit of the doubt)."""
+    days_map = {'7d': 7, '15d': 15, '30d': 30, '90d': 90}
+    max_days = days_map.get(time_window, 30)
+    cutoff = datetime.now() - timedelta(days=max_days)
+    filtered = []
+    for r in results:
+        date_str = r.get('published_date') or r.get('published_at') or ''
+        if not date_str:
+            filtered.append(r)
+            continue
+        try:
+            pub_date = datetime.strptime(date_str[:10], '%Y-%m-%d')
+            if pub_date >= cutoff:
+                filtered.append(r)
+        except (ValueError, TypeError):
+            filtered.append(r)
+    return filtered
+
+
 def transform_to_shared_schema(results, source_card):
     """Transform search results to shared schema used by all 4 cards"""
     transformed = []
@@ -3500,7 +3543,15 @@ def search_sources_v2():
         time_window = data.get('time_window', '30d')
         exclude_urls = data.get('exclude_urls', [])
 
-        print(f"\n[API v2] Source Explorer: query='{query}', packs={source_packs}")
+        print(f"\n[API v2] Source Explorer: query='{query}', packs={source_packs}, time_window={time_window}")
+
+        # Convert time window to human-readable for query
+        time_desc = {
+            '7d': 'past week',
+            '15d': 'past 2 weeks',
+            '30d': 'past month',
+            '90d': 'past 3 months'
+        }.get(time_window, 'recent')
 
         # Expanded source pack sites (B2B and trade publications added)
         SITE_PACKS = {
@@ -3518,10 +3569,11 @@ def search_sources_v2():
             ]
         }
 
-        # Collect sites from selected packs
+        # Collect sites from selected packs (deduplicated)
         sites = []
         for pack in source_packs:
             sites.extend(SITE_PACKS.get(pack, []))
+        sites = list(set(sites))
 
         # Build site: queries with 3-query cascade
         if sites:
@@ -3532,26 +3584,26 @@ def search_sources_v2():
                 # Query 1: Site-specific with user query
                 f"""Search for: ({site_query}) {query}
 
-Find recent articles from these wedding and event industry sources.
+Find articles from the {time_desc} from these wedding and event industry sources.
 Return results with title, url, publisher, published_date, and summary.""",
 
                 # Query 2: Site-specific with broader topic
                 f"""Search for: ({site_query}) wedding venue business news
 
-Find recent business news about wedding venues or event spaces.
+Find business news from the {time_desc} about wedding venues or event spaces.
 Return results with title, url, publisher, published_date, and summary.""",
 
                 # Query 3: Fallback without site restriction
                 f"""Search for wedding venue industry news from trade publications.
 
-Find articles about: {query}
+Find articles from the {time_desc} about: {query}
 Focus on business insights, trends, and industry analysis.
 Return results with title, url, publisher, published_date, and summary."""
             ]
         else:
             queries = [
                 f"""Search for wedding venue industry news.
-Find articles about: {query}
+Find articles from the {time_desc} about: {query}
 Return results with title, url, publisher, published_date, and summary."""
             ]
 
@@ -3560,8 +3612,13 @@ Return results with title, url, publisher, published_date, and summary."""
         # Use multi-search with cascade
         search_results = multi_search(queries, max_results=8, exclude_urls=exclude_urls)
 
+        # Filter out paywalled sources and articles older than the requested time window
+        search_results = filter_paywalled(search_results)
+        search_results = filter_by_recency(search_results, time_window)
+        print(f"[Source Explorer] After recency/paywall filter ({time_window}): {len(search_results)} results")
+
         # Transform to shared schema
-        results = transform_to_shared_schema(search_results, 'explorer')
+        results = transform_to_shared_schema(search_results[:8], 'explorer')
 
         # Enrich with GPT-5.2 story angle analysis
         results = analyze_story_angles(results, query)
@@ -3856,6 +3913,11 @@ def search_insights_v2():
         # Step 1: Search all 5 signals simultaneously
         raw_results = search_all_signals(time_window=time_window, exclude_urls=exclude_urls)
 
+        # Filter out paywalled sources and stale articles
+        raw_results = filter_paywalled(raw_results)
+        raw_results = filter_by_recency(raw_results, time_window)
+        print(f"[Insight Builder] After recency/paywall filter ({time_window}): {len(raw_results)} results")
+
         # Step 2: Analyze results with GPT for industry impact
         enriched_results = analyze_industry_impact(raw_results)
 
@@ -4019,6 +4081,10 @@ def search_perplexity_v2():
         # Filter out excluded URLs
         if exclude_urls:
             search_results = [r for r in search_results if r.get('url') not in exclude_urls]
+
+        # Filter out paywalled sources and stale articles
+        search_results = filter_paywalled(search_results)
+        search_results = filter_by_recency(search_results, time_window)
 
         # Take top 8 results for more options
         results = search_results[:8]
