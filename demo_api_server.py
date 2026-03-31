@@ -1494,20 +1494,30 @@ def generate_subject_options():
         }
         season = month_to_season.get(month.lower(), 'spring')
 
+        # Strip HTML tags so Claude sees actual text, not markup
+        def _plain(html_str):
+            text = re.sub(r'<[^>]+>', ' ', str(html_str or ''))
+            text = text.replace('&nbsp;', ' ').replace('&amp;', '&')
+            return ' '.join(text.split())  # collapse whitespace
+
+        news_text = _plain(news.get('content', ''))[:500]
+        tip_text = _plain(tip.get('content', ''))[:500]
+        trend_text = _plain(trend.get('content', ''))[:500]
+
         # Create summary of newsletter content
         content_summary = f"""Newsletter for {month.capitalize()} ({season.capitalize()} Season):
 
 NEWS SECTION:
 Title: {news.get('title', '')}
-Content: {str(news.get('content', ''))[:300]}...
+Content: {news_text}
 
 TIP SECTION:
 Title: {tip.get('title', '')}
-Content: {str(tip.get('content', ''))[:300]}...
+Content: {tip_text}
 
 TREND SECTION:
 Title: {trend.get('title', '')}
-Content: {str(trend.get('content', ''))[:300]}..."""
+Content: {trend_text}"""
 
         # Define tone instructions
         tone_instructions = {
