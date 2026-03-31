@@ -48,14 +48,26 @@ class ClaudeClient:
         # Build messages
         messages = [{"role": "user", "content": prompt}]
 
-        # Call Claude API
-        response = self.client.messages.create(
-            model=model_name,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            system=system_prompt if system_prompt else "",
-            messages=messages
-        )
+        # Call Claude API with retry on 529 overloaded
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                response = self.client.messages.create(
+                    model=model_name,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                    system=system_prompt if system_prompt else "",
+                    messages=messages
+                )
+                break
+            except Exception as e:
+                if '529' in str(e) or 'overloaded' in str(e).lower():
+                    if attempt < max_retries - 1:
+                        wait = 2 ** attempt  # 1s, 2s
+                        print(f"[Claude] 529 overloaded, retrying in {wait}s (attempt {attempt + 1}/{max_retries})...")
+                        time.sleep(wait)
+                        continue
+                raise
 
         end_time = time.time()
         latency_ms = int((end_time - start_time) * 1000)
