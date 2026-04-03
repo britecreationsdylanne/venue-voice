@@ -2794,7 +2794,7 @@ def export_to_docs():
         recipients = data.get('recipients', [])  # List of email addresses
 
         # Google Drive folder ID for saving documents - Venue Voice folder
-        GOOGLE_DRIVE_FOLDER_ID = '1OvlOIelSnFFBgWtk6XmbwXtp4Ii29XPw'
+        GOOGLE_DRIVE_FOLDER_ID = '1kkn_ssceOTP0BJsB7H8ZGH8ancxDglJ1'
 
         safe_print(f"[API] Exporting to Google Docs: {title}")
 
