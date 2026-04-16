@@ -5622,17 +5622,58 @@
                 .replace(/{{TREND_URL}}/g, trendUrl);
         }
 
+        // Get the source URL for a section, checking all possible locations
+        function getSectionUrl(section) {
+            const selected = section === 'news' ? selectedNews : section === 'tip' ? selectedTip : selectedTrend;
+            return selected?.source_url || selected?.url || '#';
+        }
+
+        // Patch source URLs into already-edited HTML so Read more buttons always link to real articles
+        function patchSourceUrls(html) {
+            const newsUrl = getSectionUrl('news');
+            const tipUrl = getSectionUrl('tip');
+            const trendUrl = getSectionUrl('trend');
+            // The rendered HTML has 3 sections in order, each with "Read more" buttons.
+            // We split by the section label badges to isolate each section, then replace href="#" within each.
+            const sections = [
+                { label: 'Tip of the Month', url: tipUrl },
+                { label: 'Trend Alert', url: trendUrl }
+            ];
+            // News section is everything before "Tip of the Month"
+            // Replace all href="#" in the news portion with newsUrl
+            let tipIdx = html.indexOf('Tip of the Month');
+            if (tipIdx === -1) tipIdx = html.length;
+            let trendIdx = html.indexOf('Trend Alert');
+            if (trendIdx === -1) trendIdx = html.length;
+
+            const newsPart = html.substring(0, tipIdx);
+            const tipPart = html.substring(tipIdx, trendIdx);
+            const trendPart = html.substring(trendIdx);
+
+            function replaceHashHrefs(segment, url) {
+                if (!url || url === '#') return segment;
+                return segment.replace(/href="#"/g, `href="${url}"`);
+            }
+
+            return replaceHashHrefs(newsPart, newsUrl) + replaceHashHrefs(tipPart, tipUrl) + replaceHashHrefs(trendPart, trendUrl);
+        }
+
         function generateNewsletterHTML() {
             // Get subject line and preheader
             const subjectLine = document.getElementById('finalSubjectLine')?.value || 'Your Monthly Newsletter';
             const preheader = document.getElementById('finalPreheader')?.value || 'Latest insights inside';
+
+            // If we have savedEditedHTML, patch in current source URLs to preserve user edits
+            if (savedEditedHTML) {
+                return patchSourceUrls(savedEditedHTML);
+            }
 
             // Prepare news data
             const newsData = {
                 title: selectedNews?.title || generatedNewsTitle || 'News Update',
                 content: document.getElementById('newsContentBox')?.innerHTML || generatedNewsContent || '',
                 image: generatedImages.news?.url || '',
-                url: selectedNews?.source_url || selectedNews?.url || '#'
+                url: getSectionUrl('news')
             };
 
             // Prepare tip data
@@ -5641,7 +5682,7 @@
                 content: document.getElementById('tipContentBox')?.innerHTML || generatedTipContent || '',
                 subtitle: generatedTipSubtitle || '',
                 image: generatedImages.tip?.url || '',
-                url: selectedTip?.source_url || selectedTip?.url || '#'
+                url: getSectionUrl('tip')
             };
 
             // Prepare trend data
@@ -5650,7 +5691,7 @@
                 content: document.getElementById('trendContentBox')?.innerHTML || generatedTrendContent || '',
                 subtitle: generatedTrendSubtitle || '',
                 image: generatedImages.trend?.url || '',
-                url: selectedTrend?.source_url || selectedTrend?.url || '#'
+                url: getSectionUrl('trend')
             };
 
             // Get meme URL
