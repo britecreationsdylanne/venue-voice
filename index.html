@@ -5633,29 +5633,27 @@
             const newsUrl = getSectionUrl('news');
             const tipUrl = getSectionUrl('tip');
             const trendUrl = getSectionUrl('trend');
-            // The rendered HTML has 3 sections in order, each with "Read more" buttons.
-            // We split by the section label badges to isolate each section, then replace href="#" within each.
-            const sections = [
-                { label: 'Tip of the Month', url: tipUrl },
-                { label: 'Trend Alert', url: trendUrl }
-            ];
-            // News section is everything before "Tip of the Month"
-            // Replace all href="#" in the news portion with newsUrl
+            // Split rendered HTML into 4 zones: news | tip | trend | footer
+            // so we only replace href="#" within the correct section
             let tipIdx = html.indexOf('Tip of the Month');
             if (tipIdx === -1) tipIdx = html.length;
             let trendIdx = html.indexOf('Trend Alert');
             if (trendIdx === -1) trendIdx = html.length;
+            let footerIdx = html.indexOf("Let's Connect");
+            if (footerIdx === -1) footerIdx = html.indexOf('FOOTER');
+            if (footerIdx === -1) footerIdx = html.length;
 
             const newsPart = html.substring(0, tipIdx);
             const tipPart = html.substring(tipIdx, trendIdx);
-            const trendPart = html.substring(trendIdx);
+            const trendPart = html.substring(trendIdx, footerIdx);
+            const footerPart = html.substring(footerIdx);
 
             function replaceHashHrefs(segment, url) {
                 if (!url || url === '#') return segment;
                 return segment.replace(/href="#"/g, `href="${url}"`);
             }
 
-            return replaceHashHrefs(newsPart, newsUrl) + replaceHashHrefs(tipPart, tipUrl) + replaceHashHrefs(trendPart, trendUrl);
+            return replaceHashHrefs(newsPart, newsUrl) + replaceHashHrefs(tipPart, tipUrl) + replaceHashHrefs(trendPart, trendUrl) + footerPart;
         }
 
         function generateNewsletterHTML() {
