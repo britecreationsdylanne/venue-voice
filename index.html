@@ -3418,15 +3418,18 @@
                 const content = {
                     news: {
                         title: selectedNews?.title || generatedNewsTitle || 'Industry News',
-                        body: newsContent
+                        body: newsContent,
+                        source_url: selectedNews?.source_url || selectedNews?.url || ''
                     },
                     tip: {
                         title: selectedTip?.title || generatedTipTitle || 'Venue Tip',
-                        body: tipContent
+                        body: tipContent,
+                        source_url: selectedTip?.source_url || selectedTip?.url || ''
                     },
                     trend: {
                         title: selectedTrend?.title || generatedTrendTitle || 'Trending Now',
-                        body: trendContent
+                        body: trendContent,
+                        source_url: selectedTrend?.source_url || selectedTrend?.url || ''
                     }
                 };
 

@@ -2950,38 +2950,30 @@ def export_to_docs():
         # Add newsletter sections
         add_text(title, heading=True)
 
-        if content.get('news'):
-            add_text('Industry News', bold=True)
-            news = content['news']
-            if isinstance(news, dict):
-                if news.get('title'):
-                    add_text(news['title'])
-                if news.get('body'):
-                    add_text(news['body'])
+        # Helper: render a section with optional source URL line so the Google
+        # Doc shows where each article came from (matches the "Read more"
+        # button in the rendered email). URL renders only when present.
+        def render_section(label, section):
+            add_text(label, bold=True)
+            if isinstance(section, dict):
+                if section.get('title'):
+                    add_text(section['title'])
+                if section.get('body'):
+                    add_text(section['body'])
+                src_url = section.get('source_url') or section.get('url') or ''
+                if src_url:
+                    add_text(f'Source: {src_url}')
             else:
-                add_text(str(news))
+                add_text(str(section))
+
+        if content.get('news'):
+            render_section('Industry News', content['news'])
 
         if content.get('tip'):
-            add_text('Venue Tip', bold=True)
-            tip = content['tip']
-            if isinstance(tip, dict):
-                if tip.get('title'):
-                    add_text(tip['title'])
-                if tip.get('body'):
-                    add_text(tip['body'])
-            else:
-                add_text(str(tip))
+            render_section('Venue Tip', content['tip'])
 
         if content.get('trend'):
-            add_text('Trending Now', bold=True)
-            trend = content['trend']
-            if isinstance(trend, dict):
-                if trend.get('title'):
-                    add_text(trend['title'])
-                if trend.get('body'):
-                    add_text(trend['body'])
-            else:
-                add_text(str(trend))
+            render_section('Trending Now', content['trend'])
 
         if content.get('special_section'):
             ss = content['special_section']
