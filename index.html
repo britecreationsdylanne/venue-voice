@@ -7376,6 +7376,32 @@
                 if (d.imagePrompts && Object.keys(d.imagePrompts).length > 0) {
                     basePrompts = d.imagePrompts;
                     promptsAlreadyGenerated = true;
+                } else if (generatedImages) {
+                    // Recovery for pre-fix drafts where imagePrompts was silently
+                    // dropped by the backend but the prompts are still embedded
+                    // in each generated image. Pull them back out so step 8
+                    // textareas can be populated and basePrompts is restored.
+                    const recovered = {
+                        news: generatedImages.news?.prompt || '',
+                        tip: generatedImages.tip?.prompt || '',
+                        trend: generatedImages.trend?.prompt || ''
+                    };
+                    if (recovered.news || recovered.tip || recovered.trend) {
+                        basePrompts = recovered;
+                        promptsAlreadyGenerated = true;
+                    }
+                }
+                // Populate the step 8 prompt textareas from basePrompts so the
+                // user sees the prompts that produced their existing images
+                // when they land on step 8 (otherwise the textareas are blank
+                // and the page looks broken).
+                if (basePrompts) {
+                    const newsPromptEl = document.getElementById('newsImagePromptText');
+                    const tipPromptEl = document.getElementById('tipImagePromptText');
+                    const trendPromptEl = document.getElementById('trendImagePromptText');
+                    if (newsPromptEl && basePrompts.news) newsPromptEl.value = basePrompts.news;
+                    if (tipPromptEl && basePrompts.tip) tipPromptEl.value = basePrompts.tip;
+                    if (trendPromptEl && basePrompts.trend) trendPromptEl.value = basePrompts.trend;
                 }
                 if (generatedImages && (generatedImages.news || generatedImages.tip || generatedImages.trend)) {
                     imagesAlreadyGenerated = true;
