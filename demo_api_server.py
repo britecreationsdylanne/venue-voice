@@ -4259,6 +4259,13 @@ def save_draft():
             'currentStep': data.get('currentStep'),
             'generatedContent': data.get('generatedContent'),
             'generatedImages': data.get('generatedImages'),
+            # Previously dropped on the server — frontend was sending these
+            # but the dict didn't include them, so drafts came back with
+            # blank prompt textareas, missing article selections, and lost
+            # special-section state on reload.
+            'imagePrompts': data.get('imagePrompts'),
+            'selectedArticles': data.get('selectedArticles'),
+            'specialSection': data.get('specialSection'),
             'subjectLine': data.get('subjectLine'),
             'preheader': data.get('preheader'),
             'lastSavedBy': data.get('savedBy', 'unknown'),

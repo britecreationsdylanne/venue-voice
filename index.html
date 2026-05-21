@@ -3960,10 +3960,24 @@
             }
 
             try {
-                // Get the edited values from the form
-                const scenePrompt = document.getElementById('memeScenePrompt').value;
-                const topText = document.getElementById('memeTopText').value;
-                const bottomText = document.getElementById('memeBottomText').value;
+                // Get the edited values from the form — try step 10_5 fields
+                // first, then step 11 fields, then persisted meme state. The
+                // "Regenerate Meme" button on step 11 was crashing because
+                // memeScenePrompt/memeTopText/memeBottomText only exist on
+                // step 10_5 (Meme Concept); on step 11 they're null and
+                // .value throws.
+                const scenePrompt = document.getElementById('memeScenePrompt')?.value
+                    || document.getElementById('memePrompt')?.value
+                    || generatedImages.meme?.prompt
+                    || '';
+                const topText = document.getElementById('memeTopText')?.value
+                    || generatedImages.meme?.text_top
+                    || (Array.isArray(memeTextOverlays) ? memeTextOverlays[0]?.text : '')
+                    || '';
+                const bottomText = document.getElementById('memeBottomText')?.value
+                    || generatedImages.meme?.text_bottom
+                    || (Array.isArray(memeTextOverlays) ? memeTextOverlays[1]?.text : '')
+                    || '';
 
                 // Navigate to Step 11 (Meme Generation)
                 showStep(11);
@@ -7121,15 +7135,15 @@
         }
 
         function showStep(stepNum) {
-            // Auto-save draft at key transitions (skip during draft load to prevent overwrites)
-            if (!isLoadingDraft && [5, '5b', '7b', 10, 12, 13].includes(stepNum)) {
-                saveDraft();
-            }
-
             document.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
             document.getElementById(`step${stepNum}`).classList.add('active');
             updateProgress(stepNum);
             window.scrollTo(0, 0);
+            // Auto-save AFTER activating the new step so currentStep reflects
+            // where the user is now (not the step they're leaving). Fires on
+            // EVERY transition so no step is silently un-tracked (meme step
+            // was being missed by the old whitelist).
+            if (!isLoadingDraft) saveDraft();
 
             // Step 8: show prompts immediately if already generated (skip loading spinner)
             if (stepNum == 8 || stepNum === '8') {
