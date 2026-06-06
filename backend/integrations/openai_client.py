@@ -92,6 +92,94 @@ class OpenAIClient:
             "raw_response": response,  # Include full response for tool calls
         }
 
+    def generate_image(
+        self,
+        prompt: str,
+        model: Optional[str] = None,
+        aspect_ratio: str = "16:9",
+        image_size: str = "1K",
+        number_of_images: int = 1,
+        quality: Optional[str] = None,
+    ) -> Dict:
+        """
+        Generate an image using OpenAI's image API (gpt-image-2).
+
+        Drop-in replacement for the Gemini image client: returns base64 PNG
+        data in the same dict shape so the existing PIL resize pipeline works.
+
+        Args:
+            prompt: Image description prompt
+            model: Image model to use (default: gpt-image-2)
+            aspect_ratio: "16:9", "1:1", or "9:16" - mapped to a supported size
+            image_size: Kept for compatibility (gpt-image-2 sizing via aspect_ratio)
+            number_of_images: Number of images to generate
+            quality: "low", "medium", or "high" (default: DEFAULT_IMAGE_QUALITY or "medium")
+
+        Returns:
+            {
+                "image_data": "base64_encoded_png",
+                "prompt": "original prompt",
+                "model": "model-used",
+                "cost_estimate": "$0.06",
+                "generation_time_ms": 1234
+            }
+        """
+        if not self.client:
+            raise ValueError("OpenAI API key not configured")
+
+        model_name = model or os.getenv("DEFAULT_IMAGE_MODEL", "gpt-image-2")
+        quality = quality or os.getenv("DEFAULT_IMAGE_QUALITY", "medium")
+
+        # Map aspect ratio to a gpt-image-2 supported size (1024-based)
+        size_map = {
+            "16:9": "1536x1024",  # landscape (news + tip/trend banners)
+            "9:16": "1024x1536",  # portrait
+            "1:1": "1024x1024",   # square (memes)
+        }
+        size = size_map.get(aspect_ratio, "1536x1024")
+
+        start_time = time.time()
+
+        try:
+            print(f"[GPT-IMAGE-2] Using model: {model_name} ({size}, quality={quality})")
+            print(f"[GPT-IMAGE-2] Prompt: {prompt[:100]}...")
+
+            response = self.client.images.generate(
+                model=model_name,
+                prompt=prompt,
+                size=size,
+                quality=quality,
+                n=number_of_images,
+            )
+
+            generation_time_ms = int((time.time() - start_time) * 1000)
+
+            # gpt-image-2 returns base64-encoded PNG in b64_json
+            image_data = response.data[0].b64_json
+            if not image_data:
+                raise ValueError("No image data in response")
+
+            # Approximate per-image cost by quality tier at 1024-based sizes
+            cost_by_quality = {"low": 0.01, "medium": 0.06, "high": 0.22}
+            cost_estimate = cost_by_quality.get(quality, 0.06) * number_of_images
+
+            print(f"[GPT-IMAGE-2] Image generated, base64 size: {len(image_data)} chars")
+
+            return {
+                "image_data": image_data,
+                "prompt": prompt,
+                "model": model_name,
+                "cost_estimate": f"${cost_estimate:.2f}",
+                "generation_time_ms": generation_time_ms,
+            }
+
+        except Exception as e:
+            print(f"[GPT-IMAGE-2 ERROR] Image generation failed: {str(e)}")
+            print(f"[GPT-IMAGE-2 ERROR] Model: {model_name}, Prompt: {prompt[:100]}...")
+            import traceback
+            traceback.print_exc()
+            raise
+
     def generate_newsletter_section(
         self,
         section_type: str,

@@ -668,7 +668,7 @@ def get_trends():
 @app.route('/api/research-articles', methods=['POST'])
 def research_articles():
     """
-    GPT-5.2 researches selected articles and produces detailed summaries.
+    GPT-5.5 researches selected articles and produces detailed summaries.
     - NEWS: One-page briefing (~400-500 words)
     - TIP: Half-page briefing (~200-250 words)
     - TREND: Half-page briefing (~200-250 words)
@@ -679,7 +679,7 @@ def research_articles():
         tip_topic = data.get('tip_topic')
         trend_topic = data.get('trend_topic')
 
-        print(f"\n[API] Researching articles with GPT-5.2...")
+        print(f"\n[API] Researching articles with GPT-5.5...")
 
         research_results = {}
 
@@ -717,7 +717,7 @@ Target: 400-500 words total. Be factual, cite specifics from the summary, avoid 
 
             news_research = openai_client.generate_content(
                 prompt=news_research_prompt,
-                model="gpt-5.2",
+                model="gpt-5.5",
                 temperature=0.5,
                 max_tokens=1500
             )
@@ -752,7 +752,7 @@ Target: 200-250 words total. Be practical and actionable."""
 
             tip_research = openai_client.generate_content(
                 prompt=tip_research_prompt,
-                model="gpt-5.2",
+                model="gpt-5.5",
                 temperature=0.5,
                 max_tokens=800
             )
@@ -787,7 +787,7 @@ Target: 200-250 words total. Focus on opportunity and inspiration."""
 
             trend_research = openai_client.generate_content(
                 prompt=trend_research_prompt,
-                model="gpt-5.2",
+                model="gpt-5.5",
                 temperature=0.5,
                 max_tokens=800
             )
@@ -883,7 +883,7 @@ Output the three subsections with bold labels. Use plain text with line breaks b
                 news_result = claude_client.generate_content(
                     prompt=news_user_prompt,
                     system_prompt=news_system_prompt,
-                    model="claude-opus-4-5-20251101",
+                    model="claude-opus-4-8",
                     temperature=0.65,
                     max_tokens=600
                 )
@@ -945,7 +945,7 @@ SUBTITLE: [your subtitle]"""
                 tip_title_result = claude_client.generate_content(
                     prompt=tip_title_prompt,
                     system_prompt=tip_title_system,
-                    model="claude-opus-4-5-20251101",
+                    model="claude-opus-4-8",
                     temperature=0.65,
                     max_tokens=60
                 )
@@ -1004,7 +1004,7 @@ Output ONLY the paragraph text, no title or formatting."""
                 tip_result = claude_client.generate_content(
                     prompt=tip_user_prompt,
                     system_prompt=tip_system_prompt,
-                    model="claude-opus-4-5-20251101",
+                    model="claude-opus-4-8",
                     temperature=0.65,
                     max_tokens=200
                 )
@@ -1054,7 +1054,7 @@ SUBTITLE: [your subtitle]"""
                 trend_title_result = claude_client.generate_content(
                     prompt=trend_title_prompt,
                     system_prompt=trend_title_system,
-                    model="claude-opus-4-5-20251101",
+                    model="claude-opus-4-8",
                     temperature=0.65,
                     max_tokens=60
                 )
@@ -1113,7 +1113,7 @@ Output ONLY the paragraph text, no title or formatting."""
                 trend_result = claude_client.generate_content(
                     prompt=trend_user_prompt,
                     system_prompt=trend_system_prompt,
-                    model="claude-opus-4-5-20251101",
+                    model="claude-opus-4-8",
                     temperature=0.65,
                     max_tokens=180
                 )
@@ -1769,9 +1769,9 @@ def generate_images():
         if single_prompt and single_section:
             print(f"\n[API] Single image request for section: {single_section}")
             safe_print(f"  Prompt: {single_prompt}")
-            image_result = gemini_client.generate_image(
+            image_result = openai_client.generate_image(
                 prompt=single_prompt,
-                model="gemini-3-pro-image-preview",
+                model="gpt-image-2",
                 aspect_ratio="16:9",
                 image_size="1K"
             )
@@ -1784,7 +1784,7 @@ def generate_images():
         sections = data.get('sections', {})
         prompts = data.get('prompts', {})  # Pre-generated or user-edited prompts
 
-        print(f"\n[API] Generating images with Nano Banana (Gemini)...")
+        print(f"\n[API] Generating images with OpenAI gpt-image-2...")
         print(f"[API] Received {len(prompts)} prompts")
 
         images = {}
@@ -1802,11 +1802,11 @@ def generate_images():
             else:
                 aspect_ratio = "16:9"  # Wide landscape for banner-style tip/trend images
 
-            # Generate with Gemini 3 Pro Image Preview
-            print(f"  [{section_name.upper()}] Calling Gemini 3 Pro Image...")
-            image_result = gemini_client.generate_image(
+            # Generate with OpenAI gpt-image-2
+            print(f"  [{section_name.upper()}] Calling gpt-image-2...")
+            image_result = openai_client.generate_image(
                 prompt=prompt,
-                model="gemini-3-pro-image-preview",
+                model="gpt-image-2",
                 aspect_ratio=aspect_ratio,
                 image_size="1K"
             )
@@ -2077,7 +2077,7 @@ Return ONLY in this exact JSON format:
 
 @app.route('/api/generate-meme', methods=['POST'])
 def generate_meme():
-    """Generate meme with Nano Banana using scene description and text overlay"""
+    """Generate meme with gpt-image-2 using scene description and text overlay"""
     try:
         data = request.json
         month = data.get('month')
@@ -2087,7 +2087,7 @@ def generate_meme():
         text_overlay_top = data.get('text_top', '').upper()
         text_overlay_bottom = data.get('text_bottom', '').upper()
 
-        print(f"\n[API] Generating meme with Nano Banana for {month}...")
+        print(f"\n[API] Generating meme with gpt-image-2 for {month}...")
         safe_print(f"    Text overlay - Top: '{text_overlay_top}', Bottom: '{text_overlay_bottom}'")
 
         if custom_prompt:
@@ -2144,10 +2144,10 @@ Return ONLY the image prompt, nothing else."""
             text_overlay_top = "WEDDING SEASON"
             text_overlay_bottom = "IT'S HAPPENING"
 
-        # Generate with Gemini 3 Pro Image Preview
-        meme_result = gemini_client.generate_image(
+        # Generate with OpenAI gpt-image-2
+        meme_result = openai_client.generate_image(
             prompt=prompt,
-            model="gemini-3-pro-image-preview",
+            model="gpt-image-2",
             aspect_ratio="1:1",
             image_size="1K"
         )
@@ -3627,7 +3627,7 @@ Return results with title, url, publisher, published_date, and summary."""
         # Transform to shared schema
         results = transform_to_shared_schema(search_results[:8], 'explorer')
 
-        # Enrich with GPT-5.2 story angle analysis
+        # Enrich with GPT-5.5 story angle analysis
         results = analyze_story_angles(results, query)
 
         # Query summaries for UI display
@@ -3664,7 +3664,7 @@ def analyze_story_angles(results: list, user_query: str) -> list:
     try:
         # Get model config for research enrichment task
         model_config = get_model_for_task('research_enrichment')
-        model_id = model_config.get('id', 'gpt-5.2')
+        model_id = model_config.get('id', 'gpt-5.5')
         max_tokens_param = model_config.get('max_tokens_param', 'max_tokens')
 
         print(f"[Source Explorer] Using model: {model_id}")
@@ -3815,7 +3815,7 @@ def analyze_industry_impact(results: list) -> list:
     try:
         # Get model config for research enrichment task
         model_config = get_model_for_task('research_enrichment')
-        model_id = model_config.get('id', 'gpt-5.2')
+        model_id = model_config.get('id', 'gpt-5.5')
         max_tokens_param = model_config.get('max_tokens_param', 'max_tokens')
 
         print(f"[Insight Builder] Using model: {model_id}")
@@ -3970,7 +3970,7 @@ def enrich_results_with_llm(results: list, original_query: str) -> list:
     try:
         # Get model config for research enrichment task
         model_config = get_model_for_task('research_enrichment')
-        model_id = model_config.get('id', 'gpt-5.2')
+        model_id = model_config.get('id', 'gpt-5.5')
         max_tokens_param = model_config.get('max_tokens_param', 'max_tokens')
 
         print(f"[Enrichment] Using model: {model_id}")
@@ -4046,7 +4046,7 @@ Return ONLY the JSON array, no other text."""
         impact_order = {'HIGH': 0, 'MEDIUM': 1, 'LOW': 2}
         results.sort(key=lambda x: impact_order.get(x.get('impact', 'LOW'), 2))
 
-        print(f"[LLM Enrichment] Successfully enriched {len(results)} results with GPT-5.2")
+        print(f"[LLM Enrichment] Successfully enriched {len(results)} results with GPT-5.5")
         return results
 
     except Exception as e:

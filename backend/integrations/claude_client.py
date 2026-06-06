@@ -18,7 +18,7 @@ class ClaudeClient:
             raise ValueError("ANTHROPIC_API_KEY not found in environment")
 
         self.client = Anthropic(api_key=self.api_key)
-        self.default_model = "claude-opus-4-5-20251101"  # Claude Opus 4.5 (frontier model for writing)
+        self.default_model = "claude-opus-4-8"  # Claude Opus 4.8 (frontier model for writing)
 
     def generate_content(
         self,
@@ -36,7 +36,7 @@ class ClaudeClient:
             system_prompt: System instructions
             temperature: Creativity (0-1)
             max_tokens: Max response length
-            model: Model to use (defaults to claude-3-5-sonnet)
+            model: Model to use (defaults to claude-opus-4-8)
 
         Returns:
             dict with content, model, tokens, cost_estimate, latency_ms
