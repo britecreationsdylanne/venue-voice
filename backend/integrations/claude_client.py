@@ -24,7 +24,7 @@ class ClaudeClient:
         self,
         prompt: str,
         system_prompt: str = None,
-        temperature: float = 0.7,
+        temperature: float = 0.7,  # accepted for compatibility but NOT sent to the API (Opus 4.7/4.8 reject it)
         max_tokens: int = 2000,
         model: str = None
     ) -> dict:
@@ -55,7 +55,7 @@ class ClaudeClient:
                 response = self.client.messages.create(
                     model=model_name,
                     max_tokens=max_tokens,
-                    temperature=temperature,
+                    # temperature removed: Opus 4.7/4.8 reject temperature/top_p/top_k (400)
                     system=system_prompt if system_prompt else "",
                     messages=messages
                 )
@@ -144,7 +144,7 @@ Return as JSON array with this structure:
             response = self.client.messages.create(
                 model=self.default_model,
                 max_tokens=2000,
-                temperature=0.3,
+                # temperature removed: Opus 4.7/4.8 reject temperature/top_p/top_k (400)
                 messages=[{"role": "user", "content": search_prompt}],
                 tools=[{
                     "type": "web_search_20250305",
