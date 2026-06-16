@@ -3445,25 +3445,159 @@ def filter_paywalled(results: list) -> list:
     return filtered
 
 
-def filter_by_recency(results: list, time_window: str = '30d') -> list:
-    """Filter out articles older than the requested time window.
-    Articles with no parseable date are kept (benefit of the doubt)."""
+# Cache of resolved real publish dates keyed by URL (lives for the process)
+_PAGE_DATE_CACHE = {}
+
+
+def _parse_date_flexible(date_str):
+    """Parse a date string in many common formats -> naive datetime, or None.
+    Handles ISO (with/without time/zone), YYYY-MM-DD, US/long formats, etc."""
+    if not date_str:
+        return None
+    s = str(date_str).strip()
+    if not s:
+        return None
+    # ISO 8601 (e.g. 2026-06-01T13:45:00Z / +00:00)
+    try:
+        iso = s.replace('Z', '+00:00')
+        dt = datetime.fromisoformat(iso)
+        return dt.replace(tzinfo=None)
+    except Exception:
+        pass
+    # dateutil handles almost everything else if available
+    try:
+        from dateutil import parser as _dup
+        dt = _dup.parse(s, fuzzy=True)
+        return dt.replace(tzinfo=None)
+    except Exception:
+        pass
+    # Manual fallbacks
+    for fmt in ('%Y-%m-%d', '%Y/%m/%d', '%m/%d/%Y', '%d/%m/%Y',
+                '%B %d, %Y', '%b %d, %Y', '%d %B %Y', '%d %b %Y',
+                '%Y-%m-%dT%H:%M:%S'):
+        try:
+            return datetime.strptime(s[:len(fmt) + 6], fmt)
+        except Exception:
+            continue
+    return None
+
+
+def _fetch_page_date(url, timeout=6):
+    """Fetch an article page and extract its real published date from metadata.
+    Returns a naive datetime or None. Best-effort; never raises."""
+    if not url:
+        return None
+    if url in _PAGE_DATE_CACHE:
+        return _PAGE_DATE_CACHE[url]
+    result = None
+    try:
+        from bs4 import BeautifulSoup
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+        resp = requests.get(url, headers=headers, timeout=timeout)
+        if resp.status_code == 200:
+            soup = BeautifulSoup(resp.text, 'html.parser')
+            candidates = []
+            meta_lookups = [
+                {'property': 'article:published_time'},
+                {'property': 'og:published_time'},
+                {'name': 'article:published_time'},
+                {'property': 'article:modified_time'},
+                {'name': 'date'},
+                {'name': 'publishdate'},
+                {'name': 'publish-date'},
+                {'name': 'pubdate'},
+                {'name': 'dc.date'},
+                {'name': 'dc.date.issued'},
+                {'itemprop': 'datePublished'},
+            ]
+            for attrs in meta_lookups:
+                tag = soup.find('meta', attrs=attrs)
+                if tag and tag.get('content'):
+                    candidates.append(tag.get('content'))
+            # JSON-LD datePublished
+            for script in soup.find_all('script', type='application/ld+json'):
+                try:
+                    blob = json.loads(script.string or '{}')
+                    stack = [blob]
+                    while stack:
+                        node = stack.pop()
+                        if isinstance(node, dict):
+                            if node.get('datePublished'):
+                                candidates.append(node['datePublished'])
+                            stack.extend(node.values())
+                        elif isinstance(node, list):
+                            stack.extend(node)
+                except Exception:
+                    continue
+            # <time datetime="...">
+            time_tag = soup.find('time')
+            if time_tag and time_tag.get('datetime'):
+                candidates.append(time_tag.get('datetime'))
+
+            for c in candidates:
+                d = _parse_date_flexible(c)
+                if d:
+                    result = d
+                    break
+    except Exception:
+        result = None
+    _PAGE_DATE_CACHE[url] = result
+    return result
+
+
+def filter_by_recency(results: list, time_window: str = '30d', verify: bool = True) -> list:
+    """Filter out articles outside the requested time window using the article's
+    REAL publish date (read from page metadata), not the model's claimed date.
+
+    - Model-claimed dates are only trusted to DROP clearly-old articles cheaply.
+    - Articles that claim to be recent are verified against the live page to
+      catch hallucinated-recent dates.
+    - Articles with no determinable date are dropped (recency was explicitly
+      requested) — with a safety net so a card never ends up empty for this
+      reason alone.
+    """
     days_map = {'7d': 7, '15d': 15, '30d': 30, '90d': 90}
     max_days = days_map.get(time_window, 30)
     cutoff = datetime.now() - timedelta(days=max_days)
-    filtered = []
-    for r in results:
-        date_str = r.get('published_date') or r.get('published_at') or ''
-        if not date_str:
-            filtered.append(r)
+
+    def resolve(r):
+        model_date = _parse_date_flexible(r.get('published_date') or r.get('published_at') or '')
+        if model_date is not None and model_date < cutoff:
+            # Model says it's old; trust that and skip the fetch
+            return model_date
+        if verify and r.get('url'):
+            page_date = _fetch_page_date(r['url'])
+            if page_date is not None:
+                return page_date
+        return model_date  # may be a recent claim we couldn't verify, or None
+
+    from concurrent.futures import ThreadPoolExecutor
+    try:
+        with ThreadPoolExecutor(max_workers=10) as ex:
+            dates = list(ex.map(resolve, results))
+    except Exception as e:
+        print(f"[Recency] date resolution failed ({e}); skipping recency filter")
+        return results
+
+    kept, dropped_old, dropped_undated = [], 0, 0
+    for r, d in zip(results, dates):
+        if d is None:
+            dropped_undated += 1
             continue
-        try:
-            pub_date = datetime.strptime(date_str[:10], '%Y-%m-%d')
-            if pub_date >= cutoff:
-                filtered.append(r)
-        except (ValueError, TypeError):
-            filtered.append(r)
-    return filtered
+        if d >= cutoff:
+            # Surface the verified real date to the UI
+            r['published_date'] = d.strftime('%Y-%m-%d')
+            kept.append(r)
+        else:
+            dropped_old += 1
+
+    print(f"[Recency] window={time_window}: kept {len(kept)}, dropped {dropped_old} too-old, {dropped_undated} undated")
+
+    # Safety net: never wipe out a card purely because dates couldn't be read
+    if not kept and dropped_undated and not dropped_old:
+        print("[Recency] All remaining results were undated; returning them unfiltered as fallback")
+        return results
+    return kept
 
 
 def transform_to_shared_schema(results, source_card):
