@@ -3493,9 +3493,19 @@ def _fetch_page_date(url, timeout=6):
     try:
         from bs4 import BeautifulSoup
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-        resp = requests.get(url, headers=headers, timeout=timeout)
+        # Stream and read only the first ~150KB. Publish-date metadata lives in
+        # the <head>, so we avoid downloading/parsing entire (multi-MB) pages —
+        # this keeps memory low and prevents OOM under concurrency.
+        resp = requests.get(url, headers=headers, timeout=timeout, stream=True)
         if resp.status_code == 200:
-            soup = BeautifulSoup(resp.text, 'html.parser')
+            html = ''
+            for chunk in resp.iter_content(chunk_size=16384, decode_unicode=True):
+                if chunk:
+                    html += chunk if isinstance(chunk, str) else chunk.decode('utf-8', 'ignore')
+                    if len(html) >= 150_000 or '</head>' in html.lower():
+                        break
+            resp.close()
+            soup = BeautifulSoup(html, 'html.parser')
             candidates = []
             meta_lookups = [
                 {'property': 'article:published_time'},
@@ -3573,7 +3583,9 @@ def filter_by_recency(results: list, time_window: str = '30d', verify: bool = Tr
 
     from concurrent.futures import ThreadPoolExecutor
     try:
-        with ThreadPoolExecutor(max_workers=10) as ex:
+        # Keep concurrency modest: too many simultaneous page fetches + parsing
+        # spikes memory on small Cloud Run instances.
+        with ThreadPoolExecutor(max_workers=4) as ex:
             dates = list(ex.map(resolve, results))
     except Exception as e:
         print(f"[Recency] date resolution failed ({e}); skipping recency filter")
@@ -4249,7 +4261,11 @@ def search_perplexity_v2():
         # Explain WHY when nothing comes back, so it isn't a mystery "no results"
         message = None
         if not results:
-            if raw_count == 0:
+            api_error = getattr(perplexity_client, 'last_error', None)
+            if api_error:
+                # A real API failure (quota, auth, rate-limit, timeout) — surface it
+                message = api_error
+            elif raw_count == 0:
                 message = (f"Perplexity returned no articles for “{query}”. "
                            f"Try broader or different keywords.")
             else:

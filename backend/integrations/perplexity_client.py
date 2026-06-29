@@ -19,6 +19,7 @@ class PerplexityClient:
         """Initialize Perplexity client"""
         self.api_key = api_key or os.getenv('PERPLEXITY_API_KEY')
         self.base_url = "https://api.perplexity.ai"
+        self.last_error = None  # human-readable reason the last search returned nothing
 
         if self.api_key:
             print("[OK] Perplexity initialized")
@@ -48,8 +49,10 @@ class PerplexityClient:
         Returns:
             List of results with shared schema
         """
+        self.last_error = None
         if not self.is_available():
             print("[Perplexity] API key not configured")
+            self.last_error = "Perplexity API key not configured."
             return []
 
         try:
@@ -138,7 +141,19 @@ Important:
             )
 
             if response.status_code != 200:
-                print(f"[Perplexity] API error: {response.status_code} - {response.text[:200]}")
+                body = response.text[:300]
+                print(f"[Perplexity] API error: {response.status_code} - {body}")
+                low = body.lower()
+                if 'insufficient_quota' in low or 'exceeded your current quota' in low:
+                    self.last_error = ("Perplexity API credits exhausted (insufficient_quota). "
+                                       "Add API credits at perplexity.ai/settings/api — note this is "
+                                       "separate from a Perplexity Pro subscription.")
+                elif response.status_code in (401, 403):
+                    self.last_error = f"Perplexity API auth error ({response.status_code}). Check the API key."
+                elif response.status_code == 429:
+                    self.last_error = "Perplexity API rate-limited (429). Try again shortly."
+                else:
+                    self.last_error = f"Perplexity API error {response.status_code}."
                 return []
 
             data = response.json()
@@ -176,12 +191,15 @@ Important:
 
         except requests.exceptions.Timeout:
             print("[Perplexity] Request timed out")
+            self.last_error = "Perplexity request timed out."
             return []
         except requests.exceptions.RequestException as e:
             print(f"[Perplexity] Request error: {e}")
+            self.last_error = f"Perplexity request failed: {e}"
             return []
         except Exception as e:
             print(f"[Perplexity] Error: {e}")
+            self.last_error = f"Perplexity error: {e}"
             import traceback
             traceback.print_exc()
             return []

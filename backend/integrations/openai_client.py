@@ -47,6 +47,39 @@ class OpenAIClient:
                 kwargs["max_completion_tokens"] = kwargs.pop("max_tokens")
         return self.client.chat.completions.create(**kwargs)
 
+    @staticmethod
+    def _recover_json(text: str):
+        """Best-effort extraction of a JSON array/object embedded in prose.
+        Web-search replies sometimes wrap the JSON in explanatory text or
+        markdown, so a strict json.loads() fails even though valid JSON is
+        present. Returns the parsed value or None."""
+        import re as _re
+        import json as _json
+        if not text:
+            return None
+        # 1) Fenced ```json ... ``` block anywhere in the text
+        m = _re.search(r"```(?:json)?\s*(.+?)```", text, _re.DOTALL)
+        if m:
+            try:
+                return _json.loads(m.group(1).strip())
+            except Exception:
+                pass
+        # 2) Outermost JSON array [ ... ]
+        start, end = text.find('['), text.rfind(']')
+        if start != -1 and end > start:
+            try:
+                return _json.loads(text[start:end + 1])
+            except Exception:
+                pass
+        # 3) Outermost JSON object { ... }
+        start, end = text.find('{'), text.rfind('}')
+        if start != -1 and end > start:
+            try:
+                return _json.loads(text[start:end + 1])
+            except Exception:
+                pass
+        return None
+
     def generate_content(
         self,
         prompt: str,
@@ -318,6 +351,12 @@ No extra keys. No commentary outside JSON."""
 Return at least 25 candidate results if possible (we will dedupe/trim to {max_results} in code).
 No extra keys. No commentary outside JSON."""
 
+            # Force machine-readable output: many web-search replies prepend prose
+            # ("Here are 25 articles...") which breaks JSON parsing.
+            full_prompt += ("\n\nCRITICAL: Respond with ONLY a raw JSON array. "
+                            "Begin your reply with '[' and end with ']'. "
+                            "No introduction, no explanation, no markdown fences, no trailing notes.")
+
             # Use Responses API with web_search tool
             response = self.client.responses.create(
                 model="gpt-4o",
@@ -388,9 +427,14 @@ No extra keys. No commentary outside JSON."""
             try:
                 data = json.loads(text)
             except json.JSONDecodeError as e:
-                print(f"[OpenAI Responses API ERROR] JSON parsing failed: {e}")
-                print(f"[OpenAI Responses API ERROR] Text preview: {text[:200]}...")
-                return []
+                # Models often wrap the JSON in prose ("Here are 25 articles...")
+                # or markdown. Recover the embedded JSON instead of discarding.
+                data = self._recover_json(text)
+                if data is None:
+                    print(f"[OpenAI Responses API ERROR] JSON parsing failed and recovery failed: {e}")
+                    print(f"[OpenAI Responses API ERROR] Text preview: {text[:200]}...")
+                    return []
+                print("[OpenAI Responses API] Recovered embedded JSON from a prose/markdown reply")
 
             # Handle both formats: {"results": [...]} or just [...]
             if isinstance(data, list):
