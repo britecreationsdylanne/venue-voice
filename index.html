@@ -6295,7 +6295,7 @@
                     // Cache the HTML for this tab
                     tabSearchState[currentTab].htmlCache.perplexity = resultsDiv.innerHTML;
                 } else {
-                    const errorMsg = data.error || 'No results found. Try a different query.';
+                    const errorMsg = data.message || data.error || 'No results found. Try a different query.';
                     let html = '';
                     if (data.queries_used && data.queries_used.length > 0) {
                         html += `<div class="queries-used" style="font-size: 11px; color: #666; background: #f5f5f5; padding: 8px; margin-bottom: 10px; border-radius: 4px;">

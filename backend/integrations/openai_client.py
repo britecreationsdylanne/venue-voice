@@ -17,6 +17,36 @@ class OpenAIClient:
         self.client = OpenAI(api_key=self.api_key) if self.api_key else None
         self.default_model = os.getenv("DEFAULT_CONTENT_MODEL", "gpt-4o")
 
+    @staticmethod
+    def model_supports_temperature(model: str) -> bool:
+        """GPT-5.x and the o-series reasoning models only accept the default
+        temperature (1) and 400 on any explicit value. Everything else (gpt-4o,
+        gpt-4.1, etc.) supports a custom temperature."""
+        if not model:
+            return True
+        m = model.lower()
+        return not (m.startswith("gpt-5") or m.startswith("o1") or m.startswith("o3"))
+
+    def create_chat_completion(self, **kwargs):
+        """Single safe entry point for Chat Completions. Strips parameters that
+        the target model rejects so we never hit 400 unsupported_value errors.
+
+        IMPORTANT: always call OpenAI chat completions through this method (not
+        self.client.chat.completions.create directly) so new model constraints
+        are handled in one place.
+        """
+        if not self.client:
+            raise ValueError("OpenAI API key not configured")
+        model = kwargs.get("model", "")
+        # GPT-5.x / o1 / o3 reject explicit temperature -> drop it
+        if "temperature" in kwargs and not self.model_supports_temperature(model):
+            kwargs.pop("temperature", None)
+        # Same family uses max_completion_tokens instead of max_tokens
+        if model and (model.startswith("gpt-5") or model.startswith("o1") or model.startswith("o3")):
+            if "max_tokens" in kwargs:
+                kwargs["max_completion_tokens"] = kwargs.pop("max_tokens")
+        return self.client.chat.completions.create(**kwargs)
+
     def generate_content(
         self,
         prompt: str,
@@ -73,7 +103,9 @@ class OpenAIClient:
         if tools:
             kwargs["tools"] = tools
 
-        response = self.client.chat.completions.create(**kwargs)
+        # Route through the safe wrapper so unsupported params (e.g. temperature
+        # on gpt-5.x) are stripped automatically.
+        response = self.create_chat_completion(**kwargs)
 
         latency_ms = int((time.time() - start_time) * 1000)
         tokens_used = response.usage.total_tokens

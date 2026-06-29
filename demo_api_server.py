@@ -3579,24 +3579,31 @@ def filter_by_recency(results: list, time_window: str = '30d', verify: bool = Tr
         print(f"[Recency] date resolution failed ({e}); skipping recency filter")
         return results
 
-    kept, dropped_old, dropped_undated = [], 0, 0
+    kept, undated, dropped_old = [], [], 0
     for r, d in zip(results, dates):
         if d is None:
-            dropped_undated += 1
-            continue
-        if d >= cutoff:
+            # Date could not be confirmed (no metadata / site blocked the fetch).
+            # Not proven old -> hold as a fallback rather than dropping outright.
+            undated.append(r)
+        elif d >= cutoff:
             # Surface the verified real date to the UI
             r['published_date'] = d.strftime('%Y-%m-%d')
             kept.append(r)
         else:
             dropped_old += 1
 
-    print(f"[Recency] window={time_window}: kept {len(kept)}, dropped {dropped_old} too-old, {dropped_undated} undated")
+    print(f"[Recency] window={time_window}: kept {len(kept)} date-confirmed, dropped {dropped_old} too-old, {len(undated)} unverifiable")
 
-    # Safety net: never wipe out a card purely because dates couldn't be read
-    if not kept and dropped_undated and not dropped_old:
-        print("[Recency] All remaining results were undated; returning them unfiltered as fallback")
-        return results
+    # Prefer date-confirmed, in-window results.
+    if kept:
+        return kept
+    # Nothing could be confirmed in-window. Rather than show an empty card,
+    # fall back to the unverifiable (NOT proven-old) results so the user still
+    # sees candidates. Articles we positively dated as too-old stay dropped.
+    if undated:
+        print(f"[Recency] No date-confirmed results; returning {len(undated)} unverifiable (not-proven-old) as fallback")
+        return undated
+    # Genuinely nothing in-window and nothing unverifiable (everything was proven old).
     return kept
 
 
@@ -3837,7 +3844,7 @@ Return ONLY the JSON array, no other text."""
         }
         api_params[max_tokens_param] = 2000
 
-        response = openai_client.client.chat.completions.create(**api_params)
+        response = openai_client.create_chat_completion(**api_params)
 
         content = response.choices[0].message.content.strip()
 
@@ -3989,7 +3996,7 @@ Return ONLY the JSON array, no other text."""
         }
         api_params[max_tokens_param] = 2000
 
-        response = openai_client.client.chat.completions.create(**api_params)
+        response = openai_client.create_chat_completion(**api_params)
 
         content = response.choices[0].message.content.strip()
 
@@ -4143,7 +4150,7 @@ Return ONLY the JSON array, no other text."""
         }
         api_params[max_tokens_param] = 2000
 
-        response = openai_client.client.chat.completions.create(**api_params)
+        response = openai_client.create_chat_completion(**api_params)
 
         content = response.choices[0].message.content.strip()
 
@@ -4207,6 +4214,7 @@ def search_perplexity_v2():
             geography=geography,
             time_window=time_window
         )
+        raw_count = len(search_results)  # how many Perplexity returned before filtering
 
         # Filter out excluded URLs
         if exclude_urls:
@@ -4238,9 +4246,22 @@ def search_perplexity_v2():
             f"Geographic focus: {geography if geography else 'US market'}"
         ]
 
+        # Explain WHY when nothing comes back, so it isn't a mystery "no results"
+        message = None
+        if not results:
+            if raw_count == 0:
+                message = (f"Perplexity returned no articles for “{query}”. "
+                           f"Try broader or different keywords.")
+            else:
+                message = (f"Perplexity found {raw_count} article(s), but none were within the "
+                           f"{time_desc} (or all were paywalled/undatable). "
+                           f"Try widening the time frame.")
+            print(f"[API v2] Perplexity empty: {message}")
+
         return jsonify({
             'success': True,
             'results': results,
+            'message': message,
             'queries_used': queries_used,
             'query': query,
             'source': 'perplexity',
