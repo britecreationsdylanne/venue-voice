@@ -2320,9 +2320,18 @@ def upload_meme():
                 background.paste(pil_image)
             pil_image = background
 
-        # Resize to 480x480 using fit (crop to center, no squishing)
-        target_size = (480, 480)
-        print(f"    [UPLOAD] Resizing from {pil_image.size} to {target_size}...")
+        # Center-crop to a square, but keep it high-resolution so quality
+        # isn't crushed. Use the largest square the source allows (never
+        # upscale beyond the original), capped at 1080px, with a 480px floor
+        # so tiny uploads still fill the slot. Previously this hard-resized
+        # everything to 480x480, which badly degraded hi-res uploads.
+        MAX_SIDE = 1080
+        MIN_SIDE = 480
+        src_w, src_h = pil_image.size
+        target = min(min(src_w, src_h), MAX_SIDE)
+        target = max(target, MIN_SIDE)
+        target_size = (target, target)
+        print(f"    [UPLOAD] Cropping {pil_image.size} to square {target_size}...")
         resized_image = ImageOps.fit(pil_image, target_size, method=Image.Resampling.LANCZOS, centering=(0.5, 0.5))
 
         # Convert to base64
