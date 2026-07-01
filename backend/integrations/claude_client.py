@@ -72,8 +72,10 @@ class ClaudeClient:
         end_time = time.time()
         latency_ms = int((end_time - start_time) * 1000)
 
-        # Extract content
-        content = response.content[0].text
+        # Extract content — pick the first text block rather than assuming
+        # content[0] is text. A safety refusal or a tool/thinking block first
+        # would otherwise raise IndexError/AttributeError and 500 the route.
+        content = next((b.text for b in response.content if getattr(b, "type", None) == "text"), "")
 
         # Calculate tokens
         input_tokens = response.usage.input_tokens

@@ -8,6 +8,7 @@ Excellent for finding recent news with proper source attribution.
 import os
 import json
 import requests
+import threading
 from typing import List, Dict
 from datetime import datetime
 
@@ -19,12 +20,24 @@ class PerplexityClient:
         """Initialize Perplexity client"""
         self.api_key = api_key or os.getenv('PERPLEXITY_API_KEY')
         self.base_url = "https://api.perplexity.ai"
-        self.last_error = None  # human-readable reason the last search returned nothing
+        # last_error is stored per-thread: this client is a module-level singleton
+        # shared across gunicorn threads, so a plain attribute would let one
+        # request's error message leak into another request's response.
+        self._local = threading.local()
 
         if self.api_key:
             print("[OK] Perplexity initialized")
         else:
             print("[WARNING] PERPLEXITY_API_KEY not found - Perplexity search disabled")
+
+    @property
+    def last_error(self):
+        """Per-thread reason the last search on THIS thread returned nothing."""
+        return getattr(self._local, 'error', None)
+
+    @last_error.setter
+    def last_error(self, value):
+        self._local.error = value
 
     def is_available(self) -> bool:
         """Check if Perplexity API is configured"""
@@ -110,7 +123,7 @@ Important:
                 '7d': 'week',
                 '15d': 'month',
                 '30d': 'month',
-                '90d': 'month'
+                '90d': 'year'  # Perplexity has no 90d option; 'month' silently dropped 60 days of results. after:<date> in the query keeps it precise.
             }
             recency_filter = recency_map.get(time_window, 'month')
 
