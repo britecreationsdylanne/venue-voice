@@ -53,7 +53,10 @@ CORS(app)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 # Session configuration
-app.secret_key = os.environ.get('FLASK_SECRET_KEY', secrets.token_hex(32))
+# `or` (not a default arg) so an empty env value falls back to a random key
+# rather than setting an empty secret. A stable FLASK_SECRET_KEY is required
+# for sessions to survive across instances/redeploys.
+app.secret_key = os.environ.get('FLASK_SECRET_KEY') or secrets.token_hex(32)
 
 # OAuth configuration
 oauth = OAuth(app)
@@ -4443,6 +4446,9 @@ def save_draft():
             'imagePrompts': data.get('imagePrompts'),
             'selectedArticles': data.get('selectedArticles'),
             'specialSection': data.get('specialSection'),
+            # Persist inline preview edits so they survive reload (they previously
+            # lived only in a JS variable and were silently lost on refresh).
+            'savedEditedHTML': data.get('savedEditedHTML'),
             'subjectLine': data.get('subjectLine'),
             'preheader': data.get('preheader'),
             'lastSavedBy': data.get('savedBy', 'unknown'),

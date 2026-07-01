@@ -2270,6 +2270,16 @@
         // API base URL
         const API_BASE = window.location.origin;
 
+        // HTML/URL escaping helpers for third-party/search-result metadata (XSS safety)
+        function escapeHtml(s) {
+          if (s === null || s === undefined) return '';
+          return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+        }
+        function safeUrl(u) {
+          try { const x = new URL(u, window.location.origin); return (x.protocol==='http:'||x.protocol==='https:') ? x.href : '#'; }
+          catch { return '#'; }
+        }
+
         // State
         let selectedMonth = '';
         let selectedSeason = '';
@@ -2413,16 +2423,16 @@
                 <div class="research-result-header">
                     <span class="research-result-badge" style="background: #059669; color: white;">CUSTOM</span>
                     <div class="research-result-meta">
-                        <span>${article.publisher}</span>
-                        <a href="${article.url}" target="_blank" onclick="event.stopPropagation()">Source →</a>
+                        <span>${escapeHtml(article.publisher)}</span>
+                        <a href="${escapeHtml(safeUrl(article.url))}" target="_blank" onclick="event.stopPropagation()">Source →</a>
                         <input type="checkbox" class="research-result-checkbox" onclick="handleCheckboxClick(this, event)">
                     </div>
                 </div>
-                <div class="research-result-title">${article.headline}</div>
+                <div class="research-result-title">${escapeHtml(article.headline)}</div>
                 ${article.snippet ? `
                 <div class="research-result-keydata">
                     <div class="research-result-keydata-label">SUMMARY</div>
-                    <p>${article.snippet.substring(0, 250)}${article.snippet.length > 250 ? '...' : ''}</p>
+                    <p>${escapeHtml(article.snippet.substring(0, 250))}${article.snippet.length > 250 ? '...' : ''}</p>
                 </div>
                 ` : ''}
             `;
@@ -2522,38 +2532,6 @@
             return content;
         }
 
-        function extractContentText(content) {
-            if (!content) return '';
-
-            // If it has raw JSON, parse it
-            if (content.raw) {
-                try {
-                    const cleaned = content.raw.replace(/```json\n/g, '').replace(/\n```/g, '');
-                    const parsed = JSON.parse(cleaned);
-
-                    // Extract text based on structure
-                    if (parsed.short_version) {
-                        return `${parsed.short_version} ${parsed.whats_happening || ''} ${parsed.why_matters || ''}`;
-                    } else if (parsed.content) {
-                        // New single paragraph format for tip/trend
-                        return parsed.content;
-                    } else if (parsed.intro) {
-                        return `${parsed.intro} ${(parsed.steps || []).join(' ')}`;
-                    } else if (parsed.overview) {
-                        return `${parsed.overview} ${(parsed.examples || []).join(' ')} ${parsed.opportunity || ''}`;
-                    }
-                    return JSON.stringify(parsed);
-                } catch (e) {
-                    return content.raw.substring(0, 500);
-                }
-            }
-
-            if (typeof content === 'string') return content;
-            if (content.content) return content.content;
-            if (content.short_version) return `${content.short_version} ${content.whats_happening || ''} ${content.why_matters || ''}`;
-            return JSON.stringify(content).substring(0, 500);
-        }
-
         // Track article selection for learning/analysis (fire-and-forget)
         async function trackSelection(section, article, deselected = false) {
             try {
@@ -2647,10 +2625,10 @@
                 const card = document.createElement('div');
                 card.className = 'topic-card';
                 card.innerHTML = `
-                    <div class="title">📰 ${topic.title}</div>
-                    ${topic.age ? `<div style="color: #666; font-size: 0.85em; margin-top: 4px;">Published: ${topic.age}</div>` : ''}
-                    <div class="description">${topic.description}</div>
-                    ${topic.source_url ? `<a href="${topic.source_url}" target="_blank" class="source" onclick="event.stopPropagation()">Read source article →</a>` : ''}
+                    <div class="title">📰 ${escapeHtml(topic.title)}</div>
+                    ${topic.age ? `<div style="color: #666; font-size: 0.85em; margin-top: 4px;">Published: ${escapeHtml(topic.age)}</div>` : ''}
+                    <div class="description">${escapeHtml(topic.description)}</div>
+                    ${topic.source_url ? `<a href="${escapeHtml(safeUrl(topic.source_url))}" target="_blank" class="source" onclick="event.stopPropagation()">Read source article →</a>` : ''}
                 `;
                 card.onclick = () => selectNews(index, card);
                 container.appendChild(card);
@@ -2709,10 +2687,10 @@
                 const card = document.createElement('div');
                 card.className = 'topic-card';
                 card.innerHTML = `
-                    <div class="title">💡 ${topic.title}</div>
-                    ${topic.age ? `<div style="color: #666; font-size: 0.85em; margin-top: 4px;">Published: ${topic.age}</div>` : ''}
-                    <div class="description">${topic.description}</div>
-                    ${topic.source_url ? `<a href="${topic.source_url}" target="_blank" class="source" onclick="event.stopPropagation()">Read source article →</a>` : ''}
+                    <div class="title">💡 ${escapeHtml(topic.title)}</div>
+                    ${topic.age ? `<div style="color: #666; font-size: 0.85em; margin-top: 4px;">Published: ${escapeHtml(topic.age)}</div>` : ''}
+                    <div class="description">${escapeHtml(topic.description)}</div>
+                    ${topic.source_url ? `<a href="${escapeHtml(safeUrl(topic.source_url))}" target="_blank" class="source" onclick="event.stopPropagation()">Read source article →</a>` : ''}
                 `;
                 card.onclick = () => selectTip(index, card);
                 container.appendChild(card);
@@ -2773,10 +2751,10 @@
                 const card = document.createElement('div');
                 card.className = 'topic-card';
                 card.innerHTML = `
-                    <div class="title">📈 ${topic.title}</div>
-                    ${topic.age ? `<div style="color: #666; font-size: 0.85em; margin-top: 4px;">Published: ${topic.age}</div>` : ''}
-                    <div class="description">${topic.description}</div>
-                    ${topic.source_url ? `<a href="${topic.source_url}" target="_blank" class="source" onclick="event.stopPropagation()">Read source article →</a>` : ''}
+                    <div class="title">📈 ${escapeHtml(topic.title)}</div>
+                    ${topic.age ? `<div style="color: #666; font-size: 0.85em; margin-top: 4px;">Published: ${escapeHtml(topic.age)}</div>` : ''}
+                    <div class="description">${escapeHtml(topic.description)}</div>
+                    ${topic.source_url ? `<a href="${escapeHtml(safeUrl(topic.source_url))}" target="_blank" class="source" onclick="event.stopPropagation()">Read source article →</a>` : ''}
                 `;
                 card.onclick = () => selectTrend(index, card);
                 container.appendChild(card);
@@ -4960,62 +4938,6 @@
             await saveTextToMemeImage();
         }
 
-        async function searchWebMeme() {
-            try {
-                // Show loading in preview
-                document.getElementById('memePreview').innerHTML = `
-                    <div style="text-align: center; padding: 40px;">
-                        <div class="spinner" style="margin: 0 auto 10px;"></div>
-                        <div>Searching web for wedding memes...</div>
-                    </div>
-                `;
-
-                // Call backend to search for memes via Google Images API or similar
-                const response = await fetch(`${API_BASE}/api/search-memes`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        month: selectedMonth,
-                        query: 'wedding meme funny'
-                    })
-                });
-
-                const data = await response.json();
-
-                if (data.success && data.images && data.images.length > 0) {
-                    // Show first 6 results in a grid
-                    const images = data.images.slice(0, 6);
-                    document.getElementById('memePreview').innerHTML = `
-                        <div style="padding: 15px;">
-                            <h4 style="margin: 0 0 10px 0;">Select a meme:</h4>
-                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
-                                ${images.map((img, i) => `
-                                    <div onclick="selectSearchedMeme('${img.url.replace(/'/g, "\\'")}', '${img.title.replace(/'/g, "\\'")}', '${img.source || ''}')"
-                                         style="cursor: pointer; border: 2px solid #e5e7eb; border-radius: 8px; overflow: hidden; transition: all 0.2s;"
-                                         onmouseover="this.style.borderColor='#008181'"
-                                         onmouseout="this.style.borderColor='#e5e7eb'">
-                                        <img src="${img.thumbnail || img.url}" alt="${img.title}" style="width: 100%; height: 100px; object-fit: cover;" />
-                                        <div style="padding: 5px; font-size: 10px; text-align: center; background: white;">${img.title.substring(0, 25)}...</div>
-                                    </div>
-                                `).join('')}
-                            </div>
-                            <p style="margin-top: 10px; font-size: 12px; color: #666;">Click an image to select it</p>
-                        </div>
-                    `;
-                } else {
-                    document.getElementById('memePreview').innerHTML = `
-                        <div style="text-align: center; padding: 40px; color: #666;">
-                            <p>No memes found. Try generating with AI or uploading your own!</p>
-                            <button class="btn-secondary btn" onclick="regenerateImage('meme')" style="margin-top: 10px;">Generate with AI Instead</button>
-                        </div>
-                    `;
-                }
-            } catch (error) {
-                console.error('Error searching memes:', error);
-                alert('Failed to search for memes. Please try generating with AI or upload your own.');
-            }
-        }
-
         function selectSearchedMeme(url, title, source) {
             generatedImages.meme = {
                 url: url,
@@ -5033,41 +4955,6 @@
             document.getElementById('memePrompt').value = title;
 
             alert('✓ Meme selected! You can add text overlays below.');
-        }
-
-        async function searchWeddingMemes() {
-            try {
-                const searchResults = document.getElementById('memeSearchResults');
-                const gallery = document.getElementById('memeGallery');
-
-                // Show loading
-                searchResults.style.display = 'block';
-                gallery.innerHTML = '<div style="text-align: center; padding: 20px;"><div class="spinner" style="margin: 0 auto;"></div><div style="margin-top: 10px;">Searching for wedding memes...</div></div>';
-
-                // Call backend to search for memes
-                const response = await fetch(`${API_BASE}/api/search-memes`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ month: selectedMonth })
-                });
-
-                const data = await response.json();
-
-                if (data.success && data.images && data.images.length > 0) {
-                    // Display meme options
-                    gallery.innerHTML = data.images.map((img, index) => `
-                        <div onclick="selectMemeFromGallery('${img.url.replace(/'/g, "\\'")}', '${img.title.replace(/'/g, "\\'")})" style="cursor: pointer; border: 2px solid #e5e7eb; border-radius: 8px; overflow: hidden; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-                            <img src="${img.thumbnail || img.url}" alt="${img.title}" style="width: 100%; height: 150px; object-fit: cover;" />
-                            <div style="padding: 5px; font-size: 11px; text-align: center; background: white;">${img.title.substring(0, 30)}...</div>
-                        </div>
-                    `).join('');
-                } else {
-                    gallery.innerHTML = '<p style="text-align: center; color: #666;">No memes found. Try uploading your own or generating one!</p>';
-                }
-            } catch (error) {
-                console.error('Error searching memes:', error);
-                alert('Error searching for memes. Please try again or upload your own.');
-            }
         }
 
         function selectMemeFromGallery(url, title) {
@@ -6006,36 +5893,6 @@
             savedEditedHTML = updatedHTML;
         }
 
-        async function sendTestEmail() {
-            const email = prompt('Enter email address for test:');
-            if (!email) return;
-
-            try {
-                const newsletterHTML = document.getElementById('newsletterPreview').innerHTML;
-
-                const response = await fetch(`${API_BASE}/api/send-test-email`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        email: email,
-                        html: newsletterHTML,
-                        month: selectedMonth
-                    })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    alert(`Test email sent to ${email}!\n\nNote: ${data.note || 'Email sent successfully'}`);
-                } else {
-                    alert('Error sending test email: ' + (data.error || 'Unknown error'));
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Error sending test email: ' + error.message);
-            }
-        }
-
         function refreshNews() {
             searchTopics();
         }
@@ -6471,26 +6328,26 @@
                         <span class="research-result-badge" style="background: ${colors.bg}; border: 1px solid ${colors.border}; color: ${colors.text};">${impact}</span>
                         ${signalTags}
                         <div class="research-result-meta">
-                            <span>${result.publisher || ''}</span>
-                            ${result.url ? `<a href="${result.url}" target="_blank" onclick="event.stopPropagation()">Source →</a>` : ''}
+                            <span>${escapeHtml(result.publisher || '')}</span>
+                            ${result.url ? `<a href="${escapeHtml(safeUrl(result.url))}" target="_blank" onclick="event.stopPropagation()">Source →</a>` : ''}
                             <input type="checkbox" class="research-result-checkbox" onclick="handleCheckboxClick(this, event)">
                             <button class="dots-btn" ${isSaved ? 'style="color: #f59e0b;"' : ''} onclick="event.stopPropagation(); toggleDotsMenu(this, ${articleIdx})">⋮</button>
                         </div>
                     </div>
 
-                    <div class="research-result-title">${headline}</div>
+                    <div class="research-result-title">${escapeHtml(headline)}</div>
 
                     ${industryData ? `
                     <div class="research-result-keydata">
                         <div class="research-result-keydata-label">KEY DATA</div>
-                        <p>${industryData.substring(0, 250)}${industryData.length > 250 ? '...' : ''}</p>
+                        <p>${escapeHtml(industryData.substring(0, 250))}${industryData.length > 250 ? '...' : ''}</p>
                     </div>
                     ` : ''}
 
                     ${soWhat ? `
                     <div class="research-result-action">
                         <div class="research-result-action-label">ACTION</div>
-                        <p>${soWhat}</p>
+                        <p>${escapeHtml(soWhat)}</p>
                     </div>
                     ` : ''}
                 `;
@@ -7301,6 +7158,7 @@
                         specialSection: specialSection,
                         subjectLine: document.getElementById('finalSubjectLine')?.value || '',
                         preheader: document.getElementById('finalPreheader')?.value || '',
+                        savedEditedHTML: savedEditedHTML,
                         savedBy: userEmail
                     })
                 });
@@ -7362,6 +7220,9 @@
                 const data = await response.json();
                 if (!data.success || !data.draft) { isLoadingDraft = false; alert('Failed to load draft'); return; }
                 const d = data.draft;
+
+                // Restore inline contenteditable preview edits so they persist across reloads
+                if (d.savedEditedHTML) { savedEditedHTML = d.savedEditedHTML; }
 
                 selectedMonth = d.month || '';
                 const gc = d.generatedContent || {};
@@ -7722,8 +7583,8 @@
             container.innerHTML = savedArticlesCache.map((article, i) => `
                 <div class="saved-article-card">
                     <div class="sa-info">
-                        <div class="sa-title">${article.title || article.url}</div>
-                        <div class="sa-meta">${article.publisher || ''} ${article.dateSaved ? '· Saved ' + new Date(article.dateSaved).toLocaleDateString() : ''}</div>
+                        <div class="sa-title">${escapeHtml(article.title || article.url)}</div>
+                        <div class="sa-meta">${escapeHtml(article.publisher || '')} ${article.dateSaved ? '· Saved ' + new Date(article.dateSaved).toLocaleDateString() : ''}</div>
                     </div>
                     <div class="sa-actions">
                         <button class="sa-use-btn" onclick="useSavedArticle(${i})">Use</button>
@@ -7792,17 +7653,17 @@
                 <div class="research-result-header">
                     <span class="research-result-badge saved">SAVED</span>
                     <div class="research-result-meta">
-                        <span>${article.publisher}</span>
-                        <a href="${article.url}" target="_blank" onclick="event.stopPropagation()">Source →</a>
+                        <span>${escapeHtml(article.publisher)}</span>
+                        <a href="${escapeHtml(safeUrl(article.url))}" target="_blank" onclick="event.stopPropagation()">Source →</a>
                         <input type="checkbox" class="research-result-checkbox" onclick="handleCheckboxClick(this, event)">
                         <button class="dots-btn" style="color: #f59e0b;" onclick="event.stopPropagation(); toggleDotsMenu(this, ${savedArticleIdx})">⋮</button>
                     </div>
                 </div>
-                <div class="research-result-title">${article.headline}</div>
+                <div class="research-result-title">${escapeHtml(article.headline)}</div>
                 ${article.snippet ? `
                     <div class="research-result-keydata">
                         <div class="research-result-keydata-label">SUMMARY</div>
-                        <p>${article.snippet.substring(0, 250)}${article.snippet.length > 250 ? '...' : ''}</p>
+                        <p>${escapeHtml(article.snippet.substring(0, 250))}${article.snippet.length > 250 ? '...' : ''}</p>
                     </div>
                 ` : ''}
             `;
@@ -8044,15 +7905,15 @@
                                 <div style="margin: 12px 0;">
                                     <div style="margin-bottom: 10px; padding-left: 12px; border-left: 3px solid #31D7CA;">
                                         <div style="font-size: 11px; text-transform: uppercase; color: #31D7CA; font-weight: 700; letter-spacing: 0.5px;">NEWS</div>
-                                        <div style="font-size: 13px; color: #272D3F; font-weight: 600;">${n.sections?.news?.title || 'News Article'}</div>
+                                        <div style="font-size: 13px; color: #272D3F; font-weight: 600;">${n.sections?.news || 'News Article'}</div>
                                     </div>
                                     <div style="margin-bottom: 10px; padding-left: 12px; border-left: 3px solid #31D7CA;">
                                         <div style="font-size: 11px; text-transform: uppercase; color: #31D7CA; font-weight: 700; letter-spacing: 0.5px;">TIP</div>
-                                        <div style="font-size: 13px; color: #272D3F; font-weight: 600;">${n.sections?.tip?.title || 'Pro Tip'}</div>
+                                        <div style="font-size: 13px; color: #272D3F; font-weight: 600;">${n.sections?.tip || 'Pro Tip'}</div>
                                     </div>
                                     <div style="margin-bottom: 10px; padding-left: 12px; border-left: 3px solid #31D7CA;">
                                         <div style="font-size: 11px; text-transform: uppercase; color: #31D7CA; font-weight: 700; letter-spacing: 0.5px;">TREND</div>
-                                        <div style="font-size: 13px; color: #272D3F; font-weight: 600;">${n.sections?.trend?.title || 'Trend Alert'}</div>
+                                        <div style="font-size: 13px; color: #272D3F; font-weight: 600;">${n.sections?.trend || 'Trend Alert'}</div>
                                     </div>
                                 </div>
                                 <p style="margin: 8px 0 0; font-size: 12px; color: #999;">${savedBy} · ${savedAt} CT</p>
