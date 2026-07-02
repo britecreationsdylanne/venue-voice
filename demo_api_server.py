@@ -47,7 +47,7 @@ from config.brand_guidelines import BRAND_VOICE, NEWSLETTER_GUIDELINES, get_styl
 from config.model_config import get_model_config, get_model_for_task
 
 app = Flask(__name__, static_folder='.')
-CORS(app)
+CORS(app, resources={r"/api/*": {"origins": re.compile(r"^https://venue-voice-[\w-]+\.run\.app$")}})
 
 # Fix for running behind Cloud Run's proxy - ensures correct HTTPS URLs
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
@@ -57,6 +57,11 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 # rather than setting an empty secret. A stable FLASK_SECRET_KEY is required
 # for sessions to survive across instances/redeploys.
 app.secret_key = os.environ.get('FLASK_SECRET_KEY') or secrets.token_hex(32)
+app.config.update(
+    SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax',
+)
 
 # OAuth configuration
 oauth = OAuth(app)
@@ -111,6 +116,26 @@ def safe_print(text):
         # Fallback: encode to ASCII with replacement character
         safe_text = text.encode('ascii', errors='replace').decode('ascii')
         print(safe_text)
+
+import ipaddress, socket
+from urllib.parse import urlparse as _urlparse
+
+def is_safe_fetch_url(url):
+    """SSRF guard: allow only http/https to PUBLIC IPs. Blocks localhost,
+    private/link-local/reserved ranges (incl. cloud metadata 169.254.169.254)
+    and non-http schemes. Resolves the host and checks every resolved IP."""
+    try:
+        p = _urlparse(url)
+        if p.scheme not in ('http', 'https') or not p.hostname:
+            return False
+        for info in socket.getaddrinfo(p.hostname, None):
+            ip = ipaddress.ip_address(info[4][0])
+            if (ip.is_private or ip.is_loopback or ip.is_link_local or
+                    ip.is_reserved or ip.is_multicast or ip.is_unspecified):
+                return False
+        return True
+    except Exception:
+        return False
 
 # Helper function to convert HTML to plain text
 def html_to_plain_text(html_content):
@@ -167,6 +192,7 @@ GCS_IMAGES_BUCKET = 'venue-voice-images'
 gcs_client = None
 try:
     from google.cloud import storage as gcs_storage
+    from google.api_core.exceptions import PreconditionFailed
     gcs_client = gcs_storage.Client()
     print("[OK] GCS initialized for drafts")
 except Exception as e:
@@ -3526,6 +3552,8 @@ def _fetch_page_date(url, timeout=6):
         return _PAGE_DATE_CACHE[url]
     result = None
     try:
+        if not is_safe_fetch_url(url):
+            return None
         from bs4 import BeautifulSoup
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
         # Stream and read only the first ~150KB. Publish-date metadata lives in
@@ -4341,21 +4369,36 @@ def track_not_good_fit():
             return jsonify({'success': False, 'error': 'Article URL required'}), 400
 
         bucket = gcs_client.bucket(GCS_BUCKET_NAME)
-        blob = bucket.blob(NOT_GOOD_FIT_BLOB)
 
         entries = []
-        if blob.exists():
-            data = json.loads(blob.download_as_text())
-            entries = data.get('entries', [])
+        for _attempt in range(4):
+            blob = bucket.blob(NOT_GOOD_FIT_BLOB)
+            if blob.exists():
+                blob.reload()
+                generation = blob.generation
+                data = json.loads(blob.download_as_text())
+                entries = data.get('entries', [])
+            else:
+                generation = 0
+                entries = []
 
-        if not any(e.get('url') == article['url'] for e in entries):
+            if any(e.get('url') == article['url'] for e in entries):
+                # Already recorded; no write needed.
+                break
+
             entries.append({
                 'url': article['url'],
                 'title': article.get('title', ''),
                 'publisher': article.get('publisher', ''),
                 'markedAt': datetime.now(CHICAGO_TZ).isoformat()
             })
-            blob.upload_from_string(json.dumps({'entries': entries}), content_type='application/json')
+            try:
+                blob.upload_from_string(json.dumps({'entries': entries}), content_type='application/json', if_generation_match=generation)
+                break
+            except PreconditionFailed:
+                if _attempt == 3:
+                    raise
+                continue
 
         return jsonify({'success': True, 'count': len(entries)})
 
@@ -4615,6 +4658,8 @@ def delete_draft():
         filename = request.json.get('file')
         if not filename:
             return jsonify({'success': False, 'error': 'No file specified'}), 400
+        if '..' in filename or not (filename.startswith('drafts/') or filename.startswith('published/')):
+            return jsonify({'success': False, 'error': 'Invalid path'}), 400
         bucket = gcs_client.bucket(GCS_BUCKET_NAME)
         blob = bucket.blob(filename)
         if blob.exists():
@@ -4622,7 +4667,7 @@ def delete_draft():
         return jsonify({'success': True})
     except Exception as e:
         safe_print(f"[DRAFT DELETE ERROR] {str(e)}")
-        return jsonify({'success': True})
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/api/delete-newsletter', methods=['DELETE'])
@@ -4634,6 +4679,8 @@ def delete_newsletter():
         filename = request.json.get('file')
         if not filename:
             return jsonify({'success': False, 'error': 'No file specified'}), 400
+        if '..' in filename or not (filename.startswith('drafts/') or filename.startswith('published/')):
+            return jsonify({'success': False, 'error': 'Invalid path'}), 400
         bucket = gcs_client.bucket(GCS_BUCKET_NAME)
         blob = bucket.blob(filename)
         if blob.exists():
@@ -4642,7 +4689,7 @@ def delete_newsletter():
         return jsonify({'success': True})
     except Exception as e:
         safe_print(f"[NEWSLETTER DELETE ERROR] {str(e)}")
-        return jsonify({'success': True})
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 # ============================================================================
@@ -4677,20 +4724,32 @@ def add_saved_article():
             return jsonify({'success': False, 'error': 'Article with URL required'}), 400
 
         bucket = gcs_client.bucket(GCS_BUCKET_NAME)
-        blob = bucket.blob(SAVED_ARTICLES_BLOB)
 
-        articles = []
-        if blob.exists():
-            data = json.loads(blob.download_as_text())
-            articles = data.get('articles', [])
+        for _attempt in range(4):
+            blob = bucket.blob(SAVED_ARTICLES_BLOB)
+            if blob.exists():
+                blob.reload()
+                generation = blob.generation
+                data = json.loads(blob.download_as_text())
+                articles = data.get('articles', [])
+            else:
+                generation = 0
+                articles = []
 
-        if any(a.get('url') == article['url'] for a in articles):
-            return jsonify({'success': True, 'message': 'Already saved', 'articles': articles})
+            if any(a.get('url') == article['url'] for a in articles):
+                return jsonify({'success': True, 'message': 'Already saved', 'articles': articles})
 
-        article['dateSaved'] = datetime.now(CHICAGO_TZ).isoformat()
-        articles.insert(0, article)
+            article['dateSaved'] = datetime.now(CHICAGO_TZ).isoformat()
+            articles.insert(0, article)
 
-        blob.upload_from_string(json.dumps({'articles': articles}), content_type='application/json')
+            try:
+                blob.upload_from_string(json.dumps({'articles': articles}), content_type='application/json', if_generation_match=generation)
+                break
+            except PreconditionFailed:
+                if _attempt == 3:
+                    raise
+                continue
+
         return jsonify({'success': True, 'articles': articles})
 
     except Exception as e:
@@ -4708,15 +4767,28 @@ def delete_saved_article():
             return jsonify({'success': False, 'error': 'URL required'}), 400
 
         bucket = gcs_client.bucket(GCS_BUCKET_NAME)
-        blob = bucket.blob(SAVED_ARTICLES_BLOB)
 
-        articles = []
-        if blob.exists():
-            data = json.loads(blob.download_as_text())
-            articles = data.get('articles', [])
+        for _attempt in range(4):
+            blob = bucket.blob(SAVED_ARTICLES_BLOB)
+            if blob.exists():
+                blob.reload()
+                generation = blob.generation
+                data = json.loads(blob.download_as_text())
+                articles = data.get('articles', [])
+            else:
+                generation = 0
+                articles = []
 
-        articles = [a for a in articles if a.get('url') != url]
-        blob.upload_from_string(json.dumps({'articles': articles}), content_type='application/json')
+            articles = [a for a in articles if a.get('url') != url]
+
+            try:
+                blob.upload_from_string(json.dumps({'articles': articles}), content_type='application/json', if_generation_match=generation)
+                break
+            except PreconditionFailed:
+                if _attempt == 3:
+                    raise
+                continue
+
         return jsonify({'success': True, 'articles': articles})
 
     except Exception as e:
@@ -4735,6 +4807,9 @@ def fetch_article_metadata():
 
         if not url:
             return jsonify({'success': False, 'error': 'URL is required'}), 400
+
+        if not is_safe_fetch_url(url):
+            return jsonify({'success': False, 'error': 'URL not allowed'}), 400
 
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
@@ -4880,14 +4955,25 @@ def track_selection():
         blob_name = f'selection-history/venue/{year_month}.jsonl'
 
         bucket = gcs_client.bucket(GCS_BUCKET_NAME)
-        blob = bucket.blob(blob_name)
 
-        existing = ''
-        if blob.exists():
-            existing = blob.download_as_text()
+        for _attempt in range(4):
+            blob = bucket.blob(blob_name)
+            if blob.exists():
+                blob.reload()
+                generation = blob.generation
+                existing = blob.download_as_text()
+            else:
+                generation = 0
+                existing = ''
 
-        new_content = existing + json.dumps(selection) + '\n'
-        blob.upload_from_string(new_content, content_type='application/jsonl')
+            new_content = existing + json.dumps(selection) + '\n'
+            try:
+                blob.upload_from_string(new_content, content_type='application/jsonl', if_generation_match=generation)
+                break
+            except PreconditionFailed:
+                if _attempt == 3:
+                    raise
+                continue
 
         return jsonify({'success': True})
     except Exception as e:

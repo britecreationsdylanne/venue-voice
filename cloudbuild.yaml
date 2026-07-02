@@ -1,15 +1,8 @@
 steps:
-  # Step 1: Clear stale secret bindings from the previous deploy
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: gcloud
-    args:
-      - 'run'
-      - 'services'
-      - 'update'
-      - 'venue-voice'
-      - '--region=us-central1'
-      - '--clear-secrets'
-  # Step 2: Deploy with env vars and only GOOGLE_DOCS_CREDENTIALS as a secret
+  # Deploy. Sensitive keys come from Secret Manager (--set-secrets); only
+  # non-sensitive config is passed as plain env vars. --set-secrets fully
+  # replaces the secret set, so no separate "clear stale secrets" step is
+  # needed (and removing it avoids a brief revision with no API keys).
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
@@ -23,8 +16,13 @@ steps:
       # cards fetch/parse article pages concurrently to verify dates).
       - '--memory=1Gi'
       - '--concurrency=40'
-      - '--set-env-vars=FLASK_SECRET_KEY=${_FLASK_SECRET_KEY},OPENAI_API_KEY=${_OPENAI_API_KEY},GOOGLE_AI_API_KEY=${_GOOGLE_AI_API_KEY},ANTHROPIC_API_KEY=${_ANTHROPIC_API_KEY},PERPLEXITY_API_KEY=${_PERPLEXITY_API_KEY},ONTRAPORT_APP_ID=${_ONTRAPORT_APP_ID},ONTRAPORT_API_KEY=${_ONTRAPORT_API_KEY},GOOGLE_CLIENT_ID=${_GOOGLE_CLIENT_ID},GOOGLE_CLIENT_SECRET=${_GOOGLE_CLIENT_SECRET},SENDGRID_API_KEY=${_SENDGRID_API_KEY},SENDGRID_FROM_EMAIL=${_SENDGRID_FROM_EMAIL},SENDGRID_FROM_NAME=${_SENDGRID_FROM_NAME},CLICKUP_API_TOKEN=${_CLICKUP_API_TOKEN},CLICKUP_LIST_ID=${_CLICKUP_LIST_ID}'
-      - '--set-secrets=GOOGLE_DOCS_CREDENTIALS=google-docs-credentials:latest'
+      # Non-sensitive config only (IDs, sender display fields, ClickUp list id).
+      - '--set-env-vars=ONTRAPORT_APP_ID=${_ONTRAPORT_APP_ID},GOOGLE_CLIENT_ID=${_GOOGLE_CLIENT_ID},SENDGRID_FROM_EMAIL=${_SENDGRID_FROM_EMAIL},SENDGRID_FROM_NAME=${_SENDGRID_FROM_NAME},CLICKUP_LIST_ID=${_CLICKUP_LIST_ID}'
+      # All secrets from Secret Manager (per-app secrets + shared Google Docs creds).
+      - '--set-secrets=GOOGLE_DOCS_CREDENTIALS=google-docs-credentials:latest,FLASK_SECRET_KEY=venue-voice-FLASK_SECRET_KEY:latest,OPENAI_API_KEY=venue-voice-OPENAI_API_KEY:latest,GOOGLE_AI_API_KEY=venue-voice-GOOGLE_AI_API_KEY:latest,ANTHROPIC_API_KEY=venue-voice-ANTHROPIC_API_KEY:latest,PERPLEXITY_API_KEY=venue-voice-PERPLEXITY_API_KEY:latest,ONTRAPORT_API_KEY=venue-voice-ONTRAPORT_API_KEY:latest,GOOGLE_CLIENT_SECRET=venue-voice-GOOGLE_CLIENT_SECRET:latest,SENDGRID_API_KEY=venue-voice-SENDGRID_API_KEY:latest,CLICKUP_API_TOKEN=venue-voice-CLICKUP_API_TOKEN:latest'
 options:
   logging: CLOUD_LOGGING_ONLY
+  # ALLOW_LOOSE so the deploy still succeeds if some non-sensitive substitution
+  # vars (_SENDGRID_FROM_*, _CLICKUP_LIST_ID) aren't defined on the trigger.
+  substitution_option: 'ALLOW_LOOSE'
 timeout: '1200s'
