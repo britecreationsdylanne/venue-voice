@@ -81,6 +81,17 @@ providers:
         cost_per_1m_input: 0.075
         cost_per_1m_output: 0.30
 
+      # Image generation (fallback for meme/newsletter images)
+      - id: "gemini-2.5-flash-image"
+        name: "Gemini 2.5 Flash Image"
+        tier: "standard"
+        speed: "fast"
+        image_generation: true
+        status: "active"
+        notes: "Google image generation (Nano Banana); fallback for gpt-image-2."
+        cost_per_1m_input: 0.30
+        cost_per_1m_output: 2.50
+
   openai:
     name: "OpenAI"
     env_key: "OPENAI_API_KEY"

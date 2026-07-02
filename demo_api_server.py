@@ -63,6 +63,15 @@ app.config.update(
     SESSION_COOKIE_SAMESITE='Lax',
 )
 
+from werkzeug.exceptions import HTTPException
+
+@app.errorhandler(Exception)
+def handle_uncaught_exception(e):
+    if isinstance(e, HTTPException):
+        return e
+    safe_print(f"[UNCAUGHT] {type(e).__name__}: {e}")
+    return jsonify({'success': False, 'error': 'Internal server error'}), 500
+
 # OAuth configuration
 oauth = OAuth(app)
 google = oauth.register(
@@ -431,60 +440,6 @@ def search_news():
                 'generated_at': datetime.now().isoformat()
             }), 500
 
-        # REMOVED: No more fallback to fake articles pool
-
-        # ALL POSSIBLE ARTICLES - 25 different articles
-        all_articles = [
-                {"title": "Wedding Venue Booking Trends Shift in 2025", "description": "Data shows 67% of couples now book venues 18+ months in advance", "keywords": ["booking", "trends", "data", month], "source_url": "https://www.theknot.com", "age": "2 weeks ago"},
-                {"title": "Virtual Tours Increase Venue Inquiries by 40%", "description": "3D venue tours converting better than traditional photo galleries", "keywords": ["virtual tours", "technology", "conversion", month], "source_url": "https://www.weddingwire.com", "age": "1 week ago"},
-                {"title": "Gen Z Couples Prioritize Instagram-Worthy Venues", "description": "Social media appeal now top factor for 58% of younger couples", "keywords": ["Gen Z", "social media", "Instagram", month], "source_url": "https://www.brides.com", "age": "3 days ago"},
-                {"title": "Wedding Venue Revenue Up 25% with AI Booking Tools", "description": "Automated scheduling and chatbots driving venue profitability", "keywords": ["AI", "revenue", "automation", month], "source_url": "https://www.theknot.com", "age": "1 week ago"},
-                {"title": "Sustainable Wedding Venues See 35% Growth", "description": "Eco-conscious couples seeking green-certified event spaces", "keywords": ["sustainability", "eco-friendly", "growth", month], "source_url": "https://www.marthastewartweddings.com", "age": "4 days ago"},
-                {"title": "Micro-Weddings Continue Strong in 2026", "description": "Small intimate gatherings remain popular despite pandemic ending", "keywords": ["micro-weddings", "trends", "intimate", month], "source_url": "https://www.theknot.com", "age": "1 week ago"},
-                {"title": "Wedding Venue Tech Investment Pays Off", "description": "Venues with digital tools see 50% faster booking cycles", "keywords": ["technology", "investment", "booking", month], "source_url": "https://www.weddingwire.com", "age": "5 days ago"},
-                {"title": "Hybrid Wedding Venues Gaining Traction", "description": "Spaces offering both indoor and outdoor options in high demand", "keywords": ["hybrid", "indoor-outdoor", "flexibility", month], "source_url": "https://www.brides.com", "age": "2 weeks ago"},
-                {"title": "Dynamic Pricing Boosts Venue Revenue", "description": "Seasonal and demand-based pricing increases profits by 30%", "keywords": ["pricing", "revenue", "strategy", month], "source_url": "https://www.theknot.com", "age": "6 days ago"},
-                {"title": "Wedding Venue Video Marketing Drives Bookings", "description": "Short-form venue videos on TikTok and Instagram Reels converting at 3x rate", "keywords": ["video", "marketing", "TikTok", month], "source_url": "https://www.marthastewartweddings.com", "age": "1 week ago"},
-                {"title": "Destination Wedding Venues Report 50% Revenue Increase", "description": "Travel restrictions lifting drives demand for international venue bookings", "keywords": ["destination", "travel", "international", month], "source_url": "https://www.brides.com", "age": "3 days ago"},
-                {"title": "All-Inclusive Venue Packages Simplify Planning", "description": "Couples prefer one-stop-shop venues that handle everything", "keywords": ["all-inclusive", "packages", "planning", month], "source_url": "https://www.theknot.com", "age": "2 days ago"},
-                {"title": "Wedding Venues Embrace Contactless Check-In", "description": "Digital guest management systems improve arrival experience", "keywords": ["contactless", "digital", "guest management", month], "source_url": "https://www.weddingwire.com", "age": "1 week ago"},
-                {"title": "Venues with In-House Catering See Higher Profit Margins", "description": "Controlling food service drives 40% revenue increase for venue owners", "keywords": ["catering", "profit", "revenue", month], "source_url": "https://www.theknot.com", "age": "4 days ago"},
-                {"title": "Outdoor Wedding Venues Dominate 2025 Bookings", "description": "75% of couples prefer outdoor or garden venue settings", "keywords": ["outdoor", "garden", "nature", month], "source_url": "https://www.brides.com", "age": "1 week ago"},
-                {"title": "Wedding Venue SEO Strategies That Actually Work", "description": "Local search optimization increases venue inquiries by 60%", "keywords": ["SEO", "marketing", "local search", month], "source_url": "https://www.weddingwire.com", "age": "5 days ago"},
-                {"title": "Flexible Cancellation Policies Win More Bookings", "description": "Venues offering flexibility see 45% higher conversion rates", "keywords": ["flexibility", "cancellation", "booking", month], "source_url": "https://www.theknot.com", "age": "3 days ago"},
-                {"title": "Wedding Venues Leverage User-Generated Content", "description": "Guest photos and reviews drive 3x more inquiries than professional shots", "keywords": ["UGC", "social proof", "marketing", month], "source_url": "https://www.marthastewartweddings.com", "age": "2 weeks ago"},
-                {"title": "Boutique Venues Outperform Large Event Spaces", "description": "Intimate settings command premium pricing and higher satisfaction", "keywords": ["boutique", "intimate", "premium", month], "source_url": "https://www.brides.com", "age": "6 days ago"},
-                {"title": "Wedding Venue Email Marketing Sees 35% Open Rates", "description": "Personalized drip campaigns converting prospects to bookings", "keywords": ["email", "marketing", "conversion", month], "source_url": "https://www.weddingwire.com", "age": "1 week ago"},
-                {"title": "Venues Adding Bridal Suites See Booking Boost", "description": "Getting-ready spaces become must-have amenity for couples", "keywords": ["bridal suite", "amenities", "booking", month], "source_url": "https://www.theknot.com", "age": "4 days ago"},
-                {"title": "Same-Day Venue Tours Convert at 80% Rate", "description": "Instant availability for site visits dramatically increases bookings", "keywords": ["tours", "conversion", "availability", month], "source_url": "https://www.weddingwire.com", "age": "2 days ago"},
-                {"title": "Wedding Venue Chatbots Answer 70% of Inquiries", "description": "AI assistants handle common questions, freeing staff for bookings", "keywords": ["chatbot", "AI", "automation", month], "source_url": "https://www.brides.com", "age": "1 week ago"},
-                {"title": "Rustic Barn Venues Lead 2026 Popularity Rankings", "description": "Countryside aesthetics remain top choice for modern couples", "keywords": ["rustic", "barn", "countryside", month], "source_url": "https://www.marthastewartweddings.com", "age": "5 days ago"},
-                {"title": "Venue Comparison Tools Influence 90% of Bookings", "description": "Couples research average 8 venues before making final decision", "keywords": ["comparison", "research", "decision", month], "source_url": "https://www.theknot.com", "age": "3 days ago"}
-        ]
-
-        # Filter out excluded titles FIRST
-        available_articles = [a for a in all_articles if a['title'] not in exclude_titles]
-
-        # If we've shown everything, reset and shuffle
-        if len(available_articles) < 5:
-            print("[API] All articles shown, using full set with shuffle")
-            available_articles = all_articles.copy()
-
-        # Shuffle for randomness
-        import random as rand_module
-        rand_module.shuffle(available_articles)
-
-        # Take first 5
-        articles = available_articles[:5]
-
-        print(f"[API] Returning {len(articles)} articles")
-
-        return jsonify({
-            'success': True,
-            'articles': articles,
-            'generated_at': datetime.now().isoformat()
-        })
-
     except Exception as e:
         print(f"[API ERROR] {str(e)}")
         import traceback
@@ -539,55 +494,6 @@ def search_tips():
                 'tips': [],
                 'generated_at': datetime.now().isoformat()
             }), 500
-
-        # REMOVED: No more fallback to fake tips pool
-
-        # ALL POSSIBLE TIPS - 20 different tip articles
-        all_tips = [
-                {"title": "Transform Your Virtual Tours with These 5 Quick Wins", "description": "Improve conversion rates by showing venues from guest perspective", "keywords": ["virtual tours", "conversion", "technology"], "source_url": "https://www.theknot.com", "age": "1 week ago"},
-                {"title": "Automate Your Follow-Up Emails to Book More Tours", "description": "Drip campaigns that convert inquiries into site visits", "keywords": ["email", "automation", "follow-up"], "source_url": "https://www.weddingwire.com", "age": "3 days ago"},
-                {"title": "Optimize Your Google Business Profile for More Leads", "description": "Local SEO tactics that put your venue on the map", "keywords": ["Google", "SEO", "local"], "source_url": "https://www.brides.com", "age": "5 days ago"},
-                {"title": "Create an Instagram Strategy That Books Weddings", "description": "Social media content calendar for venue marketing", "keywords": ["Instagram", "social media", "content"], "source_url": "https://www.theknot.com", "age": "2 weeks ago"},
-                {"title": "Turn Past Couples into Your Best Marketing Asset", "description": "Referral program strategies that generate qualified leads", "keywords": ["referrals", "testimonials", "marketing"], "source_url": "https://www.marthastewartweddings.com", "age": "4 days ago"},
-                {"title": "Price Your Venue Packages for Maximum Profit", "description": "Dynamic pricing strategies that increase revenue per booking", "keywords": ["pricing", "packages", "revenue"], "source_url": "https://www.weddingwire.com", "age": "1 week ago"},
-                {"title": "Reduce No-Shows with Smart Booking Deposits", "description": "Payment structures that secure committed couples", "keywords": ["deposits", "payments", "booking"], "source_url": "https://www.theknot.com", "age": "6 days ago"},
-                {"title": "Create a Venue Tour Experience That Closes Deals", "description": "Site visit best practices that convert 80% of prospects", "keywords": ["tours", "conversion", "sales"], "source_url": "https://www.brides.com", "age": "2 days ago"},
-                {"title": "Use Video Marketing to Showcase Your Venue", "description": "TikTok and Reels strategies for wedding venue promotion", "keywords": ["video", "TikTok", "marketing"], "source_url": "https://www.weddingwire.com", "age": "1 week ago"},
-                {"title": "Implement a CRM System to Track Every Lead", "description": "Customer relationship tools that prevent lost opportunities", "keywords": ["CRM", "leads", "tracking"], "source_url": "https://www.theknot.com", "age": "5 days ago"},
-                {"title": "Partner with Local Vendors for Cross-Promotion", "description": "Collaborative marketing that expands your reach", "keywords": ["partnerships", "vendors", "promotion"], "source_url": "https://www.marthastewartweddings.com", "age": "3 days ago"},
-                {"title": "Respond to Inquiries in Under 5 Minutes", "description": "Speed-to-lead strategies that win more bookings", "keywords": ["response time", "inquiries", "conversion"], "source_url": "https://www.brides.com", "age": "1 week ago"},
-                {"title": "Build an Email List from Website Visitors", "description": "Lead magnet strategies that grow your database", "keywords": ["email list", "lead generation", "content"], "source_url": "https://www.weddingwire.com", "age": "4 days ago"},
-                {"title": "Create Seasonal Promotions That Fill Your Calendar", "description": "Strategic discounting that drives off-season bookings", "keywords": ["promotions", "seasonal", "discounts"], "source_url": "https://www.theknot.com", "age": "2 weeks ago"},
-                {"title": "Showcase Real Weddings in Your Marketing", "description": "User-generated content that builds trust with couples", "keywords": ["real weddings", "UGC", "authenticity"], "source_url": "https://www.brides.com", "age": "6 days ago"},
-                {"title": "Optimize Your Website for Mobile Bookings", "description": "Mobile-first design that captures on-the-go couples", "keywords": ["mobile", "website", "UX"], "source_url": "https://www.weddingwire.com", "age": "3 days ago"},
-                {"title": "Track Your Marketing ROI with Simple Metrics", "description": "Key performance indicators every venue should monitor", "keywords": ["analytics", "ROI", "metrics"], "source_url": "https://www.theknot.com", "age": "1 week ago"},
-                {"title": "Create a Signature Venue Package That Sells Itself", "description": "All-inclusive offerings that simplify decision-making", "keywords": ["packages", "all-inclusive", "sales"], "source_url": "https://www.marthastewartweddings.com", "age": "5 days ago"},
-                {"title": "Use Retargeting Ads to Re-Engage Lost Leads", "description": "Facebook and Instagram ads that bring couples back", "keywords": ["retargeting", "ads", "Facebook"], "source_url": "https://www.weddingwire.com", "age": "2 days ago"},
-                {"title": "Build a Content Calendar for Consistent Posting", "description": "Social media planning that maintains engagement", "keywords": ["content calendar", "planning", "consistency"], "source_url": "https://www.brides.com", "age": "1 week ago"}
-        ]
-
-        # Filter out excluded titles FIRST
-        available_tips = [t for t in all_tips if t['title'] not in exclude_titles]
-
-        # If we've shown everything, reset
-        if len(available_tips) < 5:
-            print("[API] All tips shown, using full set")
-            available_tips = all_tips.copy()
-
-        # Shuffle for randomness
-        import random as rand_module
-        rand_module.shuffle(available_tips)
-
-        # Take first 5
-        tips = available_tips[:5]
-
-        print(f"[API] Found {len(tips)} tip articles")
-
-        return jsonify({
-            'success': True,
-            'tips': tips,
-            'generated_at': datetime.now().isoformat()
-        })
 
     except Exception as e:
         print(f"[API ERROR] {str(e)}")
@@ -655,60 +561,6 @@ def get_trends():
                 'season': season,
                 'generated_at': datetime.now().isoformat()
             }), 500
-
-        # REMOVED: No more fallback to fake trends pool
-
-        # ALL POSSIBLE TRENDS - 24 different trend articles
-        all_trends = [
-                {"title": "Maximalist Decor Makes Bold Comeback", "description": "Couples embrace vibrant colors and eclectic styling", "keywords": [season, "maximalist", "decor"], "source_url": "https://www.brides.com", "season": season, "age": "1 week ago"},
-                {"title": "Sustainable Weddings Go Mainstream", "description": "Eco-friendly choices now expected, not optional", "keywords": [season, "sustainable", "eco-friendly"], "source_url": "https://www.theknot.com", "season": season, "age": "3 days ago"},
-                {"title": "Multi-Day Wedding Celebrations Trending", "description": "Extended festivities replace single-day events", "keywords": [season, "multi-day", "celebration"], "source_url": "https://www.weddingwire.com", "season": season, "age": "5 days ago"},
-                {"title": "Personalized Menus Replace Traditional Catering", "description": "Custom dining experiences reflect couple's story", "keywords": [season, "menu", "catering"], "source_url": "https://www.marthastewartweddings.com", "season": season, "age": "2 weeks ago"},
-                {"title": "Live Music Dominates Reception Entertainment", "description": "Bands and musicians preferred over DJ setups", "keywords": [season, "live music", "entertainment"], "source_url": "https://www.theknot.com", "season": season, "age": "4 days ago"},
-                {"title": "Intimate Guest Lists Under 50 People", "description": "Quality over quantity drives smaller celebrations", "keywords": [season, "intimate", "small wedding"], "source_url": "https://www.brides.com", "season": season, "age": "1 week ago"},
-                {"title": "Dried Florals Replace Fresh Flower Arrangements", "description": "Sustainable and budget-friendly botanical choices", "keywords": [season, "dried flowers", "florals"], "source_url": "https://www.weddingwire.com", "season": season, "age": "6 days ago"},
-                {"title": "Interactive Food Stations Engage Guests", "description": "Build-your-own bars and live cooking demonstrations", "keywords": [season, "food stations", "interactive"], "source_url": "https://www.theknot.com", "season": season, "age": "2 days ago"},
-                {"title": "Mismatched Bridesmaid Dresses Gain Popularity", "description": "Coordinated colors with individual style choices", "keywords": [season, "bridesmaids", "fashion"], "source_url": "https://www.brides.com", "season": season, "age": "1 week ago"},
-                {"title": "Unplugged Ceremonies Become Standard Request", "description": "Couples ask guests to put away phones and cameras", "keywords": [season, "unplugged", "ceremony"], "source_url": "https://www.marthastewartweddings.com", "season": season, "age": "5 days ago"},
-                {"title": "Bold Accent Colors Replace All-White Palettes", "description": "Jewel tones and vibrant hues make statements", "keywords": [season, "colors", "palette"], "source_url": "https://www.weddingwire.com", "season": season, "age": "3 days ago"},
-                {"title": "Dessert Bars Compete with Traditional Wedding Cakes", "description": "Variety of sweets appeals to diverse tastes", "keywords": [season, "dessert", "cake"], "source_url": "https://www.theknot.com", "season": season, "age": "1 week ago"},
-                {"title": "Lounge Seating Areas Enhance Guest Experience", "description": "Comfortable furniture creates conversation spaces", "keywords": [season, "lounge", "seating"], "source_url": "https://www.brides.com", "season": season, "age": "4 days ago"},
-                {"title": "Non-Traditional Venues Outpace Hotels and Ballrooms", "description": "Barns, lofts, and outdoor spaces preferred", "keywords": [season, "venue", "alternative"], "source_url": "https://www.weddingwire.com", "season": season, "age": "2 weeks ago"},
-                {"title": "Signature Cocktails Reflect Couple's Personality", "description": "Custom drink menus add personal touch", "keywords": [season, "cocktails", "bar"], "source_url": "https://www.theknot.com", "season": season, "age": "6 days ago"},
-                {"title": "Bridal Jumpsuits and Pantsuits Rise in Popularity", "description": "Modern alternatives to traditional gowns", "keywords": [season, "bridal fashion", "jumpsuit"], "source_url": "https://www.brides.com", "season": season, "age": "1 week ago"},
-                {"title": "Vintage and Antique Decor Elements Return", "description": "Nostalgic touches add character and charm", "keywords": [season, "vintage", "antique"], "source_url": "https://www.marthastewartweddings.com", "season": season, "age": "5 days ago"},
-                {"title": "Cultural Fusion Weddings Celebrate Heritage", "description": "Blending traditions creates meaningful ceremonies", "keywords": [season, "cultural", "traditions"], "source_url": "https://www.weddingwire.com", "season": season, "age": "3 days ago"},
-                {"title": "Micro-Moments Replace Formal Photo Sessions", "description": "Candid photography captures authentic emotions", "keywords": [season, "photography", "candid"], "source_url": "https://www.theknot.com", "season": season, "age": "1 week ago"},
-                {"title": "Late-Night Snack Stations Keep Party Going", "description": "Pizza, tacos, and comfort food for dancing guests", "keywords": [season, "late night", "food"], "source_url": "https://www.brides.com", "season": season, "age": "4 days ago"},
-                {"title": "Statement Lighting Transforms Venue Ambiance", "description": "Chandeliers, string lights, and LEDs set mood", "keywords": [season, "lighting", "ambiance"], "source_url": "https://www.weddingwire.com", "season": season, "age": "2 days ago"},
-                {"title": "Weekday Weddings Offer Better Value and Availability", "description": "Monday-Thursday events grow more common", "keywords": [season, "weekday", "budget"], "source_url": "https://www.theknot.com", "season": season, "age": "1 week ago"},
-                {"title": "Garden-Style Centerpieces Bring Nature Indoors", "description": "Organic arrangements with greenery and wildflowers", "keywords": [season, "centerpieces", "garden"], "source_url": "https://www.marthastewartweddings.com", "season": season, "age": "5 days ago"},
-                {"title": "Couples Prioritize Guest Comfort Over Formality", "description": "Relaxed dress codes and flexible timelines", "keywords": [season, "comfort", "casual"], "source_url": "https://www.brides.com", "season": season, "age": "3 days ago"}
-        ]
-
-        # Filter out excluded titles FIRST
-        available_trends = [t for t in all_trends if t['title'] not in exclude_titles]
-
-        # If we've shown everything, reset
-        if len(available_trends) < 5:
-            print("[API] All trends shown, using full set")
-            available_trends = all_trends.copy()
-
-        # Shuffle for randomness
-        import random as rand_module
-        rand_module.shuffle(available_trends)
-
-        # Take first 5
-        trends = available_trends[:5]
-
-        print(f"[API] Found {len(trends)} trend articles for {season}")
-
-        return jsonify({
-            'success': True,
-            'trends': trends,
-            'season': season,
-            'generated_at': datetime.now().isoformat()
-        })
 
     except Exception as e:
         print(f"[API ERROR] {str(e)}")
@@ -2121,7 +1973,7 @@ def generate_meme():
     """Generate meme with gpt-image-2 using scene description and text overlay"""
     try:
         data = request.json
-        month = data.get('month')
+        month = data.get('month') or ''
         custom_prompt = data.get('customPrompt') or data.get('prompt')  # Accept both parameter names
 
         # Get pre-generated text overlay (from meme prompt generation step)
@@ -3432,54 +3284,6 @@ def get_newsletter_archive():
         safe_print(f"[ARCHIVE ERROR] {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/api/save-newsletter-archive', methods=['POST'])
-def save_newsletter_archive():
-    """Save newsletter to archive when published"""
-    try:
-        data = request.json
-
-        archive_file = os.path.join('data', 'archives', 'venue-voice-archives.json')
-
-        # Load existing archives
-        if os.path.exists(archive_file):
-            with open(archive_file, 'r', encoding='utf-8') as f:
-                archives = json.load(f)
-        else:
-            archives = []
-
-        # Create new archive entry
-        new_entry = {
-            'id': f"venue-{data.get('year')}-{data.get('month')}",
-            'month': data.get('month'),
-            'year': data.get('year'),
-            'date_published': datetime.now().strftime('%Y-%m-%d'),
-            'sections': data.get('sections', {}),
-            'html_content': data.get('html_content', ''),
-            'ontraport_campaign_id': data.get('ontraport_campaign_id')
-        }
-
-        # Add to beginning of list (most recent first)
-        archives.insert(0, new_entry)
-
-        # Keep only last 12 months
-        archives = archives[:12]
-
-        # Save back to file
-        os.makedirs(os.path.dirname(archive_file), exist_ok=True)
-        with open(archive_file, 'w', encoding='utf-8') as f:
-            json.dump(archives, f, indent=2)
-
-        print(f"[API] Saved newsletter archive: {new_entry['id']}")
-
-        return jsonify({'success': True, 'message': 'Newsletter archived'})
-
-    except Exception as e:
-        print(f"[API ERROR] {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-
 # =============================================================================
 # NEW 4-CARD SEARCH SYSTEM
 # =============================================================================
@@ -3977,30 +3781,33 @@ def search_all_signals(time_window: str = '30d', exclude_urls: list = None) -> l
     print(f"[Insight Builder] Searching all 8 signals (US focus)...")
 
     # Search each signal
-    for signal, query_terms in SIGNAL_QUERIES.items():
-        try:
-            prompt = f"""Search for recent US news about {signal.replace('_', ' ')}.
+    def _search_signal(item):
+        signal, query_terms = item
+        prompt = f"""Search for recent US news about {signal.replace('_', ' ')}.
 
 Find articles about the United States with data points, statistics, and business impact.
 Focus on American markets and US-based sources.
 Search terms: {query_terms}
 
 Return results with title, url, publisher, published_date, and summary with key data points."""
-
-            results = openai_client.search_web_responses_api(prompt, max_results=4, exclude_urls=list(seen_urls))
-
-            for r in results:
-                url = r.get('url', '')
-                if url and url not in seen_urls:
-                    r['signal_source'] = signal  # Tag which signal found this
-                    all_results.append(r)
-                    seen_urls.add(url)
-
-            print(f"[Insight Builder] Signal '{signal}' returned {len(results)} results")
-
+        try:
+            return signal, openai_client.search_web_responses_api(prompt, max_results=4, exclude_urls=exclude_urls)
         except Exception as e:
             print(f"[Insight Builder] Error searching signal '{signal}': {e}")
-            continue
+            return signal, []
+
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=8) as _ex:
+        signal_results = list(_ex.map(_search_signal, SIGNAL_QUERIES.items()))
+
+    for signal, results in signal_results:
+        for r in results:
+            url = r.get('url', '')
+            if url and url not in seen_urls:
+                r['signal_source'] = signal
+                all_results.append(r)
+                seen_urls.add(url)
+        print(f"[Insight Builder] Signal '{signal}' returned {len(results)} results")
 
     print(f"[Insight Builder] Total unique results: {len(all_results)}")
     return all_results
