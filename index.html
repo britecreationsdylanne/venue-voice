@@ -1944,6 +1944,7 @@
             <div class="buttons">
                 <button class="btn-secondary btn" onclick="goBackToPrompts()">← Back to Prompts</button>
                 <button class="btn-secondary btn" onclick="generateImagesFromPrompts(true)" style="background: #f59e0b; color: white; border-color: #f59e0b;">🔄 Regenerate All Images</button>
+                <button class="btn-secondary btn" onclick="saveDraftManual(this)" style="background: #16a34a; color: white; border-color: #16a34a;">💾 Save Draft</button>
                 <button class="btn" onclick="generateMemePrompt()">Continue to Meme →</button>
             </div>
         </div>
@@ -7126,8 +7127,19 @@
         // DRAFTS - Save, Load, Delete
         // ============================================================
 
+        // On-demand save (button) with visible confirmation — saveDraft() itself
+        // is silent (used by auto-save on step changes).
+        async function saveDraftManual(btn) {
+            const orig = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Saving…';
+            const ok = await saveDraft();
+            btn.innerHTML = ok ? '✓ Saved!' : '⚠️ Save failed';
+            setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; }, 2000);
+        }
+
         async function saveDraft() {
-            if (!selectedMonth) return;
+            if (!selectedMonth) return false;
             try {
                 const userEmail = (window.AUTH_USER && window.AUTH_USER.email) || 'unknown';
                 const resp = await fetch(`${API_BASE}/api/save-draft`, {
@@ -7164,8 +7176,10 @@
                 });
                 console.log('[Draft] Saved');
                 loadDrafts();
+                return resp.ok;
             } catch (e) {
                 console.error('[Draft] Save failed:', e);
+                return false;
             }
         }
 
