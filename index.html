@@ -1858,7 +1858,7 @@
         <!-- Step 10: Review Article Images (News, Tip, Trend) -->
         <div class="step" id="step10">
             <h2>🖼️ Article Images</h2>
-            <p>Review and customize images for your newsletter sections <span id="imageAutoSaveStatus" style="display:none; color:#16a34a; font-weight:600; margin-left:6px;"></span></p>
+            <p>Review and customize images for your newsletter sections</p>
 
             <!-- News Image -->
             <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #e5e7eb;">
@@ -3844,16 +3844,9 @@
                 displayImages();
                 showStep(10);
 
-                // Auto-save the freshly generated images (before the meme step) and
-                // show a visible confirmation so it isn't silent.
-                saveDraft().then(ok => {
-                    const _s = document.getElementById('imageAutoSaveStatus');
-                    if (_s) {
-                        _s.textContent = ok ? '✓ Auto-saved' : '⚠️ Auto-save failed';
-                        _s.style.color = ok ? '#16a34a' : '#dc2626';
-                        _s.style.display = 'inline';
-                    }
-                });
+                // Auto-save the freshly generated images (before the meme step).
+                // The global save-status indicator shows the result.
+                saveDraft();
             } catch (error) {
                 console.error('Error:', error);
                 alert('Error generating images: ' + error.message);
@@ -7137,8 +7130,26 @@
         // DRAFTS - Save, Load, Delete
         // ============================================================
 
+        // Small fixed "save status" pill. Bottom-LEFT (bottom-right is the
+        // BritePulse feedback button). Created lazily so it needs no HTML.
+        function setSaveStatus(state) {
+            let el = document.getElementById('saveStatus');
+            if (!el) {
+                el = document.createElement('div');
+                el.id = 'saveStatus';
+                el.style.cssText = 'position:fixed;bottom:16px;left:16px;z-index:9999;padding:6px 12px;border-radius:20px;font-size:13px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,0.15);';
+                document.body.appendChild(el);
+            }
+            const now = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+            if (state === 'saving') { el.textContent = '⏳ Saving…'; el.style.background = '#fef3c7'; el.style.color = '#92400e'; }
+            else if (state === 'saved') { el.textContent = '✓ Saved · ' + now; el.style.background = '#dcfce7'; el.style.color = '#166534'; }
+            else { el.textContent = '⚠️ Save failed'; el.style.background = '#fee2e2'; el.style.color = '#991b1b'; }
+            el.style.display = 'inline-block';
+        }
+
         async function saveDraft() {
             if (!selectedMonth) return false;
+            setSaveStatus('saving');
             try {
                 const userEmail = (window.AUTH_USER && window.AUTH_USER.email) || 'unknown';
                 const resp = await fetch(`${API_BASE}/api/save-draft`, {
@@ -7175,9 +7186,11 @@
                 });
                 console.log('[Draft] Saved');
                 loadDrafts();
+                setSaveStatus(resp.ok ? 'saved' : 'error');
                 return resp.ok;
             } catch (e) {
                 console.error('[Draft] Save failed:', e);
+                setSaveStatus('error');
                 return false;
             }
         }
