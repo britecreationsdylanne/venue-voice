@@ -7130,24 +7130,57 @@
         // DRAFTS - Save, Load, Delete
         // ============================================================
 
-        // Small fixed "save status" pill. Bottom-LEFT (bottom-right is the
-        // BritePulse feedback button). Created lazily so it needs no HTML.
+        let _saveRetryQueued = false;
+
+        // Fixed save-status toast, bottom-LEFT (bottom-right is the BritePulse
+        // feedback button). Created lazily. Success auto-fades; errors persist
+        // until dismissed and carry actions.
         function setSaveStatus(state) {
             let el = document.getElementById('saveStatus');
             if (!el) {
                 el = document.createElement('div');
                 el.id = 'saveStatus';
-                el.style.cssText = 'position:fixed;bottom:16px;left:16px;z-index:9999;padding:6px 12px;border-radius:20px;font-size:13px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,0.15);';
+                el.style.cssText = 'position:fixed;bottom:16px;left:16px;z-index:9999;padding:10px 14px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:0 2px 10px rgba(0,0,0,0.25);max-width:300px;line-height:1.45;';
                 document.body.appendChild(el);
             }
+            clearTimeout(el._fadeTimer);
+            el.innerHTML = '';
             const now = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-            if (state === 'saving') { el.textContent = '⏳ Saving…'; el.style.background = '#fef3c7'; el.style.color = '#92400e'; }
-            else if (state === 'saved') { el.textContent = '✓ Saved · ' + now; el.style.background = '#dcfce7'; el.style.color = '#166534'; }
-            else { el.textContent = '⚠️ Save failed'; el.style.background = '#fee2e2'; el.style.color = '#991b1b'; }
+            const hide = () => { el.style.display = 'none'; };
+            const mkBtn = (label, bg, fg, fn) => {
+                const b = document.createElement('button');
+                b.textContent = label;
+                b.style.cssText = 'padding:4px 10px;border-radius:8px;border:none;font-size:12px;font-weight:700;cursor:pointer;margin-right:6px;margin-top:8px;background:' + bg + ';color:' + fg + ';';
+                b.onclick = fn;
+                return b;
+            };
+            if (state === 'saving') {
+                el.textContent = '⏳ Saving…'; el.style.background = '#fef3c7'; el.style.color = '#92400e';
+            } else if (state === 'saved') {
+                el.textContent = '✓ Saved · ' + now; el.style.background = '#dcfce7'; el.style.color = '#166534';
+                el._fadeTimer = setTimeout(hide, 3000);
+            } else if (state === 'expired') {
+                el.style.background = '#fee2e2'; el.style.color = '#991b1b';
+                const msg = document.createElement('div');
+                msg.innerHTML = '🔒 Session expired — <strong>your work is still here.</strong> Sign in (new tab), then Retry.';
+                const row = document.createElement('div');
+                row.appendChild(mkBtn('Sign in ↗', '#008181', '#fff', () => window.open('/auth/login', '_blank')));
+                row.appendChild(mkBtn('Retry', '#166534', '#fff', () => saveDraft()));
+                row.appendChild(mkBtn('✕', '#e5e7eb', '#333', hide));
+                el.appendChild(msg); el.appendChild(row);
+            } else {
+                el.style.background = '#fee2e2'; el.style.color = '#991b1b';
+                const msg = document.createElement('div');
+                msg.innerHTML = "⚠️ Couldn't save — <strong>your work is safe.</strong> Retrying…";
+                const row = document.createElement('div');
+                row.appendChild(mkBtn('Retry now', '#166534', '#fff', () => saveDraft()));
+                row.appendChild(mkBtn('✕', '#e5e7eb', '#333', hide));
+                el.appendChild(msg); el.appendChild(row);
+            }
             el.style.display = 'inline-block';
         }
 
-        async function saveDraft() {
+        async function saveDraft(isRetry = false) {
             if (!selectedMonth) return false;
             setSaveStatus('saving');
             try {
@@ -7184,13 +7217,28 @@
                         savedBy: userEmail
                     })
                 });
-                console.log('[Draft] Saved');
-                loadDrafts();
-                setSaveStatus(resp.ok ? 'saved' : 'error');
-                return resp.ok;
+                if (resp.ok) {
+                    console.log('[Draft] Saved');
+                    loadDrafts();
+                    setSaveStatus('saved');
+                    return true;
+                }
+                // Session expired -> distinct, non-fading, actionable message.
+                if (resp.status === 401) { setSaveStatus('expired'); return false; }
+                // Other failure -> one gentle auto-retry, then normal autosave.
+                setSaveStatus('error');
+                if (!isRetry && !_saveRetryQueued) {
+                    _saveRetryQueued = true;
+                    setTimeout(() => { _saveRetryQueued = false; saveDraft(true); }, 5000);
+                }
+                return false;
             } catch (e) {
                 console.error('[Draft] Save failed:', e);
                 setSaveStatus('error');
+                if (!isRetry && !_saveRetryQueued) {
+                    _saveRetryQueued = true;
+                    setTimeout(() => { _saveRetryQueued = false; saveDraft(true); }, 5000);
+                }
                 return false;
             }
         }
