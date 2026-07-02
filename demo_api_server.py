@@ -89,6 +89,19 @@ def get_current_user():
     """Get current user from session"""
     return session.get('user')
 
+@app.before_request
+def require_api_auth():
+    """Gate every /api/* route behind a logged-in session.
+
+    The HTML page already requires login (root redirects to Google OAuth), and
+    logged-in browsers send the session cookie with same-origin fetches, so
+    normal use is unaffected. This closes the previously-open API surface
+    (email send, LLM/image generation, GCS read/write/delete, Ontraport push,
+    Docs export). Pages, the auth flow, and static assets stay public.
+    """
+    if request.path.startswith('/api/') and not get_current_user():
+        return jsonify({'success': False, 'error': 'Authentication required. Please sign in.'}), 401
+
 # Helper function to safely print Unicode content on Windows
 def safe_print(text):
     """Print text with proper encoding handling for Windows console"""
@@ -3590,9 +3603,9 @@ def filter_by_recency(results: list, time_window: str = '30d', verify: bool = Tr
     - Model-claimed dates are only trusted to DROP clearly-old articles cheaply.
     - Articles that claim to be recent are verified against the live page to
       catch hallucinated-recent dates.
-    - Articles with no determinable date are dropped (recency was explicitly
-      requested) — with a safety net so a card never ends up empty for this
-      reason alone.
+    - Articles whose date can't be determined are KEPT (we only drop articles
+      we can positively date as older than the window), so cards aren't starved
+      when a site simply has no readable date metadata.
     """
     days_map = {'7d': 7, '15d': 15, '30d': 30, '90d': 90}
     max_days = days_map.get(time_window, 30)
@@ -3619,31 +3632,23 @@ def filter_by_recency(results: list, time_window: str = '30d', verify: bool = Tr
         print(f"[Recency] date resolution failed ({e}); skipping recency filter")
         return results
 
-    kept, undated, dropped_old = [], [], 0
+    kept, dropped_old, undated_count = [], 0, 0
     for r, d in zip(results, dates):
-        if d is None:
-            # Date could not be confirmed (no metadata / site blocked the fetch).
-            # Not proven old -> hold as a fallback rather than dropping outright.
-            undated.append(r)
-        elif d >= cutoff:
-            # Surface the verified real date to the UI
-            r['published_date'] = d.strftime('%Y-%m-%d')
-            kept.append(r)
-        else:
+        if d is not None and d < cutoff:
+            # The ONLY thing we drop: articles positively dated older than the window.
             dropped_old += 1
+            continue
+        if d is not None:
+            # Confirmed in-window — surface the verified real date to the UI.
+            r['published_date'] = d.strftime('%Y-%m-%d')
+        else:
+            # Date couldn't be determined (no metadata / site blocked the fetch).
+            # Keep it: starving the card is worse than possibly including an
+            # undatable article. We only drop what we can PROVE is too old.
+            undated_count += 1
+        kept.append(r)
 
-    print(f"[Recency] window={time_window}: kept {len(kept)} date-confirmed, dropped {dropped_old} too-old, {len(undated)} unverifiable")
-
-    # Prefer date-confirmed, in-window results.
-    if kept:
-        return kept
-    # Nothing could be confirmed in-window. Rather than show an empty card,
-    # fall back to the unverifiable (NOT proven-old) results so the user still
-    # sees candidates. Articles we positively dated as too-old stay dropped.
-    if undated:
-        print(f"[Recency] No date-confirmed results; returning {len(undated)} unverifiable (not-proven-old) as fallback")
-        return undated
-    # Genuinely nothing in-window and nothing unverifiable (everything was proven old).
+    print(f"[Recency] window={time_window}: {len(kept)} kept ({len(kept) - undated_count} date-confirmed, {undated_count} unverifiable), {dropped_old} dropped as too-old")
     return kept
 
 
