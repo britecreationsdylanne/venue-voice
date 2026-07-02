@@ -1858,7 +1858,7 @@
         <!-- Step 10: Review Article Images (News, Tip, Trend) -->
         <div class="step" id="step10">
             <h2>🖼️ Article Images</h2>
-            <p>Review and customize images for your newsletter sections</p>
+            <p>Review and customize images for your newsletter sections <span id="imageAutoSaveStatus" style="display:none; color:#16a34a; font-weight:600; margin-left:6px;"></span></p>
 
             <!-- News Image -->
             <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #e5e7eb;">
@@ -1944,7 +1944,6 @@
             <div class="buttons">
                 <button class="btn-secondary btn" onclick="goBackToPrompts()">← Back to Prompts</button>
                 <button class="btn-secondary btn" onclick="generateImagesFromPrompts(true)" style="background: #f59e0b; color: white; border-color: #f59e0b;">🔄 Regenerate All Images</button>
-                <button class="btn-secondary btn" onclick="saveDraftManual(this)" style="background: #16a34a; color: white; border-color: #16a34a;">💾 Save Draft</button>
                 <button class="btn" onclick="generateMemePrompt()">Continue to Meme →</button>
             </div>
         </div>
@@ -3844,6 +3843,17 @@
                 // Display images and go to Step 10 (Review Images)
                 displayImages();
                 showStep(10);
+
+                // Auto-save the freshly generated images (before the meme step) and
+                // show a visible confirmation so it isn't silent.
+                saveDraft().then(ok => {
+                    const _s = document.getElementById('imageAutoSaveStatus');
+                    if (_s) {
+                        _s.textContent = ok ? '✓ Auto-saved' : '⚠️ Auto-save failed';
+                        _s.style.color = ok ? '#16a34a' : '#dc2626';
+                        _s.style.display = 'inline';
+                    }
+                });
             } catch (error) {
                 console.error('Error:', error);
                 alert('Error generating images: ' + error.message);
@@ -7126,17 +7136,6 @@
         // ============================================================
         // DRAFTS - Save, Load, Delete
         // ============================================================
-
-        // On-demand save (button) with visible confirmation — saveDraft() itself
-        // is silent (used by auto-save on step changes).
-        async function saveDraftManual(btn) {
-            const orig = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '⏳ Saving…';
-            const ok = await saveDraft();
-            btn.innerHTML = ok ? '✓ Saved!' : '⚠️ Save failed';
-            setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; }, 2000);
-        }
 
         async function saveDraft() {
             if (!selectedMonth) return false;
