@@ -2971,20 +2971,9 @@
                 const cData = await cResp.json();
                 if (!cData.success) throw new Error(cData.error || 'Writing failed');
                 const c = cData.content || {};
-                if (section === 'news') {
-                    generatedNewsContent = c.news;
-                    if (c.news_title) generatedNewsTitle = c.news_title;
-                } else if (section === 'tip') {
-                    generatedTipContent = c.tip;
-                    if (c.tip_title) generatedTipTitle = c.tip_title;
-                    if (c.tip_subtitle) generatedTipSubtitle = c.tip_subtitle;
-                } else {
-                    generatedTrendContent = c.trend;
-                    if (c.trend_title) generatedTrendTitle = c.trend_title;
-                    if (c.trend_subtitle) generatedTrendSubtitle = c.trend_subtitle;
-                }
 
-                // Collect the newly-written copy WITHOUT overwriting the live vars yet.
+                // Collect the newly-written copy WITHOUT overwriting the live vars yet
+                // (they are only committed in applyPendingSwap, after the user reviews).
                 let newContent, newTitle = null, newSubtitle = null;
                 if (section === 'news') {
                     newContent = c.news;
@@ -2997,6 +2986,19 @@
                     newContent = c.trend;
                     newTitle = c.trend_title || generatedTrendTitle || null;
                     newSubtitle = c.trend_subtitle || generatedTrendSubtitle || null;
+                }
+
+                // The researcher can come back empty for hard-to-read sources (a custom
+                // URL behind a login/paywall, or a page it can't open). Don't block the
+                // swap — hand back a light draft built from the article's own title/summary
+                // that the user fleshes out with inline editing after adding it.
+                let thinDraft = false;
+                if (!newContent || (typeof newContent === 'string' && !newContent.trim())) {
+                    thinDraft = true;
+                    const summary = (selected.description || selected.snippet || selected.so_what || '').toString().trim();
+                    const para = summary || "We couldn't auto-read this source, so add your summary of the article here.";
+                    newContent = `<p style="margin:0 0 16px 0; font-size:17px; line-height:1.7; color:#555;">${para}</p>`;
+                    if (!newTitle) newTitle = selected.title || null;
                 }
 
                 // 3) New image prompt for the rewritten section (using the NEW copy).
@@ -3024,7 +3026,8 @@
                     title: newTitle,
                     subtitle: newSubtitle,
                     imageUrl: newImageUrl,
-                    prompt: newPrompt
+                    prompt: newPrompt,
+                    thin: thinDraft
                 };
                 showSwapReview();
             } catch (e) {
@@ -3051,6 +3054,12 @@
             const copyEl = document.getElementById('swapReviewCopy');
             if (copyEl) {
                 copyEl.innerHTML = '';
+                if (s.thin) {
+                    const note = document.createElement('div');
+                    note.style.cssText = 'background:#fef3c7; border:1px solid #fcd34d; color:#92400e; border-radius:8px; padding:10px 12px; margin-bottom:12px; font-size:13px;';
+                    note.textContent = "⚠️ We couldn't fully read this source, so this is a light draft. Add it, then edit the copy directly in the preview to flesh it out.";
+                    copyEl.appendChild(note);
+                }
                 if (s.title) {
                     const h = document.createElement('h3');
                     h.style.cssText = 'margin:0 0 6px; font-size:18px; color:#111;';
@@ -3064,8 +3073,8 @@
                     copyEl.appendChild(sub);
                 }
                 const body = document.createElement('div');
-                let html = typeof s.content === 'string' ? s.content : JSON.stringify(s.content);
-                html = html.replace(/color:\s*#ffffff;?/gi, 'color:#1f2937;'); // readable on white
+                let html = typeof s.content === 'string' ? s.content : (s.content == null ? '' : JSON.stringify(s.content));
+                html = (html || '').replace(/color:\s*#ffffff;?/gi, 'color:#1f2937;'); // readable on white
                 body.innerHTML = html;
                 copyEl.appendChild(body);
             }
