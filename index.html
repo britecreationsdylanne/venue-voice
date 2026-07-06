@@ -7040,6 +7040,15 @@
                         if (previewSelect) previewSelect.value = specialSection.position || 'after-trend';
                     }
                 }
+                // If we landed here directly (e.g. editing a published newsletter,
+                // which jumps straight to the preview) the preview hasn't been
+                // rendered yet — the "Continue to Preview" button normally does it.
+                // Render it now if it's empty so the newsletter actually shows.
+                const _prev = document.getElementById('newsletterPreview');
+                if (_prev && !_prev.innerHTML.trim() &&
+                    (generatedNewsContent || generatedTipContent || generatedTrendContent || savedEditedHTML)) {
+                    showNewsletterPreview();
+                }
             }
 
             // Pre-populate subject line and preheader for Ontraport
