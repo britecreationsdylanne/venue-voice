@@ -2573,6 +2573,7 @@
         }
 
         function selectMonth(month, season, element) {
+            editingPublishedFile = null;  // starting fresh -> don't overwrite a published copy
             selectedMonth = month;
             selectedSeason = season;
 
@@ -2783,6 +2784,9 @@
         let memeConceptGenerated = false;
         let memeImageGenerated = false;
         let isLoadingDraft = false;
+        // When set, this is the published/ filename being edited — saves write
+        // back over that archived copy instead of creating a new draft.
+        let editingPublishedFile = null;
 
         // Store meme concept data to preserve on back navigation
         let memeConceptData = {
@@ -6840,6 +6844,7 @@
 
         function startOver() {
             if (confirm('Start over? This will return to the first step.')) {
+                editingPublishedFile = null;  // leave published-edit mode
                 showStep(1);
             }
         }
@@ -7185,38 +7190,45 @@
             setSaveStatus('saving');
             try {
                 const userEmail = (window.AUTH_USER && window.AUTH_USER.email) || 'unknown';
-                const resp = await fetch(`${API_BASE}/api/save-draft`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        month: selectedMonth,
-                        year: new Date().getFullYear(),
-                        currentStep: document.querySelector('.step.active')?.id || '',
-                        generatedContent: {
-                            // Prefer latest edited content over original generated content
-                            news: document.getElementById('fc-news')?.innerHTML?.trim() || document.getElementById('newsContentBox')?.innerHTML?.trim() || generatedNewsContent,
-                            tip: document.getElementById('fc-tip')?.innerHTML?.trim() || document.getElementById('tipContentBox')?.innerHTML?.trim() || generatedTipContent,
-                            trend: document.getElementById('fc-trend')?.innerHTML?.trim() || document.getElementById('trendContentBox')?.innerHTML?.trim() || generatedTrendContent,
-                            tipSubtitle: generatedTipSubtitle,
-                            trendSubtitle: generatedTrendSubtitle,
-                            newsTitle: generatedNewsTitle,
-                            tipTitle: generatedTipTitle,
-                            trendTitle: generatedTrendTitle
-                        },
-                        selectedArticles: {
-                            news: selectedNews,
-                            tip: selectedTip,
-                            trend: selectedTrend
-                        },
-                        generatedImages: generatedImages,
-                        imagePrompts: (typeof basePrompts !== 'undefined') ? basePrompts : {},
-                        specialSection: specialSection,
-                        subjectLine: document.getElementById('finalSubjectLine')?.value || '',
-                        preheader: document.getElementById('finalPreheader')?.value || '',
-                        savedEditedHTML: savedEditedHTML,
-                        savedBy: userEmail
+                const payload = {
+                    month: selectedMonth,
+                    year: new Date().getFullYear(),
+                    currentStep: document.querySelector('.step.active')?.id || '',
+                    generatedContent: {
+                        // Prefer latest edited content over original generated content
+                        news: document.getElementById('fc-news')?.innerHTML?.trim() || document.getElementById('newsContentBox')?.innerHTML?.trim() || generatedNewsContent,
+                        tip: document.getElementById('fc-tip')?.innerHTML?.trim() || document.getElementById('tipContentBox')?.innerHTML?.trim() || generatedTipContent,
+                        trend: document.getElementById('fc-trend')?.innerHTML?.trim() || document.getElementById('trendContentBox')?.innerHTML?.trim() || generatedTrendContent,
+                        tipSubtitle: generatedTipSubtitle,
+                        trendSubtitle: generatedTrendSubtitle,
+                        newsTitle: generatedNewsTitle,
+                        tipTitle: generatedTipTitle,
+                        trendTitle: generatedTrendTitle
+                    },
+                    selectedArticles: {
+                        news: selectedNews,
+                        tip: selectedTip,
+                        trend: selectedTrend
+                    },
+                    generatedImages: generatedImages,
+                    imagePrompts: (typeof basePrompts !== 'undefined') ? basePrompts : {},
+                    specialSection: specialSection,
+                    subjectLine: document.getElementById('finalSubjectLine')?.value || '',
+                    preheader: document.getElementById('finalPreheader')?.value || '',
+                    savedEditedHTML: savedEditedHTML,
+                    savedBy: userEmail
+                };
+                // When editing a published newsletter, save back over the archived
+                // copy instead of creating a draft.
+                const resp = editingPublishedFile
+                    ? await fetch(`${API_BASE}/api/save-published`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ file: editingPublishedFile, draft: payload })
                     })
-                });
+                    : await fetch(`${API_BASE}/api/save-draft`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
                 if (resp.ok) {
                     console.log('[Draft] Saved');
                     loadDrafts();
@@ -7287,12 +7299,18 @@
             }
         }
 
-        async function loadDraft(filename) {
+        async function loadDraft(filename, source = 'draft') {
             try {
                 isLoadingDraft = true;
-                const response = await fetch(`${API_BASE}/api/load-draft?file=${encodeURIComponent(filename)}`);
+                const isPublished = source === 'published';
+                // Editing a published newsletter -> saves write back to the archive.
+                editingPublishedFile = isPublished ? filename : null;
+                const endpoint = isPublished
+                    ? `${API_BASE}/api/load-published?file=${encodeURIComponent(filename)}`
+                    : `${API_BASE}/api/load-draft?file=${encodeURIComponent(filename)}`;
+                const response = await fetch(endpoint);
                 const data = await response.json();
-                if (!data.success || !data.draft) { isLoadingDraft = false; alert('Failed to load draft'); return; }
+                if (!data.success || !data.draft) { isLoadingDraft = false; editingPublishedFile = null; alert('Failed to load'); return; }
                 const d = data.draft;
 
                 // Restore inline contenteditable preview edits so they persist across reloads
@@ -7404,11 +7422,14 @@
                 showStep(stepId || 1);
                 populateFinalCopy();
                 isLoadingDraft = false;
-                alert('Draft loaded! You can continue where you left off.');
+                alert(isPublished
+                    ? 'Published newsletter loaded for editing. Change what you need — edit copy inline, or use a section’s “Regenerate” for its image — and the rest stays as-is. Your edits save back to the archive; re-send to Ontraport to push a corrected email.'
+                    : 'Draft loaded! You can continue where you left off.');
             } catch (e) {
                 isLoadingDraft = false;
+                editingPublishedFile = null;
                 console.error('[Draft] Load failed:', e);
-                alert('Failed to load draft: ' + e.message);
+                alert('Failed to load: ' + e.message);
             }
         }
 
@@ -7991,8 +8012,9 @@
                                     </div>
                                 </div>
                                 <p style="margin: 8px 0 0; font-size: 12px; color: #999;">${savedBy} · ${savedAt} CT</p>
-                                <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #eee;">
-                                    <button onclick="viewNewsletter('${n.filename}')" style="width: 100%; padding: 12px 16px; background: #31D7CA; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">View Newsletter</button>
+                                <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #eee; display: flex; gap: 8px;">
+                                    <button onclick="viewNewsletter('${n.filename}')" style="flex: 1; padding: 12px 16px; background: #31D7CA; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">View</button>
+                                    <button onclick="loadDraft('${n.filename}', 'published')" style="flex: 1; padding: 12px 16px; background: #008181; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">✏️ Edit &amp; Re-send</button>
                                 </div>
                             </div>
                         `;

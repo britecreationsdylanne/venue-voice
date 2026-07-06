@@ -4456,6 +4456,33 @@ def load_published():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@app.route('/api/save-published', methods=['POST'])
+def save_published():
+    """Overwrite a published newsletter in place (used by the edit-published flow).
+    Writes the edited draft back to its published/ blob so the archive reflects
+    the fix. Re-sending to Ontraport is a separate, unchanged action."""
+    if not gcs_client:
+        return jsonify({'success': False, 'error': 'GCS not configured'}), 500
+    try:
+        payload = request.json or {}
+        filename = payload.get('file', '')
+        if '..' in filename or not filename.startswith('published/'):
+            return jsonify({'success': False, 'error': 'Invalid path'}), 400
+        draft = payload.get('draft')
+        if not isinstance(draft, dict):
+            return jsonify({'success': False, 'error': 'Missing draft data'}), 400
+        # Keep the metadata that list-published reads current.
+        draft['lastSavedAt'] = datetime.now(CHICAGO_TZ).isoformat()
+        draft['lastSavedBy'] = draft.get('savedBy', draft.get('lastSavedBy', 'unknown'))
+        bucket = gcs_client.bucket(GCS_BUCKET_NAME)
+        bucket.blob(filename).upload_from_string(json.dumps(draft), content_type='application/json')
+        safe_print(f"[SAVE PUBLISHED] Overwrote {filename}")
+        return jsonify({'success': True})
+    except Exception as e:
+        safe_print(f"[SAVE PUBLISHED ERROR] {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @app.route('/api/delete-draft', methods=['DELETE'])
 def delete_draft():
     """Delete a draft from GCS"""
