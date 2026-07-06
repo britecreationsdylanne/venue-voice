@@ -7430,6 +7430,16 @@
 
                 showStep(stepId || 1);
                 populateFinalCopy();
+                // Explicitly render the live preview when we land on the preview
+                // step. Loading a finished newsletter jumps straight to step 13,
+                // which otherwise only renders when you click "Continue to Preview",
+                // so the preview showed blank. Delay lets the step activate first.
+                if (String(stepId) === '13') {
+                    setTimeout(() => {
+                        try { showNewsletterPreview(); }
+                        catch (e) { console.error('[Preview] render failed', e); }
+                    }, 50);
+                }
                 isLoadingDraft = false;
                 alert(isPublished
                     ? 'Published newsletter loaded for editing. Change what you need — edit copy inline, or use a section’s “Regenerate” for its image — and the rest stays as-is. Your edits save back to the archive; re-send to Ontraport to push a corrected email.'
