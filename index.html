@@ -2998,7 +2998,10 @@
                     const summary = (selected.description || selected.snippet || selected.so_what || '').toString().trim();
                     const para = summary || "We couldn't auto-read this source, so add your summary of the article here.";
                     newContent = `<p style="margin:0 0 16px 0; font-size:17px; line-height:1.7; color:#555;">${para}</p>`;
-                    if (!newTitle) newTitle = selected.title || null;
+                    // Prefer a clean headline over a raw URL for custom links.
+                    if (!newTitle || /^https?:\/\//i.test(newTitle)) {
+                        newTitle = prettyTitleFromUrl(selected.url || selected.source_url || newTitle || '');
+                    }
                 }
 
                 // 3) New image prompt for the rewritten section (using the NEW copy).
@@ -3052,14 +3055,67 @@
             }
 
             const copyEl = document.getElementById('swapReviewCopy');
-            if (copyEl) {
-                copyEl.innerHTML = '';
-                if (s.thin) {
-                    const note = document.createElement('div');
-                    note.style.cssText = 'background:#fef3c7; border:1px solid #fcd34d; color:#92400e; border-radius:8px; padding:10px 12px; margin-bottom:12px; font-size:13px;';
-                    note.textContent = "⚠️ We couldn't fully read this source, so this is a light draft. Add it, then edit the copy directly in the preview to flesh it out.";
-                    copyEl.appendChild(note);
-                }
+            if (!copyEl) { const m = document.getElementById('swapReviewModal'); if (m) m.style.display = 'flex'; return; }
+            copyEl.innerHTML = '';
+
+            if (s.thin) {
+                // Couldn't auto-read the source. Give the user two ways forward:
+                // paste the article for an AI rewrite, or type the headline + copy
+                // themselves. Nothing is applied until they click Use this.
+                const note = document.createElement('div');
+                note.style.cssText = 'background:#fef3c7; border:1px solid #fcd34d; color:#92400e; border-radius:8px; padding:10px 12px; margin-bottom:14px; font-size:13px;';
+                note.textContent = "⚠️ We couldn't automatically read this source. Paste the article below and let AI write it, or fill in the headline and copy yourself.";
+                copyEl.appendChild(note);
+
+                const pasteWrap = document.createElement('div');
+                pasteWrap.style.cssText = 'border:1px solid #99f6e4; background:#f0fdfa; border-radius:8px; padding:12px; margin-bottom:14px;';
+                const pasteLabel = document.createElement('div');
+                pasteLabel.style.cssText = 'font-size:13px; font-weight:600; color:#0f766e; margin-bottom:6px;';
+                pasteLabel.textContent = '📋 Have the article text? Paste it and let AI write this section:';
+                const pasteBox = document.createElement('textarea');
+                pasteBox.id = 'swapPasteBox';
+                pasteBox.placeholder = 'Paste the full article text here…';
+                pasteBox.style.cssText = 'width:100%; min-height:90px; border:1px solid #cbd5e1; border-radius:6px; padding:8px; font-size:13px; font-family:inherit; box-sizing:border-box;';
+                const writeBtn = document.createElement('button');
+                writeBtn.id = 'swapWriteAiBtn';
+                writeBtn.className = 'btn';
+                writeBtn.style.cssText = 'margin-top:8px; background:#008181; border-color:#008181;';
+                writeBtn.textContent = '✍️ Write with AI from this';
+                writeBtn.onclick = writeSwapFromPaste;
+                pasteWrap.appendChild(pasteLabel);
+                pasteWrap.appendChild(pasteBox);
+                pasteWrap.appendChild(writeBtn);
+                copyEl.appendChild(pasteWrap);
+
+                const divider = document.createElement('div');
+                divider.style.cssText = 'text-align:center; color:#9ca3af; font-size:12px; margin:6px 0 12px;';
+                divider.textContent = '— or write it yourself —';
+                copyEl.appendChild(divider);
+
+                const tLabel = document.createElement('label');
+                tLabel.style.cssText = 'display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:4px;';
+                tLabel.textContent = 'Headline';
+                const tInput = document.createElement('input');
+                tInput.id = 'swapEditTitle';
+                tInput.type = 'text';
+                tInput.value = s.title || '';
+                tInput.style.cssText = 'width:100%; border:1px solid #cbd5e1; border-radius:6px; padding:8px; font-size:15px; margin-bottom:12px; box-sizing:border-box;';
+                copyEl.appendChild(tLabel);
+                copyEl.appendChild(tInput);
+
+                const cLabel = document.createElement('label');
+                cLabel.style.cssText = 'display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:4px;';
+                cLabel.textContent = 'Summary / copy';
+                const cBox = document.createElement('div');
+                cBox.id = 'swapEditCopy';
+                cBox.contentEditable = 'true';
+                cBox.style.cssText = 'border:1px solid #cbd5e1; border-radius:6px; padding:10px; min-height:80px; font-size:15px; line-height:1.55; background:#fff;';
+                let dh = typeof s.content === 'string' ? s.content : (s.content == null ? '' : JSON.stringify(s.content));
+                cBox.innerHTML = (dh || '').replace(/color:\s*#ffffff;?/gi, 'color:#1f2937;');
+                copyEl.appendChild(cLabel);
+                copyEl.appendChild(cBox);
+            } else {
+                // Normal successful swap — read-only preview.
                 if (s.title) {
                     const h = document.createElement('h3');
                     h.style.cssText = 'margin:0 0 6px; font-size:18px; color:#111;';
@@ -3082,10 +3138,60 @@
             if (modal) modal.style.display = 'flex';
         }
 
+        // Light-draft helper: turn a URL into a readable headline
+        // (…/taylor-swift-travis-kelce-wedding-venue -> "Taylor Swift Travis Kelce Wedding Venue").
+        function prettyTitleFromUrl(url) {
+            try {
+                const u = new URL(url);
+                let seg = u.pathname.split('/').filter(Boolean).pop() || u.hostname;
+                seg = seg.replace(/\.(html?|php|aspx?)$/i, '').replace(/[-_]+/g, ' ').trim();
+                if (!seg) seg = u.hostname.replace(/^www\./, '');
+                return seg.replace(/\b\w/g, c => c.toUpperCase());
+            } catch (e) { return url; }
+        }
+
+        // "Write with AI from this" — the user pasted the article text; run it through
+        // the same writer the normal flow uses and replace the light draft with real copy.
+        async function writeSwapFromPaste() {
+            const s = pendingSwap;
+            if (!s) return;
+            const box = document.getElementById('swapPasteBox');
+            const text = (box && box.value || '').trim();
+            if (text.length < 40) { alert('Paste the article text first (a few sentences or more).'); return; }
+            const btn = document.getElementById('swapWriteAiBtn');
+            const orig = btn ? btn.innerHTML : '';
+            if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Writing…'; }
+            try {
+                const resp = await fetch(`${API_BASE}/api/generate-content`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ month: selectedMonth, research: { [s.section]: text } }) });
+                const data = await resp.json();
+                if (!data.success) throw new Error(data.error || 'Writing failed');
+                const c = data.content || {};
+                const written = c[s.section];
+                if (!written || !String(written).trim()) throw new Error('The writer came back empty — try pasting more of the article.');
+                s.content = written;
+                s.thin = false; // it's real copy now — show it read-only like a normal swap
+                if (s.section === 'tip') { if (c.tip_title) s.title = c.tip_title; if (c.tip_subtitle) s.subtitle = c.tip_subtitle; }
+                if (s.section === 'trend') { if (c.trend_title) s.title = c.trend_title; if (c.trend_subtitle) s.subtitle = c.trend_subtitle; }
+                showSwapReview();
+            } catch (e) {
+                console.error('[Swap] write-from-paste failed', e);
+                alert("Couldn't write from the pasted text: " + e.message);
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+            }
+        }
+
         // "Use this" — commit the staged section into the newsletter.
         function applyPendingSwap() {
             if (!pendingSwap) return;
             const s = pendingSwap;
+            // Light draft the user typed into — capture their edits from the modal fields.
+            if (s.thin) {
+                const t = document.getElementById('swapEditTitle');
+                const cp = document.getElementById('swapEditCopy');
+                if (t && t.value.trim()) s.title = t.value.trim();
+                if (cp && cp.innerHTML.trim()) s.content = cp.innerHTML.trim();
+            }
             if (s.section === 'news') {
                 generatedNewsContent = s.content;
                 if (s.title) generatedNewsTitle = s.title;
