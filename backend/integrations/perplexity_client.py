@@ -16,6 +16,13 @@ from datetime import datetime
 class PerplexityClient:
     """Client for Perplexity API"""
 
+    # Video / social hosts are not readable articles — the newsletter needs
+    # linkable written sources, so these are filtered out of research results.
+    VIDEO_HOSTS = (
+        'youtube.com', 'youtu.be', 'm.youtube.com', 'tiktok.com', 'vimeo.com',
+        'dailymotion.com', 'twitch.tv',
+    )
+
     def __init__(self, api_key: str = None):
         """Initialize Perplexity client"""
         self.api_key = api_key or os.getenv('PERPLEXITY_API_KEY')
@@ -178,17 +185,26 @@ Important:
             choice = data.get('choices', [{}])[0]
             content = choice.get('message', {}).get('content', '')
 
-            # Perplexity returns citations in a separate field
+            # Perplexity returns sources two ways: a flat `citations` list of URLs
+            # (legacy — often bare domains/homepages and video links) and a richer
+            # `search_results` array of {title, url, date} with the real article URLs.
+            # Prefer search_results: it fixes homepage-only links (e.g. theknot.com
+            # instead of the actual article) and gives real titles + dates.
             citations = data.get('citations', [])
+            search_results_meta = data.get('search_results', [])
 
-            print(f"[Perplexity] Content length: {len(content)}, Citations: {len(citations)}")
+            print(f"[Perplexity] Content length: {len(content)}, search_results: {len(search_results_meta)}, citations: {len(citations)}")
 
-            if not content:
+            if not content and not search_results_meta:
                 print("[Perplexity] No content in response")
                 return []
 
-            # If we have citations, use them to build results
-            if citations:
+            if isinstance(search_results_meta, list) and search_results_meta:
+                results = self._parse_search_results(search_results_meta, content, max_results)
+                # If everything got filtered (all videos/homepages), fall back.
+                if not results and citations:
+                    results = self._parse_with_citations(content, citations, max_results)
+            elif citations:
                 results = self._parse_with_citations(content, citations, max_results)
             else:
                 # Try to parse JSON from response (legacy approach)
@@ -226,9 +242,15 @@ Important:
         # Split content into sentences for analysis
         sentences = re.split(r'(?<=[.!?])\s+', content)
 
-        # Citations is a list of URLs that Perplexity used as sources
-        for i, url in enumerate(citations[:max_results]):
+        # Citations is a list of URLs that Perplexity used as sources.
+        # Skip videos/homepages; keep the original index so [n] markers still map
+        # to the right citation, and stop once we have max_results good ones.
+        for i, url in enumerate(citations):
+            if len(results) >= max_results:
+                break
             if not url or not isinstance(url, str):
+                continue
+            if self._is_low_quality_url(url):
                 continue
 
             # Extract domain for publisher name
@@ -368,6 +390,10 @@ Important:
                 if 'example.com' in url or 'placeholder' in url.lower():
                     continue
 
+                # Skip videos and bare homepages
+                if self._is_low_quality_url(url):
+                    continue
+
                 cleaned.append({
                     'title': title,
                     'url': url,
@@ -423,6 +449,73 @@ Important:
             return domain
         except:
             return 'Unknown'
+
+    def _is_low_quality_url(self, url: str) -> bool:
+        """True for sources we never want as a newsletter article:
+        - video/social hosts (YouTube, TikTok, Vimeo, ...) — not readable articles
+        - bare homepages (theknot.com with no path) — link the reader nowhere useful,
+          which is why 'The Knot' results were pointing at the home page instead of
+          the specific article the summary described.
+        """
+        try:
+            from urllib.parse import urlparse
+            low = url.lower()
+            if any(h in low for h in self.VIDEO_HOSTS):
+                return True
+            if '/shorts/' in low or '/watch?' in low or low.rstrip('/').endswith('/watch'):
+                return True
+            path = (urlparse(url).path or '').strip('/')
+            if not path:  # bare domain / homepage — no article to link to
+                return True
+            return False
+        except Exception:
+            return False
+
+    def _parse_search_results(self, search_results: list, content: str, max_results: int) -> List[Dict]:
+        """Preferred parser: Perplexity's structured `search_results` array of
+        {title, url, date}. Gives real article URLs, titles, and dates (unlike the
+        flat citations list), and filters out videos/homepages."""
+        import re
+        sentences = re.split(r'(?<=[.!?])\s+', content or '')
+        results = []
+
+        for sr in search_results:
+            if len(results) >= max_results:
+                break
+            if not isinstance(sr, dict):
+                continue
+            url = (sr.get('url') or '').strip()
+            if not url or self._is_low_quality_url(url):
+                continue
+
+            domain = self._extract_domain(url)
+            title = (sr.get('title') or '').strip()
+
+            # Pull a snippet from the model's prose that mentions this source.
+            stem = domain.split('.')[0].lower()
+            snippet = ''
+            for s in sentences:
+                if stem and stem in s.lower():
+                    snippet = re.sub(r'\[\d+\]', '', s).strip()
+                    break
+            if not snippet and sentences:
+                snippet = re.sub(r'\[\d+\]', '', sentences[0]).strip()
+
+            if not title:
+                title = self._extract_title_from_sentences([snippet] if snippet else [], domain)
+
+            results.append({
+                'title': title,
+                'url': url,
+                'publisher': domain,
+                'published_at': sr.get('date') or '',
+                'snippet': (snippet or f"Source from {domain}")[:300],
+                'venue_implications': self._generate_venue_angle([snippet] if snippet else []),
+                'source_card': 'perplexity',
+                'category': 'research'
+            })
+
+        return results
 
     def search_wedding_research(
         self,
