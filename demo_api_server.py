@@ -792,10 +792,12 @@ End every subsection with a complete sentence — never stop mid-thought."""
                 # Format as HTML with proper styling
                 news_text = news_result['content'].strip()
 
-                # Convert markdown-style formatting to HTML
-
-                # Replace *text:* with <strong>text:</strong> for section labels (bold)
-                news_text = re.sub(r'\*([^*]+):\*', r'<strong>\1:</strong>', news_text)
+                # Convert markdown bold to HTML. Handle **Label:** (double) BEFORE
+                # *Label:* (single) — otherwise the single-star pass leaves stray
+                # outer asterisks around the label. Then drop any leftover stars.
+                news_text = re.sub(r'\*\*([^*]+?)\*\*', r'<strong>\1</strong>', news_text)
+                news_text = re.sub(r'\*([^*\n]+?)\*', r'<strong>\1</strong>', news_text)
+                news_text = news_text.replace('*', '')
 
                 # Split into paragraphs and wrap each
                 paragraphs = [p.strip() for p in news_text.split('\n\n') if p.strip()]
@@ -911,6 +913,11 @@ Output ONLY the paragraph text, no title or formatting."""
 
                 tip_text = tip_result['content'].strip()
 
+                # Strip any markdown bold the writer added so no literal stars slip through.
+                tip_text = re.sub(r'\*\*([^*]+?)\*\*', r'<strong>\1</strong>', tip_text)
+                tip_text = re.sub(r'\*([^*\n]+?)\*', r'<strong>\1</strong>', tip_text)
+                tip_text = tip_text.replace('*', '')
+
                 # Build HTML - subtitle separate, content without asterisks
                 sections['tip'] = f'''<p style="margin: 0 0 16px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 17px; color: #555555; line-height: 1.7;" class="dark-text-secondary">{tip_text}</p>'''
                 sections['tip_title'] = tip_title
@@ -1018,6 +1025,11 @@ Output ONLY the paragraph text, no title or formatting."""
                 )
 
                 trend_text = trend_result['content'].strip()
+
+                # Strip any markdown bold the writer added so no literal stars slip through.
+                trend_text = re.sub(r'\*\*([^*]+?)\*\*', r'<strong>\1</strong>', trend_text)
+                trend_text = re.sub(r'\*([^*\n]+?)\*', r'<strong>\1</strong>', trend_text)
+                trend_text = trend_text.replace('*', '')
 
                 # Build HTML - subtitle separate, content without asterisks
                 sections['trend'] = f'''<p style="margin: 0 0 16px 0; font-family: 'Gilroy', Trebuchet MS, sans-serif; font-size: 17px; color: #555555; line-height: 1.7;" class="dark-text-secondary">{trend_text}</p>'''

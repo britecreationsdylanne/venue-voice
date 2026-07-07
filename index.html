@@ -3256,10 +3256,12 @@
                 return contentStr;
             }
 
-            // Get content as strings (backend returns HTML with <p> tags)
-            let newsContent = typeof generatedNewsContent === 'string' ? generatedNewsContent : '';
-            let tipContent = typeof generatedTipContent === 'string' ? generatedTipContent : '';
-            let trendContent = cleanContentForDisplay(generatedTrendContent); // Strip white color
+            // Get content as strings (backend returns HTML with <p> tags).
+            // cleanMarkdownStars converts any stray markdown bold so labels never
+            // show literal asterisks in the editable boxes (or when saved).
+            let newsContent = cleanMarkdownStars(typeof generatedNewsContent === 'string' ? generatedNewsContent : '');
+            let tipContent = cleanMarkdownStars(typeof generatedTipContent === 'string' ? generatedTipContent : '');
+            let trendContent = cleanMarkdownStars(cleanContentForDisplay(generatedTrendContent)); // Strip white color + stars
 
             // Use AI-generated short titles if available, otherwise fall back to original
             const displayTipTitle = generatedTipTitle || selectedTip?.title || 'Tip of the Month';
@@ -5918,6 +5920,17 @@
             return replaceHashHrefs(newsPart, newsUrl) + replaceHashHrefs(tipPart, tipUrl) + replaceHashHrefs(trendPart, trendUrl) + footerPart;
         }
 
+        // The writer sometimes emits markdown bold (**Label:** or *Label:*). If it
+        // isn't converted, readers see literal asterisks around the section labels.
+        // Convert to <strong> and drop any stray stars left over from mixed markup.
+        function cleanMarkdownStars(html) {
+            if (!html || typeof html !== 'string') return html || '';
+            let out = html
+                .replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>')   // **bold** first
+                .replace(/\*([^*\n<>]+?)\*/g, '<strong>$1</strong>');  // then *label*
+            return out.replace(/\*/g, ''); // remove any leftover stray asterisks
+        }
+
         function generateNewsletterHTML() {
             // Get subject line and preheader
             const subjectLine = document.getElementById('finalSubjectLine')?.value || 'Your Monthly Newsletter';
@@ -5931,7 +5944,7 @@
             // Prepare news data
             const newsData = {
                 title: selectedNews?.title || generatedNewsTitle || 'News Update',
-                content: document.getElementById('newsContentBox')?.innerHTML || generatedNewsContent || '',
+                content: cleanMarkdownStars(document.getElementById('newsContentBox')?.innerHTML || generatedNewsContent || ''),
                 image: generatedImages.news?.url || '',
                 url: getSectionUrl('news')
             };
@@ -5939,7 +5952,7 @@
             // Prepare tip data
             const tipData = {
                 title: selectedTip?.title || 'Tip of the Month',
-                content: document.getElementById('tipContentBox')?.innerHTML || generatedTipContent || '',
+                content: cleanMarkdownStars(document.getElementById('tipContentBox')?.innerHTML || generatedTipContent || ''),
                 subtitle: generatedTipSubtitle || '',
                 image: generatedImages.tip?.url || '',
                 url: getSectionUrl('tip')
@@ -5948,7 +5961,7 @@
             // Prepare trend data
             const trendData = {
                 title: selectedTrend?.title || 'Trend Alert',
-                content: document.getElementById('trendContentBox')?.innerHTML || generatedTrendContent || '',
+                content: cleanMarkdownStars(document.getElementById('trendContentBox')?.innerHTML || generatedTrendContent || ''),
                 subtitle: generatedTrendSubtitle || '',
                 image: generatedImages.trend?.url || '',
                 url: getSectionUrl('trend')
