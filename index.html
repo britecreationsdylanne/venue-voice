@@ -3190,14 +3190,16 @@
             }
             if (s.section === 'news') {
                 generatedNewsContent = s.content;
-                if (s.title) generatedNewsTitle = s.title;
+                // Sync the article title too — the news heading/email use selectedNews.title
+                // first, so without this an edited headline would be ignored.
+                if (s.title) { generatedNewsTitle = s.title; if (selectedNews) selectedNews.title = s.title; }
             } else if (s.section === 'tip') {
                 generatedTipContent = s.content;
-                if (s.title) generatedTipTitle = s.title;
+                if (s.title) { generatedTipTitle = s.title; if (selectedTip) selectedTip.title = s.title; }
                 if (s.subtitle) generatedTipSubtitle = s.subtitle;
             } else {
                 generatedTrendContent = s.content;
-                if (s.title) generatedTrendTitle = s.title;
+                if (s.title) { generatedTrendTitle = s.title; if (selectedTrend) selectedTrend.title = s.title; }
                 if (s.subtitle) generatedTrendSubtitle = s.subtitle;
             }
             if (s.imageUrl) generatedImages[s.section] = { url: s.imageUrl, prompt: s.prompt };
