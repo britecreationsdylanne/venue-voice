@@ -1568,10 +1568,6 @@
                                 <input type="checkbox" class="docRecipientCheckbox" value="dylanne.crugnale@brite.co" checked style="margin-right: 8px; width: 16px; height: 16px;">
                                 <span>Dylanne Crugnale (dylanne.crugnale@brite.co)</span>
                             </label>
-                            <label style="display: flex; align-items: center; cursor: pointer; font-size: 13px;">
-                                <input type="checkbox" class="docRecipientCheckbox" value="selena.fragassi@brite.co" checked style="margin-right: 8px; width: 16px; height: 16px;">
-                                <span>Selena Fragassi (selena.fragassi@brite.co)</span>
-                            </label>
                         </div>
 
                         <!-- Additional emails input -->
@@ -4307,10 +4303,16 @@
                 // memeScenePrompt/memeTopText/memeBottomText only exist on
                 // step 10_5 (Meme Concept); on step 11 they're null and
                 // .value throws.
-                const scenePrompt = document.getElementById('memeScenePrompt')?.value
-                    || document.getElementById('memePrompt')?.value
-                    || generatedImages.meme?.prompt
-                    || '';
+                // On a regenerate from step 11, prefer the "Meme Prompt" box (memePrompt)
+                // the user just edited. memeScenePrompt persists in the DOM from step 10_5
+                // with the old concept and would otherwise win, ignoring their new prompt.
+                const stepPrompt = document.getElementById('memePrompt')?.value?.trim();
+                const scenePrompt = (forceRegenerate && stepPrompt)
+                    ? stepPrompt
+                    : (document.getElementById('memeScenePrompt')?.value
+                        || document.getElementById('memePrompt')?.value
+                        || generatedImages.meme?.prompt
+                        || '');
                 const topText = document.getElementById('memeTopText')?.value
                     || generatedImages.meme?.text_top
                     || (Array.isArray(memeTextOverlays) ? memeTextOverlays[0]?.text : '')

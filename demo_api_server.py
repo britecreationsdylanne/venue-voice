@@ -791,6 +791,12 @@ End every subsection with a complete sentence — never stop mid-thought."""
 
                 # Format as HTML with proper styling
                 news_text = news_result['content'].strip()
+                # Retry once if the writer came back empty — otherwise the section
+                # silently drops from the newsletter (intermittent "missing section").
+                if not news_text:
+                    safe_print("    [RETRY] NEWS returned empty — regenerating once")
+                    news_result = claude_client.generate_content(prompt=news_user_prompt, system_prompt=news_system_prompt, model="claude-opus-4-8", max_tokens=900)
+                    news_text = news_result['content'].strip()
 
                 # Convert markdown bold to HTML. Handle **Label:** (double) BEFORE
                 # *Label:* (single) — otherwise the single-star pass leaves stray
@@ -912,6 +918,10 @@ Output ONLY the paragraph text, no title or formatting."""
                 )
 
                 tip_text = tip_result['content'].strip()
+                if not tip_text:
+                    safe_print("    [RETRY] TIP returned empty — regenerating once")
+                    tip_result = claude_client.generate_content(prompt=tip_user_prompt, system_prompt=tip_system_prompt, model="claude-opus-4-8", max_tokens=400)
+                    tip_text = tip_result['content'].strip()
 
                 # Strip any markdown bold the writer added so no literal stars slip through.
                 tip_text = re.sub(r'\*\*([^*]+?)\*\*', r'<strong>\1</strong>', tip_text)
@@ -1025,6 +1035,10 @@ Output ONLY the paragraph text, no title or formatting."""
                 )
 
                 trend_text = trend_result['content'].strip()
+                if not trend_text:
+                    safe_print("    [RETRY] TREND returned empty — regenerating once")
+                    trend_result = claude_client.generate_content(prompt=trend_user_prompt, system_prompt=trend_system_prompt, model="claude-opus-4-8", max_tokens=350)
+                    trend_text = trend_result['content'].strip()
 
                 # Strip any markdown bold the writer added so no literal stars slip through.
                 trend_text = re.sub(r'\*\*([^*]+?)\*\*', r'<strong>\1</strong>', trend_text)
@@ -1307,6 +1321,13 @@ def generate_image_prompts():
                 'fall': 'fall elements like autumn leaves, warm tones, pumpkins, rustic details, golden hour lighting'
             }
             seasonal_hint = seasonal_details.get(season, '')
+            # Explicitly forbid off-season (winter/holiday) elements so spring/summer/fall
+            # newsletters stop getting pine trees, snow, and holiday decor.
+            season_negatives = '' if season == 'winter' else (
+                f"CRITICAL: This is a {season.upper()} newsletter. Do NOT include any winter or holiday "
+                f"elements — no pine/evergreen/Christmas trees, no snow, no holiday decor, no red-and-green palette. "
+                f"The setting must clearly read as {season}."
+            )
 
             prompt_request = f"""Create a text-to-image prompt for Gemini that VISUALLY REPRESENTS this article's main topic.
 
@@ -1330,7 +1351,7 @@ REQUIREMENTS:
 - Subject: Must VISUALLY represent "{title[:60]}" - not just a generic venue!
 - Setting: Wedding venue interior/exterior that relates to the article topic
 - Style: Professional architectural/venue photography, magazine quality
-- Season: Incorporate {season} elements ({seasonal_hint})
+- Season: The image MUST clearly reflect {season}. Incorporate {season} elements ({seasonal_hint}). {season_negatives}
 - Quality: High-end, luxury, well-lit, sharp detail
 - NO: Text overlays, people's faces, generic spaces
 
