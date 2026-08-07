@@ -1390,6 +1390,22 @@ Return ONLY the image generation prompt (under 35 words). Make it SPECIFIC to th
                 }
                 prompt = section_styles.get(section_name, f"Professional wedding venue related to {title[:40]}")
 
+            # Bake the season directly into the FINAL prompt the image model receives.
+            # Claude's short prompt often drops the season, and gpt-image-2 defaults to
+            # winter/holiday venue aesthetics unless the season is explicit right here.
+            season_styles = {
+                'winter': 'winter setting, soft candlelight, cool elegant tones',
+                'spring': 'bright airy spring setting, fresh blossoms and greenery, pastel tones, natural daylight',
+                'summer': 'sunny summer setting, lush greenery, warm daylight, vibrant colors',
+                'fall': 'autumn setting, warm amber and rust tones, dried florals, golden-hour light',
+            }
+            season_tag = season_styles.get(season, '')
+            if season_tag:
+                prompt = f"{prompt.rstrip('. ')}. {season_tag}."
+            if season != 'winter':
+                # Negative cue at the model level — the single biggest lever against
+                # the pine/snow/holiday default for spring, summer, and fall.
+                prompt += " No pine or evergreen trees, no snow, no Christmas or holiday decorations."
             prompts[section_name] = prompt
 
         print(f"[API] Generated {len(prompts)} image prompts")
