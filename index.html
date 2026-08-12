@@ -5434,13 +5434,19 @@
             // Normalize content HTML - ensure all <p> tags use consistent styling with dark mode class
             const normalizeContent = (html) => {
                 if (!html) return '';
-                // Strip pasted white text (a Google Docs "white-on-dark" artifact). White
-                // copy on the light card renders invisible/unreadable; removing the inline
-                // color lets the paragraph color apply. Inline styles beat the class, so the
-                // only fix is to delete the declaration, not override it.
+                // Strip Google Docs paste artifacts from body copy. Inline styles beat the
+                // class, so we DELETE the declarations rather than override them:
+                //  - white text -> would render invisible on the light card
+                //  - white-space:pre-wrap -> stops normal reflow, which breaks Gmail mobile
+                //    scaling (whole email shrinks to fit)
+                //  - letter-spacing -> pasted spacing drift
+                // Scoped to the section body only; template chrome (buttons/badges/hero) is
+                // never passed through here, so their white text/spacing stay intact.
                 html = html
                     .replace(/color\s*:\s*#(?:ffffff|fff)\b[^;"']*;?/gi, '')
-                    .replace(/color\s*:\s*rgb\(\s*255\s*,\s*255\s*,\s*255\s*\)[^;"']*;?/gi, '');
+                    .replace(/color\s*:\s*rgb\(\s*255\s*,\s*255\s*,\s*255\s*\)[^;"']*;?/gi, '')
+                    .replace(/white-space\s*:[^;"']*;?/gi, '')
+                    .replace(/letter-spacing\s*:[^;"']*;?/gi, '');
                 return html.replace(/<p\b[^>]*>/gi, '<p class="dark-text-secondary" style="margin: 0 0 16px 0; font-family: \'Gilroy\', Trebuchet MS, sans-serif; font-size: 17px; color: #555555; line-height: 1.7;">');
             };
 
