@@ -618,7 +618,7 @@ Target: 400-500 words total. Be factual, cite specifics from the summary, avoid 
 
             news_research = openai_client.generate_content(
                 prompt=news_research_prompt,
-                model="gpt-5.5",
+                model="gpt-5.6-sol",
                 temperature=0.5,
                 max_tokens=1500
             )
@@ -653,7 +653,7 @@ Target: 200-250 words total. Be practical and actionable."""
 
             tip_research = openai_client.generate_content(
                 prompt=tip_research_prompt,
-                model="gpt-5.5",
+                model="gpt-5.6-sol",
                 temperature=0.5,
                 max_tokens=800
             )
@@ -688,7 +688,7 @@ Target: 200-250 words total. Focus on opportunity and inspiration."""
 
             trend_research = openai_client.generate_content(
                 prompt=trend_research_prompt,
-                model="gpt-5.5",
+                model="gpt-5.6-sol",
                 temperature=0.5,
                 max_tokens=800
             )
@@ -3720,7 +3720,7 @@ def analyze_story_angles(results: list, user_query: str) -> list:
     try:
         # Get model config for research enrichment task
         model_config = get_model_for_task('research_enrichment')
-        model_id = model_config.get('id', 'gpt-5.5')
+        model_id = model_config.get('id', 'gpt-5.6-sol')
         max_tokens_param = model_config.get('max_tokens_param', 'max_tokens')
 
         print(f"[Source Explorer] Using model: {model_id}")
@@ -3874,7 +3874,7 @@ def analyze_industry_impact(results: list) -> list:
     try:
         # Get model config for research enrichment task
         model_config = get_model_for_task('research_enrichment')
-        model_id = model_config.get('id', 'gpt-5.5')
+        model_id = model_config.get('id', 'gpt-5.6-sol')
         max_tokens_param = model_config.get('max_tokens_param', 'max_tokens')
 
         print(f"[Insight Builder] Using model: {model_id}")
@@ -4029,7 +4029,7 @@ def enrich_results_with_llm(results: list, original_query: str) -> list:
     try:
         # Get model config for research enrichment task
         model_config = get_model_for_task('research_enrichment')
-        model_id = model_config.get('id', 'gpt-5.5')
+        model_id = model_config.get('id', 'gpt-5.6-sol')
         max_tokens_param = model_config.get('max_tokens_param', 'max_tokens')
 
         print(f"[Enrichment] Using model: {model_id}")

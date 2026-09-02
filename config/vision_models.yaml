@@ -109,6 +109,19 @@ providers:
         cost_per_1m_input: 5.00
         cost_per_1m_output: 30.00
 
+      # GPT-5.6 Series - frontier (replaces GPT-5.5 per brite-skills; released 2026-07-09)
+      - id: "gpt-5.6-sol"
+        name: "GPT-5.6 Sol"
+        tier: "frontier"
+        speed: "medium"
+        context_window: 1050000
+        max_output: 128000
+        vision: true
+        status: "active"
+        notes: "Replacement for GPT-5.5 (brite-skills source of truth). Uses max_completion_tokens"
+        cost_per_1m_input: 5.00
+        cost_per_1m_output: 30.00
+
       # GPT-5 Mini - Economy variant
       - id: "gpt-5-mini"
         name: "GPT-5 Mini"
@@ -334,7 +347,7 @@ task_assignments:
   # Research & Analysis Tasks
   research_enrichment:
     description: "GPT-5.5 analysis layer for Perplexity/Insight Builder/Source Explorer"
-    model: "gpt-5.5"
+    model: "gpt-5.6-sol"
     fallback: "gpt-4.1"
     tier: "frontier"
     economy_alternative: "gpt-4o-mini"
