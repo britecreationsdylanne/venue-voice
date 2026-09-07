@@ -2893,6 +2893,26 @@
                     generatedTipSubtitle = data.content.tip_subtitle || null;
                     generatedTrendSubtitle = data.content.trend_subtitle || null;
 
+                    // Fallback for links the researcher couldn't read (e.g. a custom
+                    // pasted URL): seed an EDITABLE light draft so the section is never
+                    // blank or stuck on a "Content not available" placeholder. The user
+                    // can then paste the article text and rewrite it in their own words.
+                    const isEmptyContent = (c) => {
+                        if (!c || typeof c !== 'string') return true;
+                        const t = c.replace(/<[^>]*>/g, '').trim();
+                        return !t || t === 'Content not available';
+                    };
+                    const seedLightDraft = (article) => {
+                        const title = (article && article.title) || '';
+                        const url = (article && (article.source_url || article.url)) || '';
+                        const looksLikeUrl = /^https?:\/\//i.test(title);
+                        const lead = (title && !looksLikeUrl) ? (title + ' — ') : '';
+                        return `<p style="margin:0 0 16px 0; font-size:17px; line-height:1.7; color:#555;">${lead}We couldn't automatically read this source${url ? ' (' + url + ')' : ''}. Add your summary here — paste the article text and rewrite it in your own words.</p>`;
+                    };
+                    if (selectedNews && isEmptyContent(generatedNewsContent)) generatedNewsContent = seedLightDraft(selectedNews);
+                    if (selectedTip && isEmptyContent(generatedTipContent)) generatedTipContent = seedLightDraft(selectedTip);
+                    if (selectedTrend && isEmptyContent(generatedTrendContent)) generatedTrendContent = seedLightDraft(selectedTrend);
+
                     console.log('Generated titles - Tip:', generatedTipTitle, 'Trend:', generatedTrendTitle);
 
                     // Display content
@@ -3243,7 +3263,11 @@
 
             // Helper function to strip white color from content for preview display
             function cleanContentForDisplay(content) {
-                if (!content) return 'Content not available';
+                // Return empty (not a literal placeholder) so a display fallback can never
+                // be persisted as if it were real copy — and so drafts that already saved
+                // the old "Content not available" placeholder show as an editable blank.
+                if (!content) return '';
+                if (typeof content === 'string' && content.replace(/<[^>]*>/g, '').trim() === 'Content not available') return '';
 
                 // Convert to string if needed
                 let contentStr = typeof content === 'string' ? content : JSON.stringify(content);
@@ -6078,10 +6102,24 @@
                     }
                 }
 
-                // Final safety: warn about any remaining base64 images (should not happen)
-                const remainingBase64 = (html.match(/data:image\/[a-z]+;base64,/g) || []).length;
-                if (remainingBase64 > 0) {
-                    console.warn(`[ONTRAPORT] WARNING: ${remainingBase64} base64 images still in HTML - these may not render in email clients`);
+                // Hard guarantee: no base64 image can ship to Ontraport. Any that remain
+                // (a base64 that didn't string-match, or an inline-edited <img>) get
+                // swapped for a hosted GCS URL. This fixes broken images AND stops the
+                // email ballooning into a ~1MB base64 blob that renders as raw code.
+                if (/data:image\/[a-z]+;base64,/i.test(html)) {
+                    const gcsList = Object.values(gcsUrls).filter(Boolean);
+                    let gi = 0;
+                    html = html.replace(/(<img[^>]+src=")data:image\/[a-z]+;base64,[^"]+(")/gi, (m, pre, post) => {
+                        const url = gcsList[gi++] || gcsList[gcsList.length - 1] || '';
+                        return url ? (pre + url + post) : m;
+                    });
+                    const stillLeft = (html.match(/data:image\/[a-z]+;base64,/g) || []).length;
+                    if (stillLeft > 0) {
+                        // Never ship a base64 blob (that's the "all code" email). Abort so the
+                        // user can retry the upload / regenerate images instead of sending broken.
+                        console.warn(`[ONTRAPORT] ${stillLeft} base64 image(s) could not be hosted — aborting push.`);
+                        throw new Error('Image hosting failed — the newsletter still contains un-hosted images. Please try pushing again, or regenerate the images first. (Nothing was sent to Ontraport.)');
+                    }
                 }
 
                 console.log('[ONTRAPORT] Sending to backend...');
