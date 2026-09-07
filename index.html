@@ -7802,6 +7802,26 @@
                     selectedTrend = d.selectedArticles.trend || null;
                 }
 
+                // Self-heal older/broken drafts on open: if a section saved empty or the
+                // old "Content not available" placeholder, seed the editable light draft.
+                // ONLY touches still-empty sections — anything already written is left
+                // exactly as saved (never overwrites the user's work).
+                const _isEmpty = (c) => {
+                    if (!c || typeof c !== 'string') return true;
+                    const t = c.replace(/<[^>]*>/g, '').trim();
+                    return !t || t === 'Content not available';
+                };
+                const _seed = (article) => {
+                    const title = (article && article.title) || '';
+                    const url = (article && (article.source_url || article.url)) || '';
+                    const looksLikeUrl = /^https?:\/\//i.test(title);
+                    const lead = (title && !looksLikeUrl) ? (title + ' — ') : '';
+                    return `<p style="margin:0 0 16px 0; font-size:17px; line-height:1.7; color:#555;">${lead}We couldn't automatically read this source${url ? ' (' + url + ')' : ''}. Add your summary here — paste the article text and rewrite it in your own words.</p>`;
+                };
+                if (selectedNews && _isEmpty(generatedNewsContent)) generatedNewsContent = _seed(selectedNews);
+                if (selectedTip && _isEmpty(generatedTipContent)) generatedTipContent = _seed(selectedTip);
+                if (selectedTrend && _isEmpty(generatedTrendContent)) generatedTrendContent = _seed(selectedTrend);
+
                 // Restore special section
                 if (d.specialSection) {
                     specialSection = { ...specialSection, ...d.specialSection };
