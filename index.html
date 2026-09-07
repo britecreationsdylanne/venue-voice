@@ -2588,6 +2588,7 @@
         function selectMonth(month, season, element) {
             editingPublishedFile = null;  // starting fresh -> don't overwrite a published copy
             swappingSection = null;       // and not in section-swap mode
+            savedEditedHTML = null;       // discard a previous newsletter's finalized HTML
             selectedMonth = month;
             selectedSeason = season;
 
@@ -2914,6 +2915,11 @@
                     if (selectedTrend && isEmptyContent(generatedTrendContent)) generatedTrendContent = seedLightDraft(selectedTrend);
 
                     console.log('Generated titles - Tip:', generatedTipTitle, 'Trend:', generatedTrendTitle);
+
+                    // Fresh content was just generated — discard any finalized HTML from a
+                    // PREVIOUS newsletter/version so the preview + send rebuild from THIS
+                    // content instead of pulling the old one.
+                    savedEditedHTML = null;
 
                     // Display content
                     displayGeneratedContent();
