@@ -4155,24 +4155,38 @@
             }
 
             try {
-                // Show loading overlay on Step 13 instead of changing steps
-                document.getElementById('promptGenerationLoading').style.display = 'block';
-                document.getElementById('promptGenerationLoading').innerHTML = `
+                // Loading/editing containers live on step 8; guard them so "Regenerate All
+                // Images" also works when clicked from step 10 (where these are absent).
+                const _pgl = document.getElementById('promptGenerationLoading');
+                if (_pgl) {
+                    _pgl.style.display = 'block';
+                    _pgl.innerHTML = `
                     <div class="loading">
                         <div class="spinner"></div>
                         <h3>Generating Images...</h3>
                         <p style="color: #666;">Using OpenAI gpt-image-2 to create article-specific images...</p>
                         <p style="color: #999; font-size: 14px; margin-top: 10px;">This may take 20-30 seconds...</p>
-                    </div>
-                `;
-                document.getElementById('promptEditing').style.display = 'none';
+                    </div>`;
+                }
+                const _pe = document.getElementById('promptEditing');
+                if (_pe) _pe.style.display = 'none';
 
-                // Read prompts from textareas
-                const prompts = {
-                    news: document.getElementById('newsImagePromptText').value,
-                    tip: document.getElementById('tipImagePromptText').value,
-                    trend: document.getElementById('trendImagePromptText').value
-                };
+                // Visible feedback in the step-10 previews so the user isn't left staring at
+                // the old images with no sign anything is happening.
+                ['news', 'tip', 'trend'].forEach(s => {
+                    const pv = document.getElementById(s + 'ImagePreview');
+                    if (pv) pv.innerHTML = '<div style="text-align:center;color:#999;padding:40px;"><div class="spinner" style="margin:0 auto 10px;"></div>Regenerating…</div>';
+                });
+
+                // Read prompts from the step-10 fields first (what the user actually sees and
+                // edits here), then the step-8 fields, then the stored base prompts — so the
+                // prompts always "pull through" instead of regenerating from blanks.
+                const readPrompt = (s) => (
+                    (document.getElementById(s + 'Prompt')?.value || '').trim() ||
+                    (document.getElementById(s + 'ImagePromptText')?.value || '').trim() ||
+                    (basePrompts && basePrompts[s]) || ''
+                );
+                const prompts = { news: readPrompt('news'), tip: readPrompt('tip'), trend: readPrompt('trend') };
 
                 console.log('[IMAGE GEN] Sending prompts to gpt-image-2:', prompts);
 
@@ -4678,7 +4692,7 @@
                 document.getElementById('newsImagePreview').innerHTML = `
                     <img src="${generatedImages.news.url}" alt="News Image" style="max-width: 100%; border-radius: 8px;" />
                 `;
-                document.getElementById('newsPrompt').value = generatedImages.news.prompt || '';
+                document.getElementById('newsPrompt').value = generatedImages.news.prompt || (basePrompts && basePrompts.news) || '';
             }
 
             // Display tip image
@@ -4686,7 +4700,7 @@
                 document.getElementById('tipImagePreview').innerHTML = `
                     <img src="${generatedImages.tip.url}" alt="Tip Image" style="max-width: 100%; border-radius: 8px;" />
                 `;
-                document.getElementById('tipPrompt').value = generatedImages.tip.prompt || '';
+                document.getElementById('tipPrompt').value = generatedImages.tip.prompt || (basePrompts && basePrompts.tip) || '';
             }
 
             // Display trend image
@@ -4694,7 +4708,7 @@
                 document.getElementById('trendImagePreview').innerHTML = `
                     <img src="${generatedImages.trend.url}" alt="Trend Image" style="max-width: 100%; border-radius: 8px;" />
                 `;
-                document.getElementById('trendPrompt').value = generatedImages.trend.prompt || '';
+                document.getElementById('trendPrompt').value = generatedImages.trend.prompt || (basePrompts && basePrompts.trend) || '';
             }
         }
 

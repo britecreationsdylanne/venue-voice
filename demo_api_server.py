@@ -1962,6 +1962,10 @@ The meme should:
 - Reference one of the newsletter topics in a humorous way
 - Work in classic meme format (image with top/bottom text)
 - Be shareable and make venue professionals laugh
+- Use ONLY original, generic characters and scenes. NEVER name a real person,
+  celebrity, brand, logo, or copyrighted franchise/character (e.g. Pokemon/Pikachu,
+  Disney, movie characters) — image generators refuse to create those. Describe the
+  situation/emotion (e.g. "an exhausted venue owner buried in seating charts") instead.
 
 Return ONLY in this exact JSON format:
 {{"scene": "description here", "top": "TOP TEXT", "bottom": "BOTTOM TEXT"}}"""
@@ -2233,10 +2237,20 @@ Return ONLY the image prompt, nothing else."""
         })
 
     except Exception as e:
-        print(f"[API ERROR] {str(e)}")
+        msg = str(e)
+        print(f"[API ERROR] {msg}")
         import traceback
         traceback.print_exc()
-        return jsonify({'success': False, 'error': str(e)}), 500
+        low = msg.lower()
+        # gpt-image-2 rejects named characters / celebrities / brands / franchises
+        # (e.g. "Surprised Pikachu"). Turn the raw 400 into a clear, actionable message.
+        if 'moderation' in low or 'safety system' in low or 'content_policy' in low or 'rejected by the safety' in low:
+            friendly = ("That meme concept was blocked by the image generator's safety filter — usually "
+                        "because it names a character, celebrity, brand, or franchise it won't recreate "
+                        "(e.g. Pokémon/Pikachu). Edit the Meme Prompt to a generic, original scene "
+                        "(describe the situation, not a known character) and try again.")
+            return jsonify({'success': False, 'error': friendly, 'blocked': True}), 200
+        return jsonify({'success': False, 'error': msg}), 500
 
 @app.route('/api/upload-meme', methods=['POST'])
 def upload_meme():
