@@ -4228,17 +4228,14 @@
                     return;
                 }
 
-                // Store images with their prompts (remembering old URLs so an already-opened
-                // final preview picks up the regenerated images too)
-                const _oldNews = generatedImages.news?.url;
-                const _oldTip = generatedImages.tip?.url;
-                const _oldTrend = generatedImages.trend?.url;
+                // Store images with their prompts, then flow each into an already-opened
+                // final preview (per-section, so images can't cross sections)
                 generatedImages.news = { url: data.images.news, prompt: prompts.news };
                 generatedImages.tip = { url: data.images.tip, prompt: prompts.tip };
                 generatedImages.trend = { url: data.images.trend, prompt: prompts.trend };
-                syncSavedHtmlImage(_oldNews, generatedImages.news.url);
-                syncSavedHtmlImage(_oldTip, generatedImages.tip.url);
-                syncSavedHtmlImage(_oldTrend, generatedImages.trend.url);
+                syncSavedHtmlImage('news', generatedImages.news.url);
+                syncSavedHtmlImage('tip', generatedImages.tip.url);
+                syncSavedHtmlImage('trend', generatedImages.trend.url);
 
                 // Mark images as generated
                 imagesAlreadyGenerated = true;
@@ -4568,7 +4565,6 @@
 
                         const data = await response.json();
                         if (data.success) {
-                            const oldMemeUrl = generatedImages.meme?.url;
                             // Store meme with URL, prompt, and text overlay
                             generatedImages.meme = {
                                 url: data.url,
@@ -4577,7 +4573,7 @@
                                 text_bottom: data.text_bottom || ''
                             };
                             // Flow the new meme into an already-captured final preview.
-                            syncSavedHtmlImage(oldMemeUrl, generatedImages.meme.url);
+                            syncSavedHtmlImage('meme', generatedImages.meme.url);
                             console.log('[REGENERATE] Successfully regenerated meme');
                         } else {
                             throw new Error(data.error || 'Failed to regenerate meme');
@@ -4654,14 +4650,13 @@
                     const data = await response.json();
 
                     if (data.success) {
-                        const oldUrl = generatedImages[imageType]?.url;
                         // Store image with URL and prompt structure
                         generatedImages[imageType] = {
                             url: data.images[imageType],
                             prompt: customPrompt
                         };
                         // Flow the new image into an already-captured final preview.
-                        syncSavedHtmlImage(oldUrl, generatedImages[imageType].url);
+                        syncSavedHtmlImage(imageType, generatedImages[imageType].url);
                         console.log(`[REGENERATE] Successfully regenerated ${imageType} image`);
                     } else {
                         throw new Error(data.error || 'Failed to regenerate image');
@@ -5674,7 +5669,7 @@
             <table cellpadding="0" cellspacing="0" border="0" role="presentation" width="100%">
               <tr>
                 <td class="mobile-padding" style="padding: 24px 20px 0 20px;">
-                  <img alt="Monthly Meme" src="{{MEME_IMAGE}}" style="width: 100%; max-width: 560px; height: auto; display: block; border-radius: 8px;" width="560">
+                  <img data-img-section="meme" alt="Monthly Meme" src="{{MEME_IMAGE}}" style="width: 100%; max-width: 560px; height: auto; display: block; border-radius: 8px;" width="560">
                 </td>
               </tr>
             </table>
@@ -5757,7 +5752,7 @@
 
                         <h2 class="dark-text" style="margin: 0 0 12px 0; font-family: Montserrat, Helvetica, Arial, sans-serif; font-size: 24px; font-weight: 700; color: #272d3f; line-height: 1.3;">{{NEWS_TITLE}}</h2>
 
-                        <img alt="" src="{{NEWS_IMAGE}}" style="width: 100%; max-width: 512px; height: auto; display: block; border-radius: 4px; margin-bottom: 16px;" width="512">
+                        <img data-img-section="news" alt="" src="{{NEWS_IMAGE}}" style="width: 100%; max-width: 512px; height: auto; display: block; border-radius: 4px; margin-bottom: 16px;" width="512">
 
                         <div class="dark-text-secondary" style="font-family: Montserrat, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 26px; color: #272d3f;">{{NEWS_CONTENT}}</div>
 
@@ -5802,7 +5797,7 @@
                           </tr>
                         </table>
 
-                        <h2 class="dark-text" style="margin: 0 0 4px 0; font-family: Montserrat, Helvetica, Arial, sans-serif; font-size: 24px; font-weight: 700; color: #272d3f; line-height: 1.3;">{{TIP_TITLE}}</h2>{{TIP_SUBTITLE}}<img alt="" src="{{TIP_IMAGE}}" style="width: 100%; max-width: 512px; height: auto; display: block; border-radius: 4px; margin-bottom: 16px;" width="512">
+                        <h2 class="dark-text" style="margin: 0 0 4px 0; font-family: Montserrat, Helvetica, Arial, sans-serif; font-size: 24px; font-weight: 700; color: #272d3f; line-height: 1.3;">{{TIP_TITLE}}</h2>{{TIP_SUBTITLE}}<img data-img-section="tip" alt="" src="{{TIP_IMAGE}}" style="width: 100%; max-width: 512px; height: auto; display: block; border-radius: 4px; margin-bottom: 16px;" width="512">
 
                         <div class="dark-text-secondary" style="font-family: Montserrat, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 26px; color: #272d3f;">{{TIP_CONTENT}}</div>
 
@@ -5847,7 +5842,7 @@
                           </tr>
                         </table>
 
-                        <h2 class="dark-text" style="margin: 0 0 4px 0; font-family: Montserrat, Helvetica, Arial, sans-serif; font-size: 24px; font-weight: 700; color: #272d3f; line-height: 1.3;">{{TREND_TITLE}}</h2>{{TREND_SUBTITLE}}<img alt="" src="{{TREND_IMAGE}}" style="width: 100%; max-width: 512px; height: auto; display: block; border-radius: 4px; margin-bottom: 16px;" width="512">
+                        <h2 class="dark-text" style="margin: 0 0 4px 0; font-family: Montserrat, Helvetica, Arial, sans-serif; font-size: 24px; font-weight: 700; color: #272d3f; line-height: 1.3;">{{TREND_TITLE}}</h2>{{TREND_SUBTITLE}}<img data-img-section="trend" alt="" src="{{TREND_IMAGE}}" style="width: 100%; max-width: 512px; height: auto; display: block; border-radius: 4px; margin-bottom: 16px;" width="512">
 
                         <div class="dark-text-secondary" style="font-family: Montserrat, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 26px; color: #272d3f;">{{TREND_CONTENT}}</div>
 
@@ -5994,15 +5989,19 @@
             return replaceHashHrefs(newsPart, newsUrl) + replaceHashHrefs(tipPart, tipUrl) + replaceHashHrefs(trendPart, trendUrl) + footerPart;
         }
 
-        // When the user has already opened/edited the final preview, its HTML is captured
-        // in savedEditedHTML with the image URL that was current at that moment. If an image
-        // is later regenerated, the new URL never reaches the final page unless we swap it in
-        // here. Exact-string replace of a unique image URL is safe (can't touch the logo or
-        // other sections) and preserves all of the user's text edits.
-        function syncSavedHtmlImage(oldUrl, newUrl) {
-            if (savedEditedHTML && oldUrl && newUrl && oldUrl !== newUrl) {
-                savedEditedHTML = savedEditedHTML.split(oldUrl).join(newUrl);
-            }
+        // When the user has already opened/edited the final preview, its HTML is captured in
+        // savedEditedHTML with the image URLs current at that moment. If an image is later
+        // regenerated, the new URL only reaches the final page if we swap it in here. We
+        // target the ONE <img> carrying this section's data-img-section marker and replace
+        // just its src — never a global URL swap — so a regenerated image can never bleed
+        // into another section, even if two sections happened to share an image URL. The
+        // user's text edits are preserved; legacy previews without the marker are left as-is.
+        function syncSavedHtmlImage(section, newUrl) {
+            if (!savedEditedHTML || !section || !newUrl) return;
+            const tagRe = new RegExp('<img\\b[^>]*\\bdata-img-section="' + section + '"[^>]*>', 'i');
+            savedEditedHTML = savedEditedHTML.replace(tagRe, function(tag) {
+                return tag.replace(/\bsrc="[^"]*"/i, function() { return 'src="' + newUrl + '"'; });
+            });
         }
 
         // The writer sometimes emits markdown bold (**Label:** or *Label:*). If it
