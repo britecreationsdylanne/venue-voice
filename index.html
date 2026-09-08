@@ -4228,10 +4228,17 @@
                     return;
                 }
 
-                // Store images with their prompts
+                // Store images with their prompts (remembering old URLs so an already-opened
+                // final preview picks up the regenerated images too)
+                const _oldNews = generatedImages.news?.url;
+                const _oldTip = generatedImages.tip?.url;
+                const _oldTrend = generatedImages.trend?.url;
                 generatedImages.news = { url: data.images.news, prompt: prompts.news };
                 generatedImages.tip = { url: data.images.tip, prompt: prompts.tip };
                 generatedImages.trend = { url: data.images.trend, prompt: prompts.trend };
+                syncSavedHtmlImage(_oldNews, generatedImages.news.url);
+                syncSavedHtmlImage(_oldTip, generatedImages.tip.url);
+                syncSavedHtmlImage(_oldTrend, generatedImages.trend.url);
 
                 // Mark images as generated
                 imagesAlreadyGenerated = true;
@@ -4561,6 +4568,7 @@
 
                         const data = await response.json();
                         if (data.success) {
+                            const oldMemeUrl = generatedImages.meme?.url;
                             // Store meme with URL, prompt, and text overlay
                             generatedImages.meme = {
                                 url: data.url,
@@ -4568,6 +4576,8 @@
                                 text_top: data.text_top || '',
                                 text_bottom: data.text_bottom || ''
                             };
+                            // Flow the new meme into an already-captured final preview.
+                            syncSavedHtmlImage(oldMemeUrl, generatedImages.meme.url);
                             console.log('[REGENERATE] Successfully regenerated meme');
                         } else {
                             throw new Error(data.error || 'Failed to regenerate meme');
@@ -4644,11 +4654,14 @@
                     const data = await response.json();
 
                     if (data.success) {
+                        const oldUrl = generatedImages[imageType]?.url;
                         // Store image with URL and prompt structure
                         generatedImages[imageType] = {
                             url: data.images[imageType],
                             prompt: customPrompt
                         };
+                        // Flow the new image into an already-captured final preview.
+                        syncSavedHtmlImage(oldUrl, generatedImages[imageType].url);
                         console.log(`[REGENERATE] Successfully regenerated ${imageType} image`);
                     } else {
                         throw new Error(data.error || 'Failed to regenerate image');
@@ -5979,6 +5992,17 @@
             }
 
             return replaceHashHrefs(newsPart, newsUrl) + replaceHashHrefs(tipPart, tipUrl) + replaceHashHrefs(trendPart, trendUrl) + footerPart;
+        }
+
+        // When the user has already opened/edited the final preview, its HTML is captured
+        // in savedEditedHTML with the image URL that was current at that moment. If an image
+        // is later regenerated, the new URL never reaches the final page unless we swap it in
+        // here. Exact-string replace of a unique image URL is safe (can't touch the logo or
+        // other sections) and preserves all of the user's text edits.
+        function syncSavedHtmlImage(oldUrl, newUrl) {
+            if (savedEditedHTML && oldUrl && newUrl && oldUrl !== newUrl) {
+                savedEditedHTML = savedEditedHTML.split(oldUrl).join(newUrl);
+            }
         }
 
         // The writer sometimes emits markdown bold (**Label:** or *Label:*). If it
