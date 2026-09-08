@@ -3303,7 +3303,7 @@
             // NEWS SECTION - Compact display
             html += '<div style="margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 15px;">';
             html += '<h3 style="margin: 0 0 5px 0; color: #008181;">📰 News You Can Use</h3>';
-            html += `<h4 style="margin: 0 0 8px 0; color: #1f2937; font-size: 16px;">${selectedNews?.title || generatedNewsTitle || 'Industry News'}</h4>`;
+            html += `<h4 id="newsTitleBox" contenteditable="true" onblur="saveTitleEdit('news', this)" title="Click to edit the headline" style="margin: 0 0 8px 0; color: #1f2937; font-size: 16px; outline: none; border-bottom: 1px dashed #cbd5e1; cursor: text;">${selectedNews?.title || generatedNewsTitle || 'Industry News'}</h4>`;
             html += `<div id="newsContentBox" contenteditable="true" style="outline: none; color: #555; font-size: 14px; line-height: 1.6;">${newsContent}</div>`;
             html += `<button class="btn-secondary btn" style="font-size: 12px; padding: 6px 12px; margin-top: 8px;" onclick="editSection('news')">✏️ Edit</button>`;
             html += `</div>`;
@@ -3311,7 +3311,7 @@
             // TIP SECTION - Compact display
             html += '<div style="margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 15px;">';
             html += '<h3 style="margin: 0 0 5px 0; color: #008181;">💡 Tip of the Month</h3>';
-            html += `<h4 style="margin: 0 0 8px 0; color: #1f2937; font-size: 16px;">${displayTipTitle}</h4>`;
+            html += `<h4 id="tipTitleBox" contenteditable="true" onblur="saveTitleEdit('tip', this)" title="Click to edit the headline" style="margin: 0 0 8px 0; color: #1f2937; font-size: 16px; outline: none; border-bottom: 1px dashed #cbd5e1; cursor: text;">${displayTipTitle}</h4>`;
             html += `<div id="tipContentBox" contenteditable="true" style="outline: none; color: #555; font-size: 14px; line-height: 1.6;">${tipContent}</div>`;
             html += `<button class="btn-secondary btn" style="font-size: 12px; padding: 6px 12px; margin-top: 8px;" onclick="editSection('tip')">✏️ Edit</button>`;
             html += `</div>`;
@@ -3319,7 +3319,7 @@
             // TREND SECTION - Compact display
             html += '<div style="margin-bottom: 20px;">';
             html += '<h3 style="margin: 0 0 5px 0; color: #008181;">📈 Trend Watch</h3>';
-            html += `<h4 style="margin: 0 0 8px 0; color: #1f2937; font-size: 16px;">${displayTrendTitle}</h4>`;
+            html += `<h4 id="trendTitleBox" contenteditable="true" onblur="saveTitleEdit('trend', this)" title="Click to edit the headline" style="margin: 0 0 8px 0; color: #1f2937; font-size: 16px; outline: none; border-bottom: 1px dashed #cbd5e1; cursor: text;">${displayTrendTitle}</h4>`;
             html += `<div id="trendContentBox" contenteditable="true" style="outline: none; color: #555; font-size: 14px; line-height: 1.6;">${trendContent}</div>`;
             html += `<button class="btn-secondary btn" style="font-size: 12px; padding: 6px 12px; margin-top: 8px;" onclick="editSection('trend')">✏️ Edit</button>`;
             html += `</div>`;
@@ -6273,6 +6273,7 @@
             if (newSubject && newSubject !== 'Your subject line will appear here') {
                 document.getElementById('finalSubjectLine').value = newSubject;
                 console.log('[EDIT] Subject line updated:', newSubject);
+                if (typeof saveDraft === 'function') saveDraft();
             }
         }
 
@@ -6282,7 +6283,20 @@
             if (newPreheader && newPreheader !== 'Your preheader will appear here') {
                 document.getElementById('finalPreheader').value = newPreheader;
                 console.log('[EDIT] Preheader updated:', newPreheader);
+                if (typeof saveDraft === 'function') saveDraft();
             }
+        }
+
+        // Save an edited section headline (Step 5). Writes to BOTH the generated title and
+        // the selected-article title so the edit flows to the preview + Ontraport (which
+        // read selectedX.title first), then persists it to the draft.
+        function saveTitleEdit(section, el) {
+            const t = (el.textContent || '').trim();
+            if (!t) return;
+            if (section === 'news') { generatedNewsTitle = t; if (selectedNews) selectedNews.title = t; }
+            else if (section === 'tip') { generatedTipTitle = t; if (selectedTip) selectedTip.title = t; }
+            else if (section === 'trend') { generatedTrendTitle = t; if (selectedTrend) selectedTrend.title = t; }
+            if (typeof saveDraft === 'function') saveDraft();
         }
 
         let savedEditedHTML = null;
