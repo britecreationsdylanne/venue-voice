@@ -1391,7 +1391,7 @@ Return ONLY the image generation prompt (under 35 words). Make it SPECIFIC to th
                 prompt = section_styles.get(section_name, f"Professional wedding venue related to {title[:40]}")
 
             # Bake the season directly into the FINAL prompt the image model receives.
-            # Claude's short prompt often drops the season, and gpt-image-2 defaults to
+            # Claude's short prompt often drops the season, and gpt-image-2.6-sunburst defaults to
             # winter/holiday venue aesthetics unless the season is explicit right here.
             season_styles = {
                 'winter': 'winter setting, soft candlelight, cool elegant tones',
@@ -1714,7 +1714,7 @@ def generate_images():
             safe_print(f"  Prompt: {single_prompt}")
             image_result = openai_client.generate_image(
                 prompt=single_prompt,
-                model="gpt-image-2",
+                model="gpt-image-2.6-sunburst",
                 aspect_ratio="16:9",
                 image_size="1K"
             )
@@ -1745,11 +1745,11 @@ def generate_images():
             else:
                 aspect_ratio = "16:9"  # Wide landscape for banner-style tip/trend images
 
-            # Generate with OpenAI gpt-image-2
+            # Generate with OpenAI gpt-image-2.6-sunburst
             print(f"  [{section_name.upper()}] Calling gpt-image-2...")
             image_result = openai_client.generate_image(
                 prompt=prompt,
-                model="gpt-image-2",
+                model="gpt-image-2.6-sunburst",
                 aspect_ratio=aspect_ratio,
                 image_size="1K"
             )
@@ -2023,7 +2023,7 @@ Return ONLY in this exact JSON format:
 
 @app.route('/api/generate-meme', methods=['POST'])
 def generate_meme():
-    """Generate meme with gpt-image-2 using scene description and text overlay"""
+    """Generate meme with gpt-image-2.6-sunburst using scene description and text overlay"""
     try:
         data = request.json
         month = data.get('month') or ''
@@ -2033,7 +2033,7 @@ def generate_meme():
         text_overlay_top = data.get('text_top', '').upper()
         text_overlay_bottom = data.get('text_bottom', '').upper()
 
-        print(f"\n[API] Generating meme with gpt-image-2 for {month}...")
+        print(f"\n[API] Generating meme with gpt-image-2.6-sunburst for {month}...")
         safe_print(f"    Text overlay - Top: '{text_overlay_top}', Bottom: '{text_overlay_bottom}'")
 
         if custom_prompt:
@@ -2090,10 +2090,10 @@ Return ONLY the image prompt, nothing else."""
             text_overlay_top = "WEDDING SEASON"
             text_overlay_bottom = "IT'S HAPPENING"
 
-        # Generate with OpenAI gpt-image-2
+        # Generate with OpenAI gpt-image-2.6-sunburst
         meme_result = openai_client.generate_image(
             prompt=prompt,
-            model="gpt-image-2",
+            model="gpt-image-2.6-sunburst",
             aspect_ratio="1:1",
             image_size="1K"
         )
@@ -2242,7 +2242,7 @@ Return ONLY the image prompt, nothing else."""
         import traceback
         traceback.print_exc()
         low = msg.lower()
-        # gpt-image-2 rejects named characters / celebrities / brands / franchises
+        # gpt-image-2.6-sunburst rejects named characters / celebrities / brands / franchises
         # (e.g. "Surprised Pikachu"). Turn the raw 400 into a clear, actionable message.
         if 'moderation' in low or 'safety system' in low or 'content_policy' in low or 'rejected by the safety' in low:
             friendly = ("That meme concept was blocked by the image generator's safety filter — usually "

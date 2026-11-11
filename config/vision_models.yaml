@@ -193,8 +193,8 @@ providers:
         cost_per_1m_output: 0.60
 
       # Image generation
-      - id: "gpt-image-2"
-        name: "GPT Image 2"
+      - id: "gpt-image-2.6-sunburst"
+        name: "GPT Image 2.6 Sunburst"
         tier: "frontier"
         speed: "medium"
         image_generation: true
@@ -399,7 +399,7 @@ task_assignments:
   # Meme / Newsletter Image Generation
   meme_generation:
     description: "Generate meme and newsletter images"
-    model: "gpt-image-2"
+    model: "gpt-image-2.6-sunburst"
     fallback: "gemini-2.5-flash-image"
     tier: "frontier"
-    notes: "OpenAI gpt-image-2 (medium quality) for image generation"
+    notes: "OpenAI gpt-image-2.6-sunburst (medium quality) for image generation"

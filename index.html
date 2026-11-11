@@ -4164,7 +4164,7 @@
                     <div class="loading">
                         <div class="spinner"></div>
                         <h3>Generating Images...</h3>
-                        <p style="color: #666;">Using OpenAI gpt-image-2 to create article-specific images...</p>
+                        <p style="color: #666;">Using OpenAI gpt-image-2.6-sunburst to create article-specific images...</p>
                         <p style="color: #999; font-size: 14px; margin-top: 10px;">This may take 20-30 seconds...</p>
                     </div>`;
                 }
@@ -4188,7 +4188,7 @@
                 );
                 const prompts = { news: readPrompt('news'), tip: readPrompt('tip'), trend: readPrompt('trend') };
 
-                console.log('[IMAGE GEN] Sending prompts to gpt-image-2:', prompts);
+                console.log('[IMAGE GEN] Sending prompts to gpt-image-2.6-sunburst:', prompts);
 
                 // Extract content text for sections (needed by API)
                 const newsText = extractContentText(generatedNewsContent);
@@ -4476,7 +4476,7 @@
                         <div style="text-align: center; padding: 40px;">
                             <div class="spinner" style="margin: 0 auto 20px;"></div>
                             <h3 style="color: #333; margin: 0 0 10px 0;">Generating Meme...</h3>
-                            <p style="color: #666; margin: 0;">Using OpenAI gpt-image-2 to create a fun monthly meme...</p>
+                            <p style="color: #666; margin: 0;">Using OpenAI gpt-image-2.6-sunburst to create a fun monthly meme...</p>
                             <p style="color: #999; font-size: 14px; margin-top: 10px;">Estimated time: ~15-20 seconds</p>
                         </div>
                     `;

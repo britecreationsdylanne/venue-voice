@@ -167,16 +167,16 @@ class OpenAIClient:
         quality: Optional[str] = None,
     ) -> Dict:
         """
-        Generate an image using OpenAI's image API (gpt-image-2).
+        Generate an image using OpenAI's image API (gpt-image-2.6-sunburst).
 
         Drop-in replacement for the Gemini image client: returns base64 PNG
         data in the same dict shape so the existing PIL resize pipeline works.
 
         Args:
             prompt: Image description prompt
-            model: Image model to use (default: gpt-image-2)
+            model: Image model to use (default: gpt-image-2.6-sunburst)
             aspect_ratio: "16:9", "1:1", or "9:16" - mapped to a supported size
-            image_size: Kept for compatibility (gpt-image-2 sizing via aspect_ratio)
+            image_size: Kept for compatibility (gpt-image-2.6-sunburst sizing via aspect_ratio)
             number_of_images: Number of images to generate
             quality: "low", "medium", or "high" (default: DEFAULT_IMAGE_QUALITY or "medium")
 
@@ -192,10 +192,10 @@ class OpenAIClient:
         if not self.client:
             raise ValueError("OpenAI API key not configured")
 
-        model_name = model or os.getenv("DEFAULT_IMAGE_MODEL", "gpt-image-2")
+        model_name = model or os.getenv("DEFAULT_IMAGE_MODEL", "gpt-image-2.6-sunburst")
         quality = quality or os.getenv("DEFAULT_IMAGE_QUALITY", "medium")
 
-        # Map aspect ratio to a gpt-image-2 supported size (1024-based)
+        # Map aspect ratio to a gpt-image-2.6-sunburst supported size (1024-based)
         size_map = {
             "16:9": "1536x1024",  # landscape (news + tip/trend banners)
             "9:16": "1024x1536",  # portrait
@@ -219,7 +219,7 @@ class OpenAIClient:
 
             generation_time_ms = int((time.time() - start_time) * 1000)
 
-            # gpt-image-2 returns base64-encoded PNG in b64_json
+            # gpt-image-2.6-sunburst returns base64-encoded PNG in b64_json
             image_data = response.data[0].b64_json
             if not image_data:
                 raise ValueError("No image data in response")
